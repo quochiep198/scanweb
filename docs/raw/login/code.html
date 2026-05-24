@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Đăng nhập | OsteoScan DXA</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed": "#001f27",
+                    "on-secondary-fixed-variant": "#004590",
+                    "on-secondary-fixed": "#001b3f",
+                    "primary": "#003d9b",
+                    "primary-fixed": "#dae2ff",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#fefcff",
+                    "on-primary-fixed": "#001848",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2e3132",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-high": "#e7e8ea",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f8f9fb",
+                    "on-tertiary-fixed-variant": "#004e5d",
+                    "outline": "#737685",
+                    "on-surface-variant": "#434654",
+                    "on-tertiary-container": "#76e2ff",
+                    "secondary-container": "#0071e6",
+                    "outline-variant": "#c3c6d6",
+                    "primary-fixed-dim": "#b2c5ff",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed": "#afecff",
+                    "on-primary-container": "#c4d2ff",
+                    "secondary-fixed-dim": "#abc7ff",
+                    "on-surface": "#191c1e",
+                    "background": "#f8f9fb",
+                    "tertiary-container": "#006477",
+                    "tertiary": "#004b59",
+                    "surface-dim": "#d9dadc",
+                    "surface-tint": "#0c56d0",
+                    "surface-container-low": "#f3f4f6",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f0f1f3",
+                    "surface-bright": "#f8f9fb",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#edeef0",
+                    "inverse-primary": "#b2c5ff",
+                    "secondary": "#0059b8",
+                    "on-primary-fixed-variant": "#0040a2",
+                    "secondary-fixed": "#d7e2ff",
+                    "tertiary-fixed-dim": "#48d7f9",
+                    "primary-container": "#0052cc",
+                    "surface-variant": "#e1e2e4",
+                    "on-background": "#191c1e",
+                    "surface-container-highest": "#e1e2e4",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "gutter": "24px",
+                    "container-padding-desktop": "32px",
+                    "section-gap": "40px",
+                    "container-padding-mobile": "16px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "data-mono": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "data-mono": ["16px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "60px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fb;
+        }
+        .medical-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 1) 0%, rgba(237, 238, 240, 1) 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .card-shadow {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+        .split-image-mask {
+            clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+<!-- Main Content Container -->
+<main class="flex-grow flex items-center justify-center relative px-container-padding-mobile md:px-0">
+<!-- Background Decorative Element (Desktop Only) -->
+<div class="hidden lg:block absolute inset-0 z-0 overflow-hidden pointer-events-none">
+<div class="absolute right-0 top-0 w-1/2 h-full bg-surface-container-low split-image-mask opacity-60">
+<img alt="Medical background" class="w-full h-full object-cover grayscale opacity-20" data-alt="A clean, sterile medical environment featuring a high-tech radiology laboratory. The scene is illuminated with soft, clinical blue and white lighting, creating a professional and trustworthy atmosphere. Advanced DXA scanning equipment is visible in the background, subtly blurred to maintain focus. The overall aesthetic is minimalist corporate, utilizing a palette of deep blues and surgical whites to evoke precision and diagnostic clarity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwMSl9RVFU9if3vIslYiWgik0q4xTrBAslOxOYduUAhMGcURgTm_qa_HMxlSZkcHgQcIQnMkG9bP3WMWp-rrgqai1I8iSUNqebMx7q9o6FGaUL0VAPY1hbPOeFZO6mUdVevMIJxSDCu8x3ep30r4OBWJr1eknuGnzCPoeoTRzav0zJqvsHC-u1rzY1VJnEDtW0gH57yn4r-pQvP13w8-iHadd2tqXD4gWrr2QNODcfBO5PBCDVG5aDRufemScEvWm3XWMUTfmZqHIV"/>
+</div>
+</div>
+<div class="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center z-10">
+<!-- Left Side / Center Form -->
+<div class="w-full lg:w-1/2 flex flex-col items-center lg:items-start p-gutter md:p-section-gap">
+<!-- Brand Anchor -->
+<div class="mb-10 flex items-center gap-3">
+<div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">health_metrics</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">OsteoScan DXA</h1>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Diagnostic Excellence</p>
+</div>
+</div>
+<!-- Login Card -->
+<div class="w-full max-w-md bg-white border border-outline-variant rounded-xl p-8 card-shadow">
+<header class="mb-8">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-2">Đăng nhập hệ thống</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Vui lòng nhập thông tin để truy cập hồ sơ bệnh nhân.</p>
+</header>
+<form action="#" class="space-y-6" onsubmit="event.preventDefault();">
+<!-- Username Field -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1" for="username">Tên đăng nhập hoặc Email</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-outline-variant" id="username" name="username" placeholder="nguyen.van.a@clinic.vn" type="text"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1" for="password">Mật khẩu</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<input class="block w-full pl-10 pr-10 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-outline-variant" id="password" name="password" placeholder="••••••••" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- Options Row -->
+<div class="flex items-center justify-between">
+<label class="flex items-center gap-2 cursor-pointer group">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary transition-all cursor-pointer" type="checkbox"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Ghi nhớ đăng nhập</span>
+</label>
+<a class="font-body-sm text-body-sm text-primary font-semibold hover:underline decoration-2 underline-offset-4" href="#">Quên mật khẩu?</a>
+</div>
+<!-- Submit Button -->
+<button class="w-full bg-primary hover:bg-primary-container text-white py-4 rounded-lg font-headline-sm text-headline-sm transition-all shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2" type="submit">
+<span>Đăng nhập</span>
+<span class="material-symbols-outlined">login</span>
+</button>
+</form>
+<!-- Trust Bar -->
+<div class="mt-10 pt-6 border-t border-outline-variant flex items-center justify-center gap-6 opacity-60">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+<span class="text-[10px] uppercase font-bold tracking-tighter">HIPAA Compliant</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">shield</span>
+<span class="text-[10px] uppercase font-bold tracking-tighter">SSL Secure</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">lock_person</span>
+<span class="text-[10px] uppercase font-bold tracking-tighter">256-bit AES</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side Visual Element (Optional Message Area for Large Screens) -->
+<div class="hidden lg:flex w-1/2 flex-col justify-center pl-16">
+<div class="max-w-md">
+<h3 class="font-display-lg text-display-lg text-primary mb-6 leading-tight">Phân tích mật độ xương thế hệ mới.</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-8">
+                        OsteoScan DXA cung cấp độ chính xác tối ưu trong chẩn đoán loãng xương và đánh giá rủi ro gãy xương cho bệnh nhân.
+                    </p>
+<div class="space-y-4">
+<div class="flex items-start gap-4 p-4 rounded-xl bg-primary-fixed/30 border border-primary-fixed">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white text-xl">speed</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary font-bold">Xử lý thời gian thực</h4>
+<p class="font-body-sm text-body-sm text-on-primary-fixed-variant">Kết quả phân tích có ngay sau khi quét với sai số tối thiểu.</p>
+</div>
+</div>
+<div class="flex items-start gap-4 p-4 rounded-xl bg-white border border-outline-variant">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-xl">analytics</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface font-bold">Báo cáo chuyên sâu</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Biểu đồ hóa các chỉ số BMD, T-score và Z-score trực quan.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full px-container-padding-desktop py-6 flex flex-col md:flex-row items-center justify-between border-t border-outline-variant bg-white z-20">
+<div class="mb-4 md:mb-0">
+<p class="font-label-md text-label-md text-on-surface-variant">Bản quyền © 2024 <span class="font-bold text-primary">OsteoScan DXA</span>. All rights reserved.</p>
+</div>
+<div class="flex items-center gap-gutter">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-sm">support_agent</span>
+                Hỗ trợ
+            </a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-sm">policy</span>
+                Chính sách bảo mật
+            </a>
+<div class="h-4 w-[1px] bg-outline-variant hidden md:block"></div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-tighter">Hệ thống đang hoạt động</span>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interactions for input focus effects
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.querySelector('.material-symbols-outlined').style.color = '#003d9b';
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.querySelector('.material-symbols-outlined').style.color = '#737685';
+            });
+        });
+
+        // Toggle password visibility
+        const togglePass = document.querySelector('button .material-symbols-outlined[textContent="visibility"]');
+        if (togglePass) {
+            togglePass.parentElement.addEventListener('click', () => {
+                const passInput = document.getElementById('password');
+                const isPass = passInput.type === 'password';
+                passInput.type = isPass ? 'text' : 'password';
+                togglePass.textContent = isPass ? 'visibility_off' : 'visibility';
+            });
+        }
+    </script>
+</body></html>

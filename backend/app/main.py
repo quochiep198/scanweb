@@ -1,7 +1,64 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+import logging
 
-app = FastAPI(title="OsteoAI API")
+from app.core.database import engine, get_db, Base
+from app.routers.auth import router as auth_router
+from app.models import User
+from app.core.security import decode_token
+
+logging.basicConfig(level=logging.INFO)
+
+app = FastAPI(
+    title="OsteoAI API",
+    description="Medical Imaging Data Collection Platform"
+)
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
+
+# Include routers
+app.include_router(auth_router)
+
+# Security scheme for Swagger UI
+security = HTTPBearer()
 
 @app.get('/health')
 def health():
-    return {'status':'ok'}
+    return {'status': 'ok'}
+
+@app.get("/v1/protected")
+def protected_route(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """Example protected route requiring JWT token"""
+    token = credentials.credentials
+    payload = decode_token(token)
+
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type"
+        )
+
+    user = db.query(User).filter(User.id == payload.get("sub")).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    return {
+        "message": "Access granted",
+        "user_id": user.id,
+        "email": user.email,
+        "name": user.name
+    }
