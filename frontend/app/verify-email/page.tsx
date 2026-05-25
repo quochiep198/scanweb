@@ -11,7 +11,7 @@ const shared = messages.shared;
 
 function VerifyEmailContent() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState(pageMessages.loadingMessage);
+  const [message, setMessage] = useState<string>(pageMessages.loadingMessage);
   const router = useRouter();
   const searchParams = useSearchParams();
 
