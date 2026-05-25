@@ -1,18 +1,33 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import logging
 
+from app.core.config import settings
 from app.core.database import engine, get_db, Base
 from app.routers.auth import router as auth_router
 from app.models import User
 from app.core.security import decode_token
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    force=True,
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="OsteoAI API",
     description="Medical Imaging Data Collection Platform"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Create database tables
@@ -20,6 +35,9 @@ Base.metadata.create_all(bind=engine)
 
 # Include routers
 app.include_router(auth_router)
+
+logger.info("Backend logging initialized")
+logger.info("CORS origins: %s", settings.cors_origins)
 
 # Security scheme for Swagger UI
 security = HTTPBearer()

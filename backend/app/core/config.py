@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str
     EMAIL_FROM: str
     FRONTEND_URL: str
+    BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",") if origin.strip()]
 
     class Config:
         env_file = ".env"

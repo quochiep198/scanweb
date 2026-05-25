@@ -3,12 +3,15 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "@/app/auth/auth.module.css";
+import { messages } from "@/app/messages";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const pageMessages = messages.auth.verifyEmail;
+const shared = messages.shared;
 
 function VerifyEmailContent() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("Dang xac thuc email...");
+  const [message, setMessage] = useState(pageMessages.loadingMessage);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -18,7 +21,7 @@ function VerifyEmailContent() {
 
       if (!token) {
         setStatus("error");
-        setMessage("Token xac thuc khong hop le");
+        setMessage(messages.auth.errors.invalidVerifyToken);
         return;
       }
 
@@ -28,15 +31,15 @@ function VerifyEmailContent() {
 
         if (response.ok) {
           setStatus("success");
-          setMessage(data.message || "Xac thuc email thanh cong");
+          setMessage(data.message || pageMessages.successMessage);
           return;
         }
 
         setStatus("error");
-        setMessage(data.detail || "Xac thuc that bai");
+        setMessage(data.detail || messages.auth.errors.verifyFailed);
       } catch {
         setStatus("error");
-        setMessage("Khong the ket noi den server");
+        setMessage(messages.auth.errors.serverUnavailable);
       }
     };
 
@@ -52,7 +55,7 @@ function VerifyEmailContent() {
               progress_activity
             </span>
           </div>
-          <h2 className={styles["form-header"]}>Dang xac thuc...</h2>
+          <h2 className={styles["form-header"]}>{pageMessages.loadingTitle}</h2>
           <p
             style={{
               fontFamily: "Inter, sans-serif",
@@ -61,7 +64,7 @@ function VerifyEmailContent() {
               marginBottom: "24px",
             }}
           >
-            Vui long cho trong giay lat
+            {shared.loading}
           </p>
         </>
       )}
@@ -77,7 +80,7 @@ function VerifyEmailContent() {
             </span>
           </div>
           <h2 className={styles["form-header"]} style={{ color: "#22c55e" }}>
-            Xac thuc thanh cong
+            {pageMessages.successTitle}
           </h2>
           <p
             style={{
@@ -94,7 +97,7 @@ function VerifyEmailContent() {
             className={styles["btn-primary"]}
             onClick={() => router.push("/login")}
           >
-            Dang nhap ngay
+            {shared.loginNow}
           </button>
         </>
       )}
@@ -110,7 +113,7 @@ function VerifyEmailContent() {
             </span>
           </div>
           <h2 className={styles["form-header"]} style={{ color: "#ba1a1a" }}>
-            Xac thuc that bai
+            {pageMessages.errorTitle}
           </h2>
           <p
             style={{
@@ -127,7 +130,7 @@ function VerifyEmailContent() {
             className={styles["btn-primary"]}
             onClick={() => router.push("/login")}
           >
-            Quay lai dang nhap
+            {shared.loginLink}
           </button>
         </>
       )}
@@ -143,7 +146,7 @@ function VerifyEmailFallback() {
           progress_activity
         </span>
       </div>
-      <h2 className={styles["form-header"]}>Dang xac thuc...</h2>
+      <h2 className={styles["form-header"]}>{pageMessages.loadingTitle}</h2>
       <p
         style={{
           fontFamily: "Inter, sans-serif",
@@ -152,7 +155,7 @@ function VerifyEmailFallback() {
           marginBottom: "24px",
         }}
       >
-        Vui long cho trong giay lat
+        {shared.loading}
       </p>
     </div>
   );
@@ -175,8 +178,8 @@ export default function VerifyEmailPage() {
                 <span className="material-symbols-outlined">health_metrics</span>
               </div>
               <div className={styles["brand-text"]}>
-                <h1>OsteoScan DXA</h1>
-                <p>Diagnostic Excellence</p>
+                <h1>{messages.brand.name}</h1>
+                <p>{messages.brand.tagline}</p>
               </div>
             </div>
             <div className={styles["form-card"]}>
@@ -187,18 +190,15 @@ export default function VerifyEmailPage() {
           </div>
           <div className={styles["login-visual"]}>
             <div className={styles["visual-content"]}>
-              <h3>Phan tich mat do xuong the he moi.</h3>
-              <p>
-                OsteoScan DXA cung cap do chinh xac toi uu trong chan doan loang xuong va danh gia
-                rui ro gay xuong cho benh nhan.
-              </p>
+              <h3>{shared.heroTitle}</h3>
+              <p>{shared.heroDescription}</p>
             </div>
           </div>
         </div>
       </main>
       <footer className={styles["login-footer"]}>
         <div className={styles["footer-copyright"]}>
-          Ban quyen 2024 <strong>OsteoScan DXA</strong>. All rights reserved.
+          Ban quyen 2024 <strong>{messages.brand.name}</strong>. All rights reserved.
         </div>
       </footer>
     </div>

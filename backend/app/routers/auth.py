@@ -23,8 +23,10 @@ logger = logging.getLogger(__name__)
 @router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """Register a new user."""
+    logger.info("Register request received for %s", request.email)
     existing_user = AuthService.get_user_by_email(db, request.email)
     if existing_user:
+        logger.warning("Register skipped because email already exists: %s", request.email)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email da duoc dang ky",
@@ -35,6 +37,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     logger.info("New user registered: %s", request.email)
 
     verification_token = create_verification_token(user.id, user.email)
+    logger.info("Attempting to send verification email to %s", request.email)
     email_sent = send_verification_email(request.email, request.name, verification_token)
 
     if not email_sent:
@@ -114,8 +117,10 @@ def refresh_token(request: RefreshRequest, db: Session = Depends(get_db)):
 @router.post("/forgot-password", response_model=MessageResponse)
 def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Request OTP for password reset."""
+    logger.info("Forgot password request received for %s", request.email)
     can_request, error = AuthService.can_request_otp(db, request.email)
     if not can_request:
+        logger.warning("Forgot password rate limited for %s: %s", request.email, error)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=error,
@@ -127,7 +132,12 @@ def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db
 
     logger.info("OTP requested for: %s", request.email)
 
-    send_otp_email(request.email, result.code)
+    logger.info("Attempting to send OTP email to %s", request.email)
+    email_sent = send_otp_email(request.email, result.code)
+
+    if not email_sent:
+        logger.error("OTP email could not be sent to %s", request.email)
+        return MessageResponse(message="Khong gui duoc ma OTP. Vui long thu lai sau.")
 
     return MessageResponse(message="Da gui ma OTP den email cua ban")
 

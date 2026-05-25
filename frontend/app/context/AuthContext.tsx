@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { messages } from "@/app/messages";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -31,7 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load tokens from localStorage on mount
     const storedAccessToken = localStorage.getItem("access_token");
     const storedRefreshToken = localStorage.getItem("refresh_token");
     const storedUser = localStorage.getItem("user");
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Đăng nhập thất bại");
+      throw new Error(error.detail || messages.auth.errors.loginFailed);
     }
 
     const data = await response.json();
@@ -62,15 +62,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("refresh_token", data.refresh_token);
 
-    // Fetch user info
     const userResponse = await fetch(`${API_URL}/v1/protected`, {
       headers: { Authorization: `Bearer ${data.access_token}` },
     });
 
     if (userResponse.ok) {
       const userData = await userResponse.json();
-      setUser({ id: userData.user_id, email: userData.email, name: userData.name });
-      localStorage.setItem("user", JSON.stringify({ id: userData.user_id, email: userData.email, name: userData.name }));
+      const nextUser = {
+        id: userData.user_id,
+        email: userData.email,
+        name: userData.name,
+      };
+      setUser(nextUser);
+      localStorage.setItem("user", JSON.stringify(nextUser));
     }
   };
 
@@ -83,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Đăng ký thất bại");
+      throw new Error(error.detail || messages.auth.errors.registerFailed);
     }
   };
 
@@ -113,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Gửi yêu cầu thất bại");
+      throw new Error(error.detail || messages.auth.errors.forgotPasswordFailed);
     }
   };
 
@@ -126,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Đặt lại mật khẩu thất bại");
+      throw new Error(error.detail || messages.auth.errors.resetPasswordFailed);
     }
   };
 
@@ -152,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error(messages.auth.errors.authProviderRequired);
   }
   return context;
 }

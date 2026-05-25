@@ -1,8 +1,20 @@
-export default function Home(){
-  return (
-    <main>
-      <h1>OsteoAI Platform</h1>
-      <p>Phase 1 Data Collection System</p>
-    </main>
-  )
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
+
+export default function HomePage() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    router.replace(isAuthenticated ? "/dashboard" : "/login");
+  }, [isAuthenticated, isLoading, router]);
+
+  return null;
 }

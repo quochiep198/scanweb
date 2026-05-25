@@ -9,6 +9,7 @@ resend.api_key = settings.RESEND_API_KEY
 
 def send_otp_email(to_email: str, otp_code: str):
     """Send OTP code via email using Resend."""
+    logger.info("send_otp_email called for %s", to_email)
     if not settings.RESEND_API_KEY:
         logger.warning("RESEND_API_KEY is not configured. OTP email skipped for %s", to_email)
         return True
@@ -56,6 +57,7 @@ def send_otp_email(to_email: str, otp_code: str):
             "subject": "Mã xác thực OsteoAI - Đặt lại mật khẩu",
             "html": html_content,
         }
+        logger.info("Calling Resend for OTP email to %s with from=%s", to_email, settings.EMAIL_FROM)
         result = resend.Emails.send(params)
         logger.info("OTP email sent to %s: %s", to_email, result)
         return True
@@ -69,6 +71,7 @@ def send_otp_email(to_email: str, otp_code: str):
 
 def send_verification_email(to_email: str, name: str, verification_token: str = ""):
     """Send account verification email."""
+    logger.info("send_verification_email called for %s", to_email)
     if not settings.RESEND_API_KEY:
         logger.warning("RESEND_API_KEY is not configured. Verification email skipped for %s", to_email)
         return True
@@ -116,6 +119,7 @@ def send_verification_email(to_email: str, name: str, verification_token: str = 
             "subject": "Xác thực email - OsteoAI Platform",
             "html": html_content,
         }
+        logger.info("Calling Resend for verification email to %s with from=%s", to_email, settings.EMAIL_FROM)
         result = resend.Emails.send(params)
         logger.info("Verification email sent to %s: %s", to_email, result)
         return True

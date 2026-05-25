@@ -4,8 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "@/app/auth/auth.module.css";
+import { useAuth } from "@/app/context/AuthContext";
+import { messages } from "@/app/messages";
+
+const pageMessages = messages.auth.login;
+const shared = messages.shared;
 
 export default function LoginPage() {
+  const { login } = useAuth();
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -13,31 +21,28 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.BaseSyntheticEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Email không hợp lệ");
+      setError(messages.auth.errors.invalidEmail);
       return;
     }
 
     if (password.length < 8) {
-      setError("Mật khẩu phải có ít nhất 8 ký tự");
+      setError(messages.auth.errors.invalidPasswordLength);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Simulate login - replace with actual auth logic
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await login(email.trim(), password);
       router.push("/dashboard");
     } catch (err) {
-      setError("Đăng nhập thất bại");
+      setError(err instanceof Error ? err.message : messages.auth.errors.loginFailed);
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +51,6 @@ export default function LoginPage() {
   return (
     <div className={styles["login-page"]}>
       <main className={styles["login-main"]}>
-        {/* Background Decoration */}
         <div className={styles["bg-decoration"]}>
           <img
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwMSl9RVFU9if3vIslYiWgik0q4xTrBAslOxOYduUAhMGcURgTm_qa_HMxlSZkcHgQcIQnMkG9bP3WMWp-rrgqai1I8iSUNqebMx7q9o6FGaUL0VAPY1hbPOeFZO6mUdVevMIJxSDCu8x3ep30r4OBWJr1eknuGnzCPoeoTRzav0zJqvsHC-u1rzY1VJnEDtW0gH57yn4r-pQvP13w8-iHadd2tqXD4gWrr2QNODcfBO5PBCDVG5aDRufemScEvWm3XWMUTfmZqHIV"
@@ -55,36 +59,28 @@ export default function LoginPage() {
         </div>
 
         <div className={styles["login-content"]}>
-          {/* Form Section */}
           <div>
-            {/* Brand */}
             <div className={styles["login-brand"]}>
               <div className={styles["brand-logo"]}>
                 <span className="material-symbols-outlined">health_metrics</span>
               </div>
               <div className={styles["brand-text"]}>
-                <h1>OsteoScan DXA</h1>
-                <p>Diagnostic Excellence</p>
+                <h1>{messages.brand.name}</h1>
+                <p>{messages.brand.tagline}</p>
               </div>
             </div>
 
-            {/* Form Card */}
             <div className={styles["form-card"]}>
               <header className={styles["form-header"]}>
-                <h2>Đăng nhập hệ thống</h2>
-                <p>Vui lòng nhập thông tin để truy cập hồ sơ bệnh nhân.</p>
+                <h2>{pageMessages.title}</h2>
+                <p>{pageMessages.description}</p>
               </header>
 
-              {error && (
-                <div className={`${styles.alert} ${styles["alert-error"]}`}>
-                  {error}
-                </div>
-              )}
+              {error && <div className={`${styles.alert} ${styles["alert-error"]}`}>{error}</div>}
 
               <form onSubmit={handleSubmit}>
-                {/* Email Field */}
                 <div className={styles["input-group"]}>
-                  <label>Tên đăng nhập hoặc Email</label>
+                  <label>{pageMessages.emailLabel}</label>
                   <div className={styles["input-wrapper"]}>
                     <span className={styles["input-icon"]}>
                       <span className="material-symbols-outlined">person</span>
@@ -100,9 +96,8 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Password Field */}
                 <div className={styles["input-group"]}>
-                  <label>Mật khẩu</label>
+                  <label>{pageMessages.passwordLabel}</label>
                   <div className={styles["input-wrapper"]}>
                     <span className={styles["input-icon"]}>
                       <span className="material-symbols-outlined">lock</span>
@@ -112,14 +107,14 @@ export default function LoginPage() {
                       className={`${styles["form-input"]} ${styles["password-input"]}`}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder={pageMessages.passwordPlaceholder}
                       required
                     />
                     <button
                       type="button"
                       className={styles["password-toggle"]}
                       onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      aria-label={showPassword ? pageMessages.hidePassword : pageMessages.showPassword}
                     >
                       <span className="material-symbols-outlined">
                         {showPassword ? "visibility_off" : "visibility"}
@@ -128,7 +123,6 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Options Row */}
                 <div className={styles["options-row"]}>
                   <label className={styles["checkbox-wrapper"]}>
                     <input
@@ -136,25 +130,19 @@ export default function LoginPage() {
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
                     />
-                    <span>Ghi nhớ đăng nhập</span>
+                    <span>{pageMessages.rememberMe}</span>
                   </label>
                   <Link href="/forgot-password" className={styles["footer-link"]}>
-                    Quên mật khẩu?
+                    {pageMessages.forgotPassword}
                   </Link>
                 </div>
 
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  className={styles["btn-primary"]}
-                  disabled={isLoading}
-                >
-                  <span>Đăng nhập</span>
+                <button type="submit" className={styles["btn-primary"]} disabled={isLoading}>
+                  <span>{isLoading ? pageMessages.submitting : pageMessages.submit}</span>
                   <span className="material-symbols-outlined">login</span>
                 </button>
               </form>
 
-              {/* Trust Bar */}
               <div className={styles["trust-bar"]}>
                 <div className={styles["trust-item"]}>
                   <span className="material-symbols-outlined">verified_user</span>
@@ -172,32 +160,28 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Right Side Visual */}
           <div className={styles["login-visual"]}>
             <div className={styles["visual-content"]}>
-              <h3>Phân tích mật độ xương thế hệ mới.</h3>
-              <p>
-                OsteoScan DXA cung cấp độ chính xác tối ưu trong chẩn đoán loãng
-                xương và đánh giá rủi ro gãy xương cho bệnh nhân.
-              </p>
+              <h3>{shared.heroTitle}</h3>
+              <p>{shared.heroDescription}</p>
 
-              <div className={styles["feature-card"] + " " + styles["primary"]}>
-                <div className={styles["feature-icon"] + " " + styles["primary"]}>
+              <div className={`${styles["feature-card"]} ${styles["primary"]}`}>
+                <div className={`${styles["feature-icon"]} ${styles["primary"]}`}>
                   <span className="material-symbols-outlined">speed</span>
                 </div>
                 <div className={styles["feature-text"]}>
-                  <h4>Xử lý thời gian thực</h4>
-                  <p>Kết quả phân tích có ngay sau khi quét với sai số tối thiểu.</p>
+                  <h4>{shared.featureSpeedTitle}</h4>
+                  <p>{shared.featureSpeedDescription}</p>
                 </div>
               </div>
 
-              <div className={styles["feature-card"] + " " + styles["default"]}>
-                <div className={styles["feature-icon"] + " " + styles["default"]}>
+              <div className={`${styles["feature-card"]} ${styles["default"]}`}>
+                <div className={`${styles["feature-icon"]} ${styles["default"]}`}>
                   <span className="material-symbols-outlined">analytics</span>
                 </div>
-                <div className={styles["feature-text"] + " " + styles["default"]}>
-                  <h4>Báo cáo chuyên sâu</h4>
-                  <p>Biểu đồ hóa các chỉ số BMD, T-score và Z-score trực quan.</p>
+                <div className={`${styles["feature-text"]} ${styles["default"]}`}>
+                  <h4>{shared.featureReportTitle}</h4>
+                  <p>{shared.featureReportDescription}</p>
                 </div>
               </div>
             </div>
@@ -205,24 +189,23 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className={styles["login-footer"]}>
         <div className={styles["footer-copyright"]}>
-          Bản quyền © 2024 <strong>OsteoScan DXA</strong>. All rights reserved.
+          Ban quyen 2024 <strong>{messages.brand.name}</strong>. All rights reserved.
         </div>
         <div className={styles["footer-links"]}>
           <a href="#">
             <span className="material-symbols-outlined">support_agent</span>
-            Hỗ trợ
+            {shared.support}
           </a>
           <a href="#">
             <span className="material-symbols-outlined">policy</span>
-            Chính sách bảo mật
+            {shared.privacy}
           </a>
           <div className={styles["footer-links-divider"]}></div>
           <div className={styles["status-indicator"]}>
             <div className={styles["status-dot"]}></div>
-            <span className={styles["status-text"]}>Hệ thống đang hoạt động</span>
+            <span className={styles["status-text"]}>{shared.systemActive}</span>
           </div>
         </div>
       </footer>
