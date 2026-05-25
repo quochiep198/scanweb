@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import styles from "@/app/auth/auth.module.css";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function VerifyEmailPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("Đang xác thực email...");
+  const [message, setMessage] = useState("Dang xac thuc email...");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -17,27 +18,25 @@ export default function VerifyEmailPage() {
 
       if (!token) {
         setStatus("error");
-        setMessage("Token xác thực không hợp lệ");
+        setMessage("Token xac thuc khong hop le");
         return;
       }
 
       try {
-        const response = await fetch(
-          `http://localhost:8000/v1/auth/verify-email?token=${token}`
-        );
-
+        const response = await fetch(`${API_URL}/v1/auth/verify-email?token=${token}`);
         const data = await response.json();
 
         if (response.ok) {
           setStatus("success");
-          setMessage(data.message || "Xác thực email thành công!");
-        } else {
-          setStatus("error");
-          setMessage(data.detail || "Xác thực thất bại");
+          setMessage(data.message || "Xac thuc email thanh cong");
+          return;
         }
-      } catch (error) {
+
         setStatus("error");
-        setMessage("Không thể kết nối đến server");
+        setMessage(data.detail || "Xac thuc that bai");
+      } catch {
+        setStatus("error");
+        setMessage("Khong the ket noi den server");
       }
     };
 
@@ -73,24 +72,41 @@ export default function VerifyEmailPage() {
                         progress_activity
                       </span>
                     </div>
-                    <h2 className={styles["form-header"]}>Đang xác thực...</h2>
-                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", color: "#434654", marginBottom: "24px" }}>
-                      Vui lòng chờ trong giây lát
+                    <h2 className={styles["form-header"]}>Dang xac thuc...</h2>
+                    <p
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: "14px",
+                        color: "#434654",
+                        marginBottom: "24px",
+                      }}
+                    >
+                      Vui long cho trong giay lat
                     </p>
                   </>
                 )}
 
                 {status === "success" && (
                   <>
-                    <div className={styles["brand-logo"]} style={{ margin: "0 auto 16px", background: "#22c55e" }}>
+                    <div
+                      className={styles["brand-logo"]}
+                      style={{ margin: "0 auto 16px", background: "#22c55e" }}
+                    >
                       <span className="material-symbols-outlined" style={{ fontSize: "24px" }}>
                         check
                       </span>
                     </div>
                     <h2 className={styles["form-header"]} style={{ color: "#22c55e" }}>
-                      Xác thực thành công!
+                      Xac thuc thanh cong
                     </h2>
-                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", color: "#434654", marginBottom: "24px" }}>
+                    <p
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: "14px",
+                        color: "#434654",
+                        marginBottom: "24px",
+                      }}
+                    >
                       {message}
                     </p>
                     <button
@@ -98,22 +114,32 @@ export default function VerifyEmailPage() {
                       className={styles["btn-primary"]}
                       onClick={() => router.push("/login")}
                     >
-                      Đăng nhập ngay
+                      Dang nhap ngay
                     </button>
                   </>
                 )}
 
                 {status === "error" && (
                   <>
-                    <div className={styles["brand-logo"]} style={{ margin: "0 auto 16px", background: "#ba1a1a" }}>
+                    <div
+                      className={styles["brand-logo"]}
+                      style={{ margin: "0 auto 16px", background: "#ba1a1a" }}
+                    >
                       <span className="material-symbols-outlined" style={{ fontSize: "24px" }}>
                         close
                       </span>
                     </div>
                     <h2 className={styles["form-header"]} style={{ color: "#ba1a1a" }}>
-                      Xác thực thất bại
+                      Xac thuc that bai
                     </h2>
-                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", color: "#434654", marginBottom: "24px" }}>
+                    <p
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: "14px",
+                        color: "#434654",
+                        marginBottom: "24px",
+                      }}
+                    >
                       {message}
                     </p>
                     <button
@@ -121,7 +147,7 @@ export default function VerifyEmailPage() {
                       className={styles["btn-primary"]}
                       onClick={() => router.push("/login")}
                     >
-                      Quay lại đăng nhập
+                      Quay lai dang nhap
                     </button>
                   </>
                 )}
@@ -130,9 +156,10 @@ export default function VerifyEmailPage() {
           </div>
           <div className={styles["login-visual"]}>
             <div className={styles["visual-content"]}>
-              <h3>Phân tích mật độ xương thế hệ mới.</h3>
+              <h3>Phan tich mat do xuong the he moi.</h3>
               <p>
-                OsteoScan DXA cung cấp độ chính xác tối ưu trong chẩn đoán loãng xương và đánh giá rủi ro gãy xương cho bệnh nhân.
+                OsteoScan DXA cung cap do chinh xac toi uu trong chan doan loang xuong va danh gia
+                rui ro gay xuong cho benh nhan.
               </p>
             </div>
           </div>
@@ -140,7 +167,7 @@ export default function VerifyEmailPage() {
       </main>
       <footer className={styles["login-footer"]}>
         <div className={styles["footer-copyright"]}>
-          Bản quyền © 2024 <strong>OsteoScan DXA</strong>. All rights reserved.
+          Ban quyen 2024 <strong>OsteoScan DXA</strong>. All rights reserved.
         </div>
       </footer>
     </div>

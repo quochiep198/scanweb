@@ -1,6 +1,8 @@
 import resend
-import asyncio
+import logging
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Initialize Resend client
 resend.api_key = settings.RESEND_API_KEY
@@ -8,7 +10,7 @@ resend.api_key = settings.RESEND_API_KEY
 def send_otp_email(to_email: str, otp_code: str):
     """Send OTP code via email using Resend."""
     if not settings.RESEND_API_KEY:
-        print(f"[DEV] OTP for {to_email}: {otp_code}")
+        logger.warning("RESEND_API_KEY is not configured. OTP email skipped for %s", to_email)
         return True
 
     html_content = f"""
@@ -55,24 +57,24 @@ def send_otp_email(to_email: str, otp_code: str):
             "html": html_content,
         }
         result = resend.Emails.send(params)
-        print(f"[EMAIL] OTP sent to {to_email}, id: {result}")
+        logger.info("OTP email sent to %s: %s", to_email, result)
         return True
     except resend.errors.ResendError as e:
-        print(f"[EMAIL ERROR] Resend API Error: {e}")
+        logger.exception("Resend API error while sending OTP email to %s", to_email)
         return False
     except Exception as e:
-        print(f"[EMAIL ERROR] Unexpected error: {e}")
+        logger.exception("Unexpected error while sending OTP email to %s", to_email)
         return False
 
 
 def send_verification_email(to_email: str, name: str, verification_token: str = ""):
     """Send account verification email."""
     if not settings.RESEND_API_KEY:
-        print(f"[DEV] Verification email to {to_email}")
+        logger.warning("RESEND_API_KEY is not configured. Verification email skipped for %s", to_email)
         return True
 
     # Build verification URL
-    frontend_url = "http://localhost:3000"  # In production, use actual frontend URL
+    frontend_url = settings.FRONTEND_URL.rstrip("/")
     verify_url = f"{frontend_url}/verify-email?token={verification_token}" if verification_token else ""
 
     html_content = f"""
@@ -115,20 +117,19 @@ def send_verification_email(to_email: str, name: str, verification_token: str = 
             "html": html_content,
         }
         result = resend.Emails.send(params)
-        print(f"[EMAIL] Verification sent to {to_email}, id: {result}")
+        logger.info("Verification email sent to %s: %s", to_email, result)
         return True
     except resend.errors.ResendError as e:
-        print(f"[EMAIL ERROR] Resend API Error: {e}")
+        logger.exception("Resend API error while sending verification email to %s", to_email)
         return False
     except Exception as e:
-        print(f"[EMAIL ERROR] Unexpected error: {e}")
+        logger.exception("Unexpected error while sending verification email to %s", to_email)
         return False
 
 
 def test_resend():
     """Test Resend API connection"""
-    print(f"[TEST] Resend API Key: {settings.RESEND_API_KEY[:10]}...")
-    print(f"[TEST] Email From: {settings.EMAIL_FROM}")
+    logger.info("Testing Resend with sender %s", settings.EMAIL_FROM)
 
     try:
         result = resend.Emails.send({
@@ -137,8 +138,8 @@ def test_resend():
             "subject": "Test Email",
             "html": "<h1>Test</h1><p>This is a test email from OsteoAI</p>",
         })
-        print(f"[TEST] Result: {result}")
+        logger.info("Resend test succeeded: %s", result)
         return True
     except Exception as e:
-        print(f"[TEST ERROR] {e}")
+        logger.exception("Resend test failed")
         return False

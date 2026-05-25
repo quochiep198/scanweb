@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     # Email (Resend)
     RESEND_API_KEY: str = "re_gbgmFeQc_2WGJh5NLWULhRZJBuw3eJBF3"
     EMAIL_FROM: str = "OsteoAI <noreply@python.thtsolution.online>"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     class Config:
         env_file = ".env"
