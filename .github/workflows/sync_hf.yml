@@ -10,9 +10,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          lfs: true
+          fetch-depth: 1
+          lfs: false
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://quochiepho:$HF_TOKEN@huggingface.co/spaces/quochiepho/scanweb-api main
+        run: |
+          # Xóa thư mục chứa file ảnh để tránh lỗi dung lượng của HF
+          rm -rf docs/
+          
+          # Tạo một lịch sử Git mới hoàn toàn để không mang theo ảnh cũ
+          rm -rf .git
+          git init
+          git config user.email "bot@example.com"
+          git config user.name "bot"
+          git add .
+          git commit -m "Deploy to HF Space"
+          
+          # Đẩy (Force push) code mới sang HF
+          git push --force https://quochiepho:$HF_TOKEN@huggingface.co/spaces/quochiepho/scanweb-api HEAD:main
