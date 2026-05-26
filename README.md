@@ -105,3 +105,4 @@ scanweb/
 
 - **Frontend**: Vercel (set Root Directory to `frontend`)
 - **Backend**: Vercel Functions or separate service
+- Deploy again
