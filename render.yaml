@@ -1,25 +1,3 @@
-services:
-  - type: web
-    name: scanweb-backend
-    plan: free
-    env: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: scanweb-db
-          property: connectionString
-      - key: SECRET_KEY
-        generateValue: true
-      - key: FRONTEND_URL
-        value: https://scanweb-murex.vercel.app
-      - key: EMAIL_FROM
-        value: onboarding@resend.dev
-      - key: RESEND_API_KEY
-        value: re_demo_key_123
-
 databases:
   - name: scanweb-db
     plan: free
