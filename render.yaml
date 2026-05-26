@@ -1,6 +1,7 @@
 services:
   - type: web
     name: scanweb-backend
+    plan: free
     env: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
@@ -15,5 +16,6 @@ services:
 
 databases:
   - name: scanweb-db
+    plan: free
     databaseName: scanweb
     user: scanweb_user
