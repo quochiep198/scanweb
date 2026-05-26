@@ -6,15 +6,18 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def _truncate_password(password: str) -> str:
-    # Truncate to exactly 72 bytes to satisfy bcrypt limits
-    return password.encode('utf-8')[:72].decode('utf-8', 'ignore')
+import hashlib
+
+def _hash_before_bcrypt(password: str) -> str:
+    # Hash password with SHA256 before feeding to bcrypt 
+    # to completely avoid the 72-byte limitation while maintaining security
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(_truncate_password(password))
+    return pwd_context.hash(_hash_before_bcrypt(password))
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(_truncate_password(plain_password), hashed_password)
+    return pwd_context.verify(_hash_before_bcrypt(plain_password), hashed_password)
 
 def create_access_token(user_id: str, email: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
