@@ -23,10 +23,20 @@ class Settings(BaseSettings):
     EMAIL_FROM: str
     FRONTEND_URL: str
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
+    BACKEND_CORS_ORIGIN_REGEX: str = r"https://.*\.vercel\.app"
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",") if origin.strip()]
+        origins = {
+            origin.strip().rstrip("/")
+            for origin in self.BACKEND_CORS_ORIGINS.split(",")
+            if origin.strip()
+        }
+
+        if self.FRONTEND_URL.strip():
+            origins.add(self.FRONTEND_URL.strip().rstrip("/"))
+
+        return sorted(origins)
 
     class Config:
         env_file = ".env"

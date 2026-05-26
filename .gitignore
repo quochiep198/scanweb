@@ -30,3 +30,5 @@ env/
 # OS / editor
 .DS_Store
 Thumbs.db
+/backend/.env.example
+/frontend/.env.local.example
