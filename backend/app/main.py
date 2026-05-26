@@ -34,12 +34,17 @@ app.add_middleware(
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Seed database
+from app.core.seeding import seed_data
+seed_data()
+
 # Include routers
+from app.routers.upload import router as upload_router
 app.include_router(auth_router)
+app.include_router(upload_router)
 
 logger.info("Backend logging initialized")
 logger.info("CORS origins: %s", settings.cors_origins)
-
 # Security scheme for Swagger UI
 security = HTTPBearer()
 

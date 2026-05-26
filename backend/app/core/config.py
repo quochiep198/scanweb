@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
     BACKEND_CORS_ORIGIN_REGEX: str = r"https://.*\.vercel\.app"
 
+    # Cloudflare R2 Settings
+    CLOUDFLARE_R2_ACCOUNT_ID: str = ""
+    CLOUDFLARE_R2_ACCESS_KEY_ID: str = ""
+    CLOUDFLARE_R2_SECRET_ACCESS_KEY: str = ""
+    CLOUDFLARE_R2_BUCKET_NAME: str = ""
+    CLOUDFLARE_R2_PUBLIC_URL: str = ""
+
     @property
     def cors_origins(self) -> list[str]:
         origins = {

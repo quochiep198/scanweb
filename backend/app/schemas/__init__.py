@@ -8,6 +8,7 @@ from app.schemas.auth import (
     MessageResponse,
     UserResponse
 )
+from app.schemas.upload import OptionResponse, UploadOptionsResponse
 
 __all__ = [
     "RegisterRequest",
@@ -17,5 +18,7 @@ __all__ = [
     "ResetPasswordRequest",
     "TokenResponse",
     "MessageResponse",
-    "UserResponse"
+    "UserResponse",
+    "OptionResponse",
+    "UploadOptionsResponse",
 ]

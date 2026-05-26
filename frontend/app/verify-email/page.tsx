@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import styles from "@/app/auth/auth.module.css";
 import { messages } from "@/app/messages";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 const pageMessages = messages.auth.verifyEmail;
 const shared = messages.shared;
 

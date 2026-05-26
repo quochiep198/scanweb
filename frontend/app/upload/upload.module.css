@@ -1,6 +1,6 @@
 .page {
   display: grid;
-  gap: 22px;
+  gap: 12px;
 }
 
 .header {
@@ -17,7 +17,7 @@
 
 .title {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-size: clamp(1.3rem, 2.8vw, 1.8rem);
   line-height: 1.06;
   letter-spacing: -0.05em;
   color: #103f9c;
@@ -26,8 +26,8 @@
 .description {
   max-width: 720px;
   margin: 0;
-  font-size: 0.98rem;
-  line-height: 1.6;
+  font-size: 0.82rem;
+  line-height: 1.5;
   color: #4f586c;
 }
 
@@ -41,12 +41,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 52px;
-  padding: 0 18px;
-  border-radius: 14px;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
   border: 1px solid #cfd7e6;
-  font-size: 0.92rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
@@ -62,7 +62,7 @@
   border-color: #145fce;
   background: linear-gradient(180deg, #145fce, #0f43a9);
   color: #fff;
-  box-shadow: 0 16px 30px rgba(15, 67, 169, 0.22);
+  box-shadow: 0 6px 12px rgba(15, 67, 169, 0.12);
 }
 
 .ghostButton:hover,
@@ -73,23 +73,23 @@
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.72fr);
-  gap: 22px;
+  gap: 12px;
   align-items: start;
 }
 
 .mainColumn {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .uploadZone {
   position: relative;
-  padding: 36px 28px;
+  padding: 16px 14px;
   border: 2px dashed #b9caec;
-  border-radius: 22px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.88);
   text-align: center;
-  box-shadow: 0 10px 28px rgba(25, 48, 96, 0.08);
+  box-shadow: 0 6px 16px rgba(25, 48, 96, 0.05);
   transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
 }
 
@@ -100,11 +100,11 @@
 }
 
 .uploadIcon {
-  width: 64px;
-  height: 64px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
-  margin: 0 auto 14px;
+  margin: 0 auto 8px;
   border-radius: 999px;
   background: linear-gradient(180deg, #e7efff, #d9e8ff);
   color: #155dca;
@@ -112,7 +112,7 @@
 
 .uploadHeading {
   margin: 0;
-  font-size: clamp(1.28rem, 2.5vw, 1.72rem);
+  font-size: clamp(0.95rem, 1.8vw, 1.15rem);
   line-height: 1.3;
   color: #182132;
 }
@@ -128,10 +128,10 @@
 }
 
 .uploadCaption {
-  max-width: 620px;
-  margin: 10px auto 0;
-  font-size: 0.95rem;
-  line-height: 1.58;
+  max-width: 580px;
+  margin: 6px auto 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
   color: #4f586c;
 }
 
@@ -143,25 +143,25 @@
 .sidebarCard,
 .configCard {
   border: 1px solid #d5deee;
-  border-radius: 20px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 10px 28px rgba(25, 48, 96, 0.08);
+  box-shadow: 0 6px 16px rgba(25, 48, 96, 0.05);
 }
 
 .queueHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid #d8e1f1;
 }
 
 .queueTitle {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #334159;
 }
@@ -170,16 +170,16 @@
   border: 0;
   background: transparent;
   color: #0f43a9;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 .queueEmpty {
-  padding: 28px 20px;
+  padding: 16px 12px;
   text-align: center;
   color: #5b6475;
-  font-size: 0.94rem;
+  font-size: 0.78rem;
 }
 
 .queueList {
@@ -188,23 +188,23 @@
 
 .queueItem {
   display: grid;
-  gap: 16px;
-  padding: 18px 20px;
+  gap: 8px;
+  padding: 10px 12px;
   border-top: 1px solid #e2e8f4;
 }
 
 .itemTop {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 8px;
   align-items: start;
 }
 
 .thumb {
-  width: 54px;
-  height: 54px;
+  width: 34px;
+  height: 34px;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 6px;
   border: 1px solid #cfd7e6;
   background: linear-gradient(180deg, #111827, #2f3646);
   display: grid;
@@ -219,16 +219,16 @@
 
 .thumbBadge {
   color: #fff;
-  font-size: 0.78rem;
+  font-size: 0.65rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
 }
 
 .itemName {
-  margin: 0 0 4px;
-  font-size: 1.15rem;
-  line-height: 1.28;
-  letter-spacing: -0.02em;
+  margin: 0 0 2px;
+  font-size: 0.88rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
   color: #111827;
   word-break: break-word;
 }
@@ -236,7 +236,7 @@
 .itemMeta {
   margin: 0;
   color: #50596d;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
 .statusSuccess {
@@ -250,8 +250,8 @@
 }
 
 .removeButton {
-  width: 34px;
-  height: 34px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -260,6 +260,10 @@
   background: transparent;
   color: #2f3646;
   cursor: pointer;
+}
+
+.removeButton span {
+  font-size: 16px !important;
 }
 
 .progressTrack {
@@ -279,19 +283,19 @@
 .metadataGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  padding-left: 68px;
+  gap: 8px;
+  padding-left: 42px;
 }
 
 .field {
   display: grid;
-  gap: 6px;
+  gap: 3px;
 }
 
 .field label {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #5b6475;
 }
@@ -299,158 +303,162 @@
 .field input,
 .field select {
   width: 100%;
-  min-height: 42px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 8px;
   border: 1px solid #cfd7e6;
-  border-radius: 10px;
+  border-radius: 6px;
   background: #f5f7fb;
   color: #172033;
-  font-size: 0.92rem;
+  font-size: 0.78rem;
   outline: none;
 }
 
 .addMore {
   width: 100%;
-  padding: 14px 20px;
+  padding: 8px 12px;
   border: 0;
   border-top: 1px solid #d8e1f1;
-  border-radius: 0 0 20px 20px;
+  border-radius: 0 0 10px 10px;
   background: #f5f8fd;
   color: #0f43a9;
-  font-size: 0.94rem;
+  font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
+}
+
+.addMore span {
+  font-size: 16px !important;
 }
 
 .sidebarColumn {
   position: sticky;
   top: 98px;
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .sidebarCard {
-  padding: 20px;
+  padding: 12px;
 }
 
 .sidebarTitle {
-  margin: 0 0 16px;
-  font-size: 1.4rem;
+  margin: 0 0 8px;
+  font-size: 1rem;
   line-height: 1.2;
   color: #182132;
 }
 
 .overviewList {
   display: grid;
-  gap: 6px;
-  margin-bottom: 18px;
+  gap: 3px;
+  margin-bottom: 10px;
 }
 
 .overviewRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 14px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 6px 0;
   border-bottom: 1px solid #edf2fb;
   color: #4f586c;
-  font-size: 0.92rem;
+  font-size: 0.78rem;
 }
 
 .overviewValue {
   color: #182132;
-  font-size: 0.98rem;
+  font-size: 0.82rem;
   font-weight: 800;
 }
 
 .progressHeader {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-  font-size: 0.8rem;
+  gap: 10px;
+  margin-bottom: 4px;
+  font-size: 0.65rem;
   font-weight: 800;
   color: #35425b;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
 .progressHint {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   color: #5b6475;
-  font-size: 0.86rem;
-  line-height: 1.5;
+  font-size: 0.72rem;
+  line-height: 1.45;
   font-style: italic;
 }
 
 .trainButton {
   width: 100%;
-  min-height: 54px;
-  margin-top: 18px;
+  min-height: 34px;
+  margin-top: 10px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 8px;
   background: linear-gradient(180deg, #145fce, #0f43a9);
   color: #fff;
-  font-size: 0.98rem;
+  font-size: 0.82rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 14px 28px rgba(15, 67, 169, 0.24);
+  box-shadow: 0 6px 12px rgba(15, 67, 169, 0.12);
 }
 
 .eta {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   text-align: center;
   color: #4f586c;
-  font-size: 0.88rem;
+  font-size: 0.72rem;
 }
 
 .configCard {
-  padding: 20px;
+  padding: 12px;
   background: #f7f9fd;
 }
 
 .configLabel {
-  margin: 0 0 12px;
-  font-size: 0.82rem;
+  margin: 0 0 6px;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #35425b;
 }
 
 .configField {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .configField label {
   color: #172033;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
 .configField select {
   width: 100%;
-  min-height: 42px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 8px;
   border: 1px solid #cfd7e6;
-  border-radius: 10px;
+  border-radius: 6px;
   background: #fff;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
 }
 
 .checkRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 8px;
   color: #172033;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
 .checkRow input {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   accent-color: #145fce;
 }
 
@@ -514,23 +522,207 @@
 
 @media (max-width: 640px) {
   .uploadZone {
-    padding: 28px 18px;
+    padding: 20px 14px;
   }
 
   .queueHeader,
   .queueItem,
   .sidebarCard,
   .configCard {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 12px;
+    padding-right: 12px;
   }
 
   .itemName {
-    font-size: 1rem;
+    font-size: 0.8rem;
   }
 
   .description,
   .uploadCaption {
-    font-size: 0.9rem;
+    font-size: 0.72rem;
+  }
+}
+
+.toggleRow {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 10px;
+  padding-left: 42px;
+}
+
+.toggleButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(20, 79, 180, 0.05);
+  border: 1px solid rgba(20, 79, 180, 0.12);
+  border-radius: 6px;
+  color: #1249b4;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.toggleButton:hover {
+  background: rgba(20, 79, 180, 0.1);
+  transform: translateY(-0.5px);
+}
+
+.toggleButton span {
+  font-size: 16px !important;
+}
+
+.detailsPanel {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.fieldGroup {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 0;
+  background: #fff;
+}
+
+.groupLegend {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1e293b;
+  padding: 0 8px;
+}
+
+.fieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 920px) {
+  .toggleRow {
+    padding-left: 0;
+  }
+}
+
+/* Popup Styles */
+.popupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.popupCard {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  transform: scale(0.95);
+  opacity: 0;
+  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.popupSuccess {
+  border-top: 5px solid #10b981;
+}
+
+.popupError {
+  border-top: 5px solid #ef4444;
+}
+
+.popupIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+}
+
+.popupSuccess .popupIcon {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.popupError .popupIcon {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.popupIcon span {
+  font-size: 36px !important;
+}
+
+.popupTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.popupMessage {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.popupButton {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 0;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.popupButton:hover {
+  background: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+.popupButton:active {
+  transform: translateY(0);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }
