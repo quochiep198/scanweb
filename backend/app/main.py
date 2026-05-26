@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import logging
 
 from app.core.config import settings
-from app.core.database import engine, get_db, Base
+from app.core.database import engine, get_db, Base, check_and_update_schema
 from app.routers.auth import router as auth_router
 from app.models import User
 from app.core.security import decode_token
@@ -33,6 +33,7 @@ app.add_middleware(
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+check_and_update_schema()
 
 # Seed database
 from app.core.seeding import seed_data
@@ -40,8 +41,10 @@ seed_data()
 
 # Include routers
 from app.routers.upload import router as upload_router
+from app.routers.training import router as training_router
 app.include_router(auth_router)
 app.include_router(upload_router)
+app.include_router(training_router)
 
 logger.info("Backend logging initialized")
 logger.info("CORS origins: %s", settings.cors_origins)

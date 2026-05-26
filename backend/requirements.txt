@@ -10,3 +10,7 @@ email-validator
 resend
 boto3
 python-multipart
+pydicom
+Pillow
+torchxrayvision
+monai

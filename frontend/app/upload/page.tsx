@@ -30,6 +30,7 @@ type UploadItem = {
   previewUrl: string | null;
   progress: number;
   status: UploadStatus;
+  errorMessage?: string;
 
   // patients table
   anonymousCode: string;
@@ -77,6 +78,7 @@ function createUploadItem(file: File): UploadItem {
     previewUrl: isPreviewable ? URL.createObjectURL(file) : null,
     progress: 0,
     status: "queued",
+    errorMessage: "",
 
     // patients
     anonymousCode: anonymousCode,
@@ -111,7 +113,7 @@ function getStatusText(item: UploadItem) {
   }
 
   if (item.status === "error") {
-    return "Tệp vượt quá giới hạn 50MB";
+    return item.errorMessage || "Lỗi xử lý";
   }
 
   if (item.status === "uploading") {
@@ -323,6 +325,7 @@ export default function UploadPage() {
     for (const item of queuedItems) {
       if (item.file.size > MAX_FILE_SIZE) {
         updateItem(item.id, "status", "error");
+        updateItem(item.id, "errorMessage", "Tệp vượt quá giới hạn 50MB");
         updateItem(item.id, "progress", 0);
         hasError = true;
         continue;
@@ -330,6 +333,7 @@ export default function UploadPage() {
 
       updateItem(item.id, "status", "uploading");
       updateItem(item.id, "progress", 0);
+      updateItem(item.id, "errorMessage", "");
 
       try {
         const formData = new FormData();
@@ -365,9 +369,10 @@ export default function UploadPage() {
 
         updateItem(item.id, "status", "success");
         updateItem(item.id, "progress", 100);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Upload error for item", item.id, error);
         updateItem(item.id, "status", "error");
+        updateItem(item.id, "errorMessage", error.detail || error.message || "Đăng ký thất bại");
         updateItem(item.id, "progress", 0);
         hasError = true;
       }
@@ -384,6 +389,45 @@ export default function UploadPage() {
         isOpen: true,
         status: "success",
         message: "Đã đăng ký dữ liệu thành công",
+      });
+    }
+  };
+
+  const handleTrainNow = async () => {
+    if (!accessToken) {
+      setResultPopup({
+        isOpen: true,
+        status: "error",
+        message: "Bạn cần đăng nhập để thực hiện huấn luyện.",
+      });
+      return;
+    }
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      const response = await fetch(`${API_URL}/v1/training/metadata`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch training metadata");
+      }
+
+      const resData = await response.json();
+      setResultPopup({
+        isOpen: true,
+        status: "success",
+        message: `Lấy dữ liệu huấn luyện thành công! Đã tải ${resData.count} bản ghi từ SQL metadata.`,
+      });
+      console.log("Training metadata loaded:", resData.data);
+    } catch (error) {
+      console.error("Error fetching training metadata:", error);
+      setResultPopup({
+        isOpen: true,
+        status: "error",
+        message: "Không thể kết nối đến server để lấy dữ liệu metadata.",
       });
     }
   };
@@ -901,7 +945,7 @@ export default function UploadPage() {
                   phản ánh trạng thái UI.
                 </p>
 
-                <button type="button" className={styles.trainButton}>
+                <button type="button" className={styles.trainButton} onClick={handleTrainNow}>
                   <span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>
                     play_circle
                   </span>{" "}

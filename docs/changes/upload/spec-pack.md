@@ -40,25 +40,316 @@ Hiện tại đang set harcode, mong muốn dữ liệu được lấy động t
 - Sau khi lưu dữ liệu thành công phải có popup báo là hoàn thành : Đã đăng ký dữ liệu thành công 
 - Nếu có bất cứ lỗi nào như trùng dữ liệu, crack, sql exception thì hiển thị :  Đăng ký thất bại
 
-## 3.3 Luồng nhấn nút Huấn Luyện Ngay
-- Sử dụng TorchXRayVision phân tích
-- TorchXRayVision chưa có trong code vui lòng tạo settting và cài đặt
+# 3.3 Luồng nhấn nút Huấn Luyện Ngay
 
-DICOM / PNG X-ray
+Khi người dùng nhấn nút **Huấn Luyện Ngay**, hệ thống sẽ bắt đầu pipeline training AI phát hiện loãng xương từ dữ liệu X-quang.
+
+---
+
+# Luồng xử lý tổng thể
+
+```text
+Người dùng nhấn "Huấn Luyện Ngay"
         ↓
-SQL metadata: patients + xray_images + osteoporosis_labels
+Lấy metadata từ SQL
         ↓
-SQL JOIN lấy image_path, label, age, sex, bmi
+Load ảnh X-ray / DICOM từ storage
+        ↓
+TorchXRayVision phân tích ảnh X-ray
         ↓
 MONAI preprocessing / augmentation
         ↓
 PyTorch Dataset + DataLoader
         ↓
-EfficientNet-B3 training
+Train model EfficientNet-B3
         ↓
 MLflow log params, metrics, model
         ↓
-Model inference
+Lưu best_model.pt
+        ↓
+Hoàn tất huấn luyện
+```
+
+---
+
+# Mô tả chi tiết
+
+## 3.3.1. Lấy dữ liệu từ SQL metadata
+
+Hệ thống truy vấn dữ liệu từ các bảng:
+
+```text
+patients
+xray_images
+osteoporosis_labels
+```
+
+để lấy các thông tin:
+
+```text
+image_path
+label
+age
+sex
+bmi
+t_score
+bmd
+dataset_split
+```
+
+Ví dụ query:
+chỉ lấy những ảnh nào mà chưa được huấn luyện, những ảnh nào huấn luyện rồi sẽ ko được huấn luyện
+```sql
+SELECT
+    x.image_path,
+    l.label,
+    l.t_score,
+    l.bmd,
+    p.age,
+    p.sex,
+    p.bmi
+FROM xray_images x
+JOIN osteoporosis_labels l
+    ON x.image_id = l.image_id
+JOIN patients p
+    ON x.patient_id = p.patient_id
+WHERE l.dataset_split = 'train';
+```
+
+---
+
+## 3.3.2. Load ảnh X-ray / DICOM
+
+Từ `image_path`, hệ thống đọc ảnh từ:
+
+```text
+Cloudflare R2
+```
+
+Dữ liệu ảnh có thể là:
+
+```text
+PNG
+JPG
+DICOM (.dcm)
+```
+
+---
+
+## 3.3.3. Sử dụng TorchXRayVision phân tích ảnh X-ray
+
+TorchXRayVision hỗ trợ xử lý ảnh X-ray như:
+
+```text
+Normalize ảnh X-ray
+Center crop
+Resize
+Pretrained X-ray backbone
+```
+
+Ví dụ:
+
+```python
+import torchxrayvision as xrv
+```
+
+TorchXRayVision được dùng để chuẩn hóa pipeline cho ảnh X-ray medical imaging.
+
+---
+
+## 3.3.4. MONAI preprocessing / augmentation
+
+MONAI thực hiện tiền xử lý dữ liệu trước khi training:
+
+```text
+Resize ảnh
+Normalize intensity
+Rotate nhẹ
+Zoom nhẹ
+Gaussian noise
+Convert Tensor
+```
+
+Ví dụ:
+
+```python
+from monai.transforms import Compose
+from monai.transforms import Resize
+from monai.transforms import RandRotate
+from monai.transforms import ToTensor
+
+train_transform = Compose([
+    Resize((300, 300)),
+    RandRotate(range_x=0.1, prob=0.5),
+    ToTensor(),
+])
+```
+
+---
+
+## 3.3.5. PyTorch Dataset + DataLoader
+
+Dataset sẽ kết hợp:
+
+```text
+Ảnh X-ray
+Metadata
+Label
+```
+
+Sau đó DataLoader sẽ tạo batch để train model.
+
+Ví dụ:
+
+```python
+train_loader = DataLoader(
+    train_dataset,
+    batch_size=8,
+    shuffle=True
+)
+```
+
+---
+
+## 3.3.6. Huấn luyện model EfficientNet-B3
+
+Model đề xuất:
+
+```text
+EfficientNet-B3
+```
+
+Input:
+
+```text
+Image X-ray
++
+Metadata (age, sex, bmi)
+```
+
+Output:
+
+```text
+normal
+osteopenia
+osteoporosis
+```
+
+---
+
+## 3.3.7. MLflow log params, metrics, model
+
+MLflow dùng để theo dõi toàn bộ quá trình huấn luyện:
+
+### Log Parameters
+
+```text
+learning_rate
+batch_size
+epochs
+optimizer
+model_name
+```
+
+### Log Metrics
+
+```text
+train_loss
+validation_loss
+accuracy
+f1_score
+auc
+```
+
+### Log Artifacts
+
+```text
+best_model.pt
+training_config
+metrics
+plots
+```
+
+Ví dụ:
+
+```python
+import mlflow
+
+mlflow.log_metric("val_accuracy", acc)
+mlflow.log_artifact("models/best_model.pt")
+```
+
+---
+
+## 3.3.8. Lưu model tốt nhất
+
+Khi validation score tốt nhất, hệ thống lưu:
+
+```text
+models/best_model.pt
+```
+
+Hoặc upload lên Cloudflare R2:
+
+```text
+r2://osteoporosis-ai/models/best_model.pt
+```
+
+---
+
+# Kết quả sau khi huấn luyện
+
+Sau khi training hoàn tất, hệ thống sẽ có:
+
+```text
+best_model.pt
+training metrics
+MLflow run
+model version
+```
+
+Model này sẽ được dùng cho:
+
+```text
+Dự đoán loãng xương từ ảnh X-ray mới
+```
+
+---
+
+# Stack công nghệ đề xuất
+
+| Thành phần | Công nghệ |
+|---|---|
+| Deep Learning | PyTorch |
+| Medical Imaging | MONAI |
+| X-ray Processing | TorchXRayVision |
+| Model | EfficientNet-B3 |
+| Metadata | MySQL / PostgreSQL |
+| Storage | Cloudflare R2 |
+| Experiment Tracking | MLflow |
+| Medical Format | DICOM |
+
+---
+
+# Kiến trúc tổng thể
+
+```text
+SQL Metadata
+        ↓
+Cloudflare R2 / PACS
+        ↓
+TorchXRayVision
+        ↓
+MONAI Preprocessing
+        ↓
+PyTorch Dataset
+        ↓
+EfficientNet-B3
+        ↓
+MLflow Tracking
+        ↓
+best_model.pt
+```
 
 ## 4. Cấu trúc DB
 

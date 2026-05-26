@@ -48,6 +48,60 @@ def to_date(val: str):
     except ValueError:
         return None
 
+def map_label(val: str) -> str:
+    if not val:
+        return "normal"
+    v = val.strip().lower()
+    if v in ("binh thuong", "bình thường", "normal"):
+        return "normal"
+    if v in ("thieu xuong", "thiếu xương", "osteopenia"):
+        return "osteopenia"
+    if v in ("lo xuong", "lở xương", "loãng xương", "osteoporosis"):
+        return "osteoporosis"
+    return v
+
+def map_body_part(val: str) -> str:
+    if not val:
+        return "other"
+    v = val.strip().lower()
+    if v in ("cột sống thắt lưng", "cot song that lung", "lumbar_spine"):
+        return "lumbar_spine"
+    if v in ("xương đùi", "xuong dui", "femoral_neck", "hip"):
+        return "femoral_neck"
+    if v in ("toàn thân", "toan than", "other"):
+        return "other"
+    return v
+
+def map_view_type(val: str) -> str:
+    if not val:
+        return "Other"
+    v = val.strip().lower()
+    if v in ("ap", "trước - sau", "truoc - sau"):
+        return "AP"
+    if v in ("lateral", "nghiêng", "nghieng"):
+        return "Lateral"
+    if v in ("pa", "sau - trước", "sau - truoc"):
+        return "PA"
+    if v in ("other", "khác", "khac"):
+        return "Other"
+    return val.strip()
+
+def map_dxa_site(val: str) -> str:
+    if not val:
+        return "other"
+    v = val.strip().lower()
+    if v in ("cột sống thắt lưng", "cot song that lung", "lumbar_spine"):
+        return "lumbar_spine"
+    if v in ("cổ xương đùi", "co xuong dui", "femoral_neck"):
+        return "femoral_neck"
+    if v in ("khớp háng toàn phần", "khop hang toan phan", "total_hip"):
+        return "total_hip"
+    if v in ("cẳng tay", "cang tay", "forearm"):
+        return "forearm"
+    if v in ("vị trí khác", "vi tri khac", "other"):
+        return "other"
+    return v
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def upload_file(
     file: UploadFile = File(...),
@@ -108,14 +162,14 @@ def upload_file(
         xray_date_val = to_date(xray_date)
         dxa_date_val = to_date(dxa_date)
 
-        # Convert empty strings to None for enums/strings
+        # Convert empty strings to None for enums/strings and map to valid database enums
         sex_val = sex.strip() if sex and sex.strip() != "" else None
-        view_type_val = view_type.strip() if view_type and view_type.strip() != "" else None
-        body_part_val = body_part.strip() if body_part and body_part.strip() != "" else None
+        view_type_val = map_view_type(view_type) if view_type else None
+        body_part_val = map_body_part(body_part) if body_part else None
         scanner_vendor_val = scanner_vendor.strip() if scanner_vendor and scanner_vendor.strip() != "" else None
         image_quality_val = image_quality.strip() if image_quality and image_quality.strip() != "" else None
-        label_val = label.strip() if label and label.strip() != "" else None
-        dxa_site_val = dxa_site.strip() if dxa_site and dxa_site.strip() != "" else None
+        label_val = map_label(label) if label else None
+        dxa_site_val = map_dxa_site(dxa_site) if dxa_site else None
         label_source_val = label_source.strip() if label_source and label_source.strip() != "" else "DXA"
         dataset_split_val = dataset_split.strip() if dataset_split and dataset_split.strip() != "" else None
 

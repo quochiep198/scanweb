@@ -55,3 +55,38 @@ class R2Service:
         except Exception as e:
             logger.error(f"Error uploading to Cloudflare R2: {e}")
             raise e
+
+    @staticmethod
+    def download_file(image_path: str) -> bytes:
+        """
+        Downloads a file from Cloudflare R2 based on the public URL or file name.
+        Falls back to a mock local file read or simulated bytes if R2 credentials are not set
+        or if it's a mock R2 URL.
+        """
+        account_id = settings.CLOUDFLARE_R2_ACCOUNT_ID
+        access_key = settings.CLOUDFLARE_R2_ACCESS_KEY_ID
+        secret_key = settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY
+        bucket_name = settings.CLOUDFLARE_R2_BUCKET_NAME
+
+        # Check if R2 is configured and it is not a mock URL
+        if not all([account_id, access_key, secret_key, bucket_name]) or "mock-r2" in image_path:
+            logger.warning(f"R2 is not configured or mock URL used. Returning simulated image bytes for path: {image_path}")
+            # A minimal 1x1 PNG bytes fallback
+            return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82'
+
+        try:
+            # Extract key/filename from URL
+            filename = image_path.split("/")[-1]
+            r2_endpoint = f"https://{account_id}.r2.cloudflarestorage.com"
+            s3_client = boto3.client(
+                "s3",
+                endpoint_url=r2_endpoint,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                region_name="auto"
+            )
+            response = s3_client.get_object(Bucket=bucket_name, Key=filename)
+            return response["Body"].read()
+        except Exception as e:
+            logger.error(f"Error downloading from Cloudflare R2: {e}")
+            raise e
