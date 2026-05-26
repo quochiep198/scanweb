@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: scanweb-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: scanweb-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: scanweb-db
+    databaseName: scanweb
+    user: scanweb_user
