@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quản lý tải lên &amp; Huấn luyện AI - OsteoScan DXA</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e1e2e4;
+            border-radius: 10px;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#e1e2e4",
+                    "on-secondary-container": "#fefcff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#004590",
+                    "surface": "#f8f9fb",
+                    "primary-container": "#0052cc",
+                    "tertiary-container": "#006477",
+                    "secondary-fixed": "#d7e2ff",
+                    "inverse-on-surface": "#f0f1f3",
+                    "surface-container-high": "#e7e8ea",
+                    "error-container": "#ffdad6",
+                    "surface-tint": "#0c56d0",
+                    "on-tertiary-fixed": "#001f27",
+                    "background": "#f8f9fb",
+                    "on-primary-fixed-variant": "#0040a2",
+                    "on-primary-fixed": "#001848",
+                    "on-primary-container": "#c4d2ff",
+                    "inverse-surface": "#2e3132",
+                    "tertiary-fixed-dim": "#48d7f9",
+                    "tertiary-fixed": "#afecff",
+                    "primary": "#003d9b",
+                    "surface-container-low": "#f3f4f6",
+                    "on-tertiary-fixed-variant": "#004e5d",
+                    "surface-bright": "#f8f9fb",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#edeef0",
+                    "secondary-container": "#0071e6",
+                    "on-surface": "#191c1e",
+                    "on-secondary-fixed": "#001b3f",
+                    "on-tertiary-container": "#76e2ff",
+                    "on-background": "#191c1e",
+                    "error": "#ba1a1a",
+                    "surface-dim": "#d9dadc",
+                    "secondary": "#0059b8",
+                    "on-error-container": "#93000a",
+                    "primary-fixed": "#dae2ff",
+                    "surface-container-highest": "#e1e2e4",
+                    "outline": "#737685",
+                    "secondary-fixed-dim": "#abc7ff",
+                    "on-surface-variant": "#434654",
+                    "inverse-primary": "#b2c5ff",
+                    "primary-fixed-dim": "#b2c5ff",
+                    "outline-variant": "#c3c6d6",
+                    "tertiary": "#004b59",
+                    "on-error": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "gutter": "24px",
+                    "container-padding-desktop": "32px",
+                    "container-padding-mobile": "16px",
+                    "section-gap": "40px"
+            },
+            "fontFamily": {
+                    "label-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "data-mono": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "60px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "data-mono": ["16px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant shadow-sm flex justify-between items-center px-container-padding-desktop h-16 w-full">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-bold text-primary">OsteoScan DXA</span>
+<div class="hidden md:flex ml-8 items-center bg-surface-container-low rounded-full px-4 py-1.5 border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm w-64" placeholder="Tìm kiếm dữ liệu..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden ml-2 border border-outline-variant">
+<img alt="User profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPUOSxHIFl6WpjSDHQA_yZ_SaLr6YCnuv314cnoAMA2vw5YDC9RIQJGutmMPakXDvkxbiUgkJYSZHaXpvVEGk8grFp0ECV4Gtb1hGR9oMtYbmMLfrF90EMCmGzhTD-UybP_T6fWSTnrNmx8hReki6UJdd1qtn63k2f0NakExCl8TebTo_TKOxFJk--Va5_teRltLYnMWo9WP61BiwGfDroPoqS0t77hdjmWQ7M_9mGrUOHmIdEaklNt_qt8EXjfY9xbUHnaIJk_qN8"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-60 bg-surface-container-low border-r border-outline-variant flex flex-col p-4 space-y-2 z-40">
+<div class="flex items-center gap-3 px-2 py-4 mb-4">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">health_and_safety</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-label-md font-black text-primary leading-tight">Trung tâm Y tế</h2>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Khoa Chẩn đoán Hình ảnh</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 duration-200">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 duration-200">person</span>
+<span>Hồ sơ bệnh nhân</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-secondary-container text-on-secondary-container font-semibold rounded-lg transition-all font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined">upload_file</span>
+<span>Tải lên &amp; Huấn luyện</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 duration-200">description</span>
+<span>Báo cáo chẩn đoán</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 duration-200">support_agent</span>
+<span>Hỗ trợ kỹ thuật</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 duration-200">logout</span>
+<span>Đăng xuất</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-60 pt-16 min-h-screen p-8">
+<div class="max-w-[1440px] mx-auto space-y-8">
+<!-- Header Section -->
+<div class="flex justify-between items-end">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary">Quản lý tải lên &amp; Huấn luyện AI</h1>
+<p class="text-on-surface-variant text-body-md mt-1">Cung cấp dữ liệu lâm sàng chất lượng cao để cải thiện độ chính xác của mô hình OsteoScan.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-container-high text-on-surface font-semibold rounded-lg flex items-center gap-2 hover:bg-surface-variant transition-colors border border-outline-variant">
+<span class="material-symbols-outlined text-[20px]">history</span>
+                        Lịch sử huấn luyện
+                    </button>
+<button class="px-4 py-2 bg-primary text-white font-semibold rounded-lg flex items-center gap-2 hover:bg-primary-container transition-all shadow-md active:scale-95">
+<span class="material-symbols-outlined text-[20px]">model_training</span>
+                        Bắt đầu xử lý
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Content -->
+<div class="grid grid-cols-12 gap-6 items-start">
+<!-- Left: Upload Area & Queue -->
+<div class="col-span-8 space-y-6">
+<!-- Upload Zone -->
+<div class="bg-white rounded-xl border-2 border-dashed border-primary/30 p-10 flex flex-col items-center justify-center text-center transition-all hover:border-primary hover:bg-primary/5 cursor-pointer group">
+<div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[40px]" style="font-variation-settings: 'FILL' 1;">cloud_upload</span>
+</div>
+<h3 class="text-headline-sm font-semibold text-on-surface">Kéo thả tệp tin vào đây hoặc <span class="text-primary underline">Chọn từ máy tính</span></h3>
+<p class="text-on-surface-variant text-body-sm mt-2 max-w-md">Hỗ trợ định dạng: DICOM (.dcm), PNG, JPG. Kích thước tối đa mỗi tệp: 50MB. Đảm bảo dữ liệu đã được ẩn danh theo quy định HIPAA/GDPR.</p>
+</div>
+<!-- File Queue -->
+<div class="bg-white rounded-xl border border-outline-variant overflow-hidden shadow-sm">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+<h3 class="font-headline-sm text-label-md font-bold uppercase tracking-wider text-on-surface-variant">Hàng đợi tải lên (4 tệp)</h3>
+<button class="text-primary font-semibold text-body-sm hover:underline">Xóa tất cả</button>
+</div>
+<div class="divide-y divide-outline-variant">
+<!-- File Item 1: Uploading -->
+<div class="p-6 flex flex-col gap-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A detailed black and white radiographic medical scan of a human lumbar spine for bone density analysis. The image is clear, professional, and clinical, displayed in a high-tech medical interface with soft laboratory lighting. The mood is precise, scientific, and authoritative, matching a premium healthcare diagnostic software aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1_P6L618je7bjEPtkxIvk-LaQ-w5-XedQHL8Qx7I8couommi1AjktPJHfMx7owTEVOBswLnuO14i0hWNDHSaX1UFpWHgd-h71IMEwORpUY9in-p4zAna60CMarCblgmX2bISIUJsSqBkAcTYtVB9VesBXeqMVJgt1ap_szNJxVxcA_my924UZHMxpegJpMU5OVj-j06BqQSU5zFoVArxFXqDHPQeKfAiyyK6dVXl4TYSytWlIzF54Ct1gXwNbiAR4leV7agb2hj6C"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-semibold text-on-surface">LUMBAR_SCAN_001.dcm</p>
+<p class="text-label-md text-on-surface-variant">12.4 MB • Đang tải lên (65%)</p>
+</div>
+<button class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-500" style="width: 65%;"></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4 pl-16">
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant">ID Bệnh nhân</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-md text-body-sm px-3 py-2 focus:ring-2 focus:ring-primary/20" type="text" value="P-98321"/>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant">Vùng quét</label>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-md text-body-sm px-3 py-2 focus:ring-2 focus:ring-primary/20">
+<option>Cột sống thắt lưng</option>
+<option>Xương đùi</option>
+<option>Toàn thân</option>
+</select>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant">Nhãn chẩn đoán</label>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-md text-body-sm px-3 py-2 focus:ring-2 focus:ring-primary/20">
+<option>Bình thường</option>
+<option>Thiếu xương</option>
+<option>Loãng xương</option>
+</select>
+</div>
+</div>
+</div>
+<!-- File Item 2: Success -->
+<div class="p-6 flex flex-col gap-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional medical diagnostic image of a human hip joint DXA scan showing the femoral neck. The visual style is monochromatic and clinical, presented as a digital record within a medical database. Lighting is soft and even, highlighting anatomical structures with high precision for AI training purposes. The atmosphere is sterile, modern, and trustworthy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3Utt9JiioH-4kPH25cMwgfc6B32cuXgGwZ3iMIscsSlTNlgFz5ivbFjFP5YqQMy4skfALNERWyw-kAjWtQBjwNaTOkDMkgjl0ptzfDfWe3fvpdH1jSJ3lo774_9IS61MxdURuuQoUyOc7u5PFo-vvn5xK6JrpILjmpEauspd05F8rTj92nY-zVpmJiRnSkhTVXcDaGgrmStUaK_Dy7ZtTu-SPsWo9uF-RVPkIZCJIuoHSd9x4xydhuU8-qWawQN3eBGjo0CppUIkt"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-semibold text-on-surface">HIP_DUAL_SCAN_A2.png</p>
+<p class="text-label-md text-on-surface-variant">4.8 MB • <span class="text-green-600 font-medium">Hoàn tất tải lên</span></p>
+</div>
+<button class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">delete</span></button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4 pl-16 opacity-70">
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant">ID Bệnh nhân</label>
+<input class="w-full bg-surface-container border border-outline-variant rounded-md text-body-sm px-3 py-2" disabled="" type="text" value="P-77241"/>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant">Vùng quét</label>
+<input class="w-full bg-surface-container border border-outline-variant rounded-md text-body-sm px-3 py-2" disabled="" type="text" value="Xương đùi"/>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant">Nhãn chẩn đoán</label>
+<input class="w-full bg-surface-container border border-outline-variant rounded-md text-body-sm px-3 py-2" disabled="" type="text" value="Loãng xương"/>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 bg-surface-container-low text-center">
+<button class="text-primary font-bold text-body-md flex items-center justify-center gap-2 w-full">
+<span class="material-symbols-outlined">add_circle</span>
+                                Thêm tệp khác
+                            </button>
+</div>
+</div>
+</div>
+<!-- Right: Dataset Overview & Controls -->
+<div class="col-span-4 sticky top-24 space-y-6">
+<!-- Overview Card -->
+<div class="bg-white rounded-xl border border-outline-variant p-6 shadow-sm">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6">Tổng quan Dataset</h3>
+<div class="space-y-4 mb-8">
+<div class="flex justify-between items-center py-2 border-b border-surface-container">
+<span class="text-on-surface-variant">Tổng số tệp</span>
+<span class="font-bold text-on-surface">24</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-surface-container">
+<span class="text-on-surface-variant">Đã định danh</span>
+<span class="font-bold text-on-surface text-green-600">20 / 24</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-surface-container">
+<span class="text-on-surface-variant">Chưa gán nhãn</span>
+<span class="font-bold text-on-surface text-error">4</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-surface-container">
+<span class="text-on-surface-variant">Dung lượng tổng</span>
+<span class="font-bold text-on-surface">156.4 MB</span>
+</div>
+</div>
+<!-- Progress Gauge -->
+<div class="mb-8">
+<div class="flex justify-between items-center mb-2">
+<span class="text-label-md font-bold text-on-surface-variant uppercase">Độ sẵn sàng dataset</span>
+<span class="text-label-md font-bold text-primary">83%</span>
+</div>
+<div class="w-full h-3 bg-surface-container rounded-full overflow-hidden flex">
+<div class="h-full bg-primary" style="width: 83%;"></div>
+</div>
+<p class="text-[11px] text-on-surface-variant mt-2 italic">Cần gán nhãn cho tất cả các tệp trước khi bắt đầu huấn luyện.</p>
+</div>
+<button class="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-container transition-all active:scale-95 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">play_circle</span>
+                            HUẤN LUYỆN NGAY
+                        </button>
+<p class="text-center text-body-sm text-on-surface-variant mt-4">Thời gian xử lý dự kiến: <span class="font-semibold text-on-surface">~15 phút</span></p>
+</div>
+<!-- Training Configuration -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant p-6">
+<h4 class="text-label-md font-bold text-on-surface-variant uppercase mb-4">Cấu hình mô hình</h4>
+<div class="space-y-4">
+<div>
+<label class="block text-body-sm font-medium text-on-surface mb-1">Mô hình cơ sở</label>
+<select class="w-full bg-white border border-outline-variant rounded-lg text-body-sm px-3 py-2">
+<option>OsteoScan v2.4 (Phân đoạn xương)</option>
+<option>BoneDensity-Net (Phân loại T-score)</option>
+<option>Fracture-Check v1.0 (Phát hiện gãy xương)</option>
+</select>
+</div>
+<div class="flex items-center gap-3">
+<input class="w-5 h-5 text-primary rounded border-outline-variant" id="augmentation" type="checkbox"/>
+<label class="text-body-sm text-on-surface" for="augmentation">Sử dụng Data Augmentation</label>
+</div>
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 text-primary rounded border-outline-variant" id="validation" type="checkbox"/>
+<label class="text-body-sm text-on-surface" for="validation">Tự động hóa Cross-validation</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Toast Notification (Micro-interaction) -->
+<div class="fixed bottom-8 right-8 bg-inverse-surface text-inverse-on-surface px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50" id="toast">
+<span class="material-symbols-outlined text-green-400">check_circle</span>
+<span class="font-medium">Đã tải lên tệp tin thành công!</span>
+</div>
+<script>
+        // Simple micro-interaction for the toast
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Mock drag and drop effect
+        const uploadZone = document.querySelector('.bg-white.rounded-xl.border-2.border-dashed');
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('bg-primary/10', 'border-primary');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('bg-primary/10', 'border-primary');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('bg-primary/10', 'border-primary');
+            showToast();
+        });
+    </script>
+</body></html>

@@ -1,0 +1,227 @@
+.shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(0, 82, 204, 0.1), transparent 24%),
+    linear-gradient(180deg, #fbfcff 0%, #f3f6fb 100%);
+  color: #191c1e;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: 80px;
+  padding: 0 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid #cfd7e6;
+  backdrop-filter: blur(16px);
+}
+
+.brand {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #0f43a9;
+}
+
+.search {
+  flex: 1;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  border: 1px solid #b8c4da;
+  border-radius: 999px;
+  background: #f5f7fb;
+  color: #5b6475;
+}
+
+.search input {
+  width: 100%;
+  height: 58px;
+  border: 0;
+  background: transparent;
+  font-size: 1.1rem;
+  color: #2a3342;
+  outline: none;
+}
+
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconButton {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #2e3648;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.iconButton:hover {
+  background: #eef2fb;
+  border-color: #cdd6e8;
+  transform: translateY(-1px);
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #133f9d, #1d77dd);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 10px 24px rgba(13, 61, 155, 0.18);
+}
+
+.frame {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.sidebar {
+  position: sticky;
+  top: 80px;
+  height: calc(100vh - 80px);
+  padding: 24px 20px;
+  border-right: 1px solid #cfd7e6;
+  background: rgba(248, 250, 255, 0.96);
+}
+
+.clinicCard {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 14px;
+  padding: 18px 12px 22px;
+}
+
+.clinicIcon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1763d6, #0d4fc7);
+  color: #fff;
+}
+
+.clinicTitle {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f43a9;
+}
+
+.clinicSubtitle {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #495062;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #2e3648;
+  text-align: left;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.navLink:hover {
+  background: #edf2fc;
+  transform: translateX(2px);
+}
+
+.navLinkActive {
+  background: linear-gradient(90deg, #1876e8, #1568d6);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(21, 104, 214, 0.22);
+}
+
+.sidebarFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #d2dceb;
+}
+
+.content {
+  min-width: 0;
+  padding: 36px 40px 48px;
+}
+
+@media (max-width: 1100px) {
+  .frame {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid #cfd7e6;
+  }
+
+  .content {
+    padding: 28px 20px 36px;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    height: auto;
+    padding: 18px 16px;
+    flex-wrap: wrap;
+  }
+
+  .search {
+    order: 3;
+    max-width: none;
+    width: 100%;
+  }
+
+  .search input {
+    height: 52px;
+    font-size: 1rem;
+  }
+
+  .brand {
+    font-size: 1.65rem;
+  }
+}
