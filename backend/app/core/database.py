@@ -6,7 +6,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,  # Tự động kiểm tra và kết nối lại nếu kết nối bị đứt
+    pool_recycle=1800,   # Tái tạo kết nối sau mỗi 30 phút để tránh timeout của Vercel/Neon
+    pool_size=5,
+    max_overflow=10
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
