@@ -40,6 +40,25 @@ Hiện tại đang set harcode, mong muốn dữ liệu được lấy động t
 - Sau khi lưu dữ liệu thành công phải có popup báo là hoàn thành : Đã đăng ký dữ liệu thành công 
 - Nếu có bất cứ lỗi nào như trùng dữ liệu, crack, sql exception thì hiển thị :  Đăng ký thất bại
 
+## 3.3 Luồng nhấn nút Huấn Luyện Ngay
+- Sử dụng TorchXRayVision phân tích
+- TorchXRayVision chưa có trong code vui lòng tạo settting và cài đặt
+
+DICOM / PNG X-ray
+        ↓
+SQL metadata: patients + xray_images + osteoporosis_labels
+        ↓
+SQL JOIN lấy image_path, label, age, sex, bmi
+        ↓
+MONAI preprocessing / augmentation
+        ↓
+PyTorch Dataset + DataLoader
+        ↓
+EfficientNet-B3 training
+        ↓
+MLflow log params, metrics, model
+        ↓
+Model inference
 
 ## 4. Cấu trúc DB
 
