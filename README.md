@@ -1,3 +1,11 @@
+---
+title: Scanweb API
+emoji: 🚀
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+---
 # OsteoAI Platform
 
 Monorepo structure for OsteoAI - medical imaging data collection.
