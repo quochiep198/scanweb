@@ -49,6 +49,11 @@ app.include_router(training_router)
 
 logger.info("Backend logging initialized")
 logger.info("CORS origins: %s", settings.cors_origins)
+logger.info("R2 Config - ACCOUNT_ID present: %s", bool(settings.CLOUDFLARE_R2_ACCOUNT_ID))
+logger.info("R2 Config - ACCESS_KEY_ID present: %s", bool(settings.CLOUDFLARE_R2_ACCESS_KEY_ID))
+logger.info("R2 Config - SECRET_ACCESS_KEY present: %s", bool(settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY))
+logger.info("R2 Config - BUCKET_NAME present: %s", bool(settings.CLOUDFLARE_R2_BUCKET_NAME))
+logger.info("R2 Config - PUBLIC_URL present: %s", bool(settings.CLOUDFLARE_R2_PUBLIC_URL))
 # Security scheme for Swagger UI
 security = HTTPBearer()
 
