@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OsteoScan DXA - Measurement</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fb;
+        }
+        .scan-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0071e6, transparent);
+            box-shadow: 0 0 15px #0071e6;
+            animation: scanMove 4s linear infinite;
+        }
+        @keyframes scanMove {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(400px); }
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#f8f9fb",
+                        "on-tertiary-fixed-variant": "#004e5d",
+                        "on-tertiary-container": "#76e2ff",
+                        "tertiary-fixed-dim": "#48d7f9",
+                        "tertiary-container": "#006477",
+                        "surface-container-highest": "#e1e2e4",
+                        "on-primary-fixed": "#001848",
+                        "primary-fixed": "#dae2ff",
+                        "on-primary-fixed-variant": "#0040a2",
+                        "surface-container-low": "#f3f4f6",
+                        "surface-bright": "#f8f9fb",
+                        "on-surface": "#191c1e",
+                        "outline-variant": "#c3c6d6",
+                        "surface-container-high": "#e7e8ea",
+                        "primary-fixed-dim": "#b2c5ff",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "primary": "#003d9b",
+                        "surface-tint": "#0c56d0",
+                        "secondary-container": "#0071e6",
+                        "surface-variant": "#e1e2e4",
+                        "on-error-container": "#93000a",
+                        "outline": "#737685",
+                        "secondary-fixed": "#d7e2ff",
+                        "on-surface-variant": "#434654",
+                        "tertiary-fixed": "#afecff",
+                        "on-secondary-container": "#fefcff",
+                        "on-primary-container": "#c4d2ff",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#abc7ff",
+                        "on-background": "#191c1e",
+                        "inverse-primary": "#b2c5ff",
+                        "secondary": "#0059b8",
+                        "surface-dim": "#d9dadc",
+                        "error": "#ba1a1a",
+                        "tertiary": "#004b59",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#2e3132",
+                        "on-tertiary-fixed": "#001f27",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#f0f1f3",
+                        "on-secondary-fixed-variant": "#004590",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f8f9fb",
+                        "primary-container": "#0052cc",
+                        "on-secondary-fixed": "#001b3f",
+                        "surface-container": "#edeef0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "section-gap": "40px",
+                        "container-padding-desktop": "32px",
+                        "gutter": "24px",
+                        "container-padding-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "60px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "data-mono": ["16px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-lowest flex justify-between items-center px-container-padding-desktop h-16 w-full border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-bold text-primary">OsteoScan DXA</span>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">straighten</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold border-b-2 border-primary">Measurement</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative">
+<input class="bg-surface-container text-on-surface-variant rounded-full px-4 py-2 pl-10 border-none focus:ring-2 focus:ring-primary w-64 text-body-sm" placeholder="Tìm kiếm bệnh nhân..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-low p-2 rounded-full transition-colors">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-low p-2 rounded-full transition-colors">help</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-low p-2 rounded-full transition-colors">settings</span>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt4SiTnRj1T_UMKo_2nfBp2ffz0ULW_7gh-ORQHoVEO6Id3-k4Wy2eI3_bF1sd4I8GOaLx_qhNbVdLTfTubgYokBJPzOWiLNMnGLdhf2qnuzn-dP9q73DoxX7A55o7r7HfFSYjdkMdI8nCffHd67viDygXA0MJ5Uc8r7gugy1KqJX4pDBkXal6470oXJ3-Hf6gmZH3p-rI4R7YWonWAi83OD53COC_VBXmGFXZSrHN_K-3t8-UVF-HhhRjKbDY6TWWkTDU7-dSTcql"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-60 bg-surface-container-low border-r border-outline-variant flex flex-col p-4 space-y-2 z-40">
+<div class="mb-6 px-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">medical_services</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-[14px] font-black text-primary uppercase">Clinical Center</h2>
+<p class="text-label-md text-on-surface-variant">Radiology Dept</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 duration-200">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 duration-200">person</span>
+<span class="font-label-md text-label-md">Patient Profile</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 bg-secondary-container text-on-secondary-container font-semibold rounded-lg group" href="#">
+<span class="material-symbols-outlined">straighten</span>
+<span class="font-label-md text-label-md">Measurement</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 duration-200">description</span>
+<span class="font-label-md text-label-md">Diagnostic Report</span>
+</a>
+</nav>
+<button class="bg-primary text-white py-3 px-4 rounded-lg font-label-md text-label-md font-bold shadow-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 mb-4">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Scan
+        </button>
+<div class="border-t border-outline-variant pt-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg text-error" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-60 pt-16 min-h-screen p-gutter">
+<div class="max-w-[1600px] mx-auto space-y-gutter">
+<!-- Patient Header Info -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 bg-secondary-container text-white rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-primary">Nguyễn Văn A</h3>
+<p class="text-body-sm text-on-surface-variant">ID: DXA-2024-0892 • Nam • 65 tuổi</p>
+</div>
+</div>
+<div class="h-10 w-px bg-outline-variant"></div>
+<div>
+<p class="text-label-md text-on-surface-variant uppercase">Vùng quét</p>
+<p class="font-data-mono text-on-surface">Cột sống thắt lưng (L1-L4)</p>
+</div>
+<div class="h-10 w-px bg-outline-variant"></div>
+<div>
+<p class="text-label-md text-on-surface-variant uppercase">Trạng thái thiết bị</p>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-emerald-500 rounded-full pulse-dot"></span>
+<span class="font-data-mono text-on-surface">Sẵn sàng (Đã hiệu chuẩn)</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-outline text-primary font-label-md text-label-md rounded-lg hover:bg-surface-container-low transition-colors">Xem lịch sử</button>
+</div>
+</div>
+<!-- Measurement Viewport -->
+<div class="grid grid-cols-12 gap-gutter h-[600px]">
+<!-- Left Column: Live Scan Feed -->
+<div class="col-span-7 bg-surface-container-highest rounded-xl border border-outline-variant relative overflow-hidden flex flex-col shadow-inner">
+<div class="absolute top-4 left-4 z-10 flex gap-2">
+<span class="bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> TRỰC TIẾP (LIVE)
+                        </span>
+<span class="bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                            DXA SENSOR: ON
+                        </span>
+</div>
+<div class="flex-1 relative bg-black flex items-center justify-center">
+<div class="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,#222,transparent)]"></div>
+<img class="max-h-[85%] object-contain mix-blend-lighten opacity-80 transition-all duration-1000" data-alt="A high-contrast medical DXA bone density scan image displaying the lumbar spine. The image is rendered in grayscale with clinical blue overlays indicating regions of interest. The lighting is sterile and clinical, typical of a high-end medical diagnostic interface. A subtle scanning line animation moves across the bone structure, emphasizing real-time processing in a minimalist professional healthcare environment." id="scanImage" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvgkfVSBS87xmDtZ-LRxxWAXfemL8wVpWDl1kXAyiMse1ngvagBjiGGo83YdMUv0I9osHnsR-y8wtgCQI1Nei-q4-ilb2LxCybKEUJ7LU4tNg64nxHwWXvaUiio_sTIT5YVaww8jiuisF3wPING1t6xXisKUXFj42TorE5LzzzqCh4yMajeLPhiMiRS9Mu_3nxyNQV0WolCJaNdnKgJ3WjwU6WMng0GmqXrEor4k0_WcYcZI6jYG5Ke89dJcPOFZmLwyT3DhOP8UWv"/>
+<!-- Scanning Grid/HUD Overlay -->
+<div class="absolute inset-0 pointer-events-none border-[12px] border-black/10">
+<div class="w-full h-full border border-primary/20 grid grid-cols-4 grid-rows-4">
+<div class="border-r border-b border-white/5"></div>
+<div class="border-r border-b border-white/5"></div>
+<div class="border-r border-b border-white/5"></div>
+<div class="border-b border-white/5"></div>
+<div class="border-r border-b border-white/5"></div>
+<div class="border-r border-b border-white/5"></div>
+<div class="border-r border-b border-white/5"></div>
+<div class="border-b border-white/5"></div>
+</div>
+</div>
+<!-- Animated Scan Line -->
+<div class="scan-line absolute top-0 left-0 w-full z-20 hidden" id="scanIndicator"></div>
+<!-- Coordinates -->
+<div class="absolute bottom-4 right-4 font-data-mono text-[10px] text-primary/80">
+                            X: 242.02 | Y: 118.45 | Z: 0.12
+                        </div>
+</div>
+<div class="h-16 bg-surface-container-highest border-t border-outline-variant flex items-center justify-between px-6">
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant font-bold uppercase">Tiến độ quét</span>
+<div class="w-48 h-2 bg-surface-container rounded-full mt-1 overflow-hidden">
+<div class="w-0 h-full bg-primary transition-all duration-300" id="progressBar"></div>
+</div>
+</div>
+<span class="font-data-mono text-body-sm text-primary" id="progressText">0%</span>
+</div>
+<div class="flex gap-4">
+<button class="bg-primary text-white px-6 py-2 rounded-lg flex items-center gap-2 font-bold hover:bg-primary-container transition-all active:scale-95" id="startBtn">
+<span class="material-symbols-outlined">play_arrow</span> BẮT ĐẦU
+                            </button>
+<button class="bg-surface-container border border-outline-variant text-on-surface-variant px-6 py-2 rounded-lg flex items-center gap-2 font-bold opacity-50 cursor-not-allowed" disabled="" id="stopBtn">
+<span class="material-symbols-outlined">stop</span> DỪNG
+                            </button>
+</div>
+</div>
+</div>
+<!-- Right Column: Real-time Analysis -->
+<div class="col-span-5 flex flex-col gap-gutter">
+<!-- Metrics Card -->
+<div class="flex-1 bg-surface-container-lowest rounded-xl border border-outline-variant p-6 shadow-sm flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">analytics</span> Chỉ số thời gian thực
+                            </h3>
+<span class="text-label-md text-on-surface-variant italic">Cập nhật: 0.5s</span>
+</div>
+<div class="grid grid-cols-2 gap-4 flex-1">
+<!-- T-Score Gauge -->
+<div class="bg-surface-container-low rounded-lg p-5 flex flex-col items-center justify-center border border-outline-variant/50">
+<span class="text-label-md font-bold text-on-surface-variant mb-2">T-SCORE</span>
+<div class="text-[48px] font-black text-primary leading-none" id="tScoreValue">- -</div>
+<div class="mt-4 w-full h-3 bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 rounded-full relative">
+<div class="absolute top-1/2 -translate-y-1/2 w-1 h-5 bg-white border border-outline shadow-md transition-all duration-700 left-1/2" id="tScorePointer"></div>
+</div>
+<div class="flex justify-between w-full mt-2 text-[10px] text-on-surface-variant font-bold">
+<span>-3.0</span>
+<span>-1.0</span>
+<span>+1.0</span>
+</div>
+<p class="mt-4 text-body-sm font-semibold" id="tScoreStatus">Chờ dữ liệu...</p>
+</div>
+<!-- Z-Score Gauge -->
+<div class="bg-surface-container-low rounded-lg p-5 flex flex-col items-center justify-center border border-outline-variant/50">
+<span class="text-label-md font-bold text-on-surface-variant mb-2">Z-SCORE</span>
+<div class="text-[48px] font-black text-secondary leading-none" id="zScoreValue">- -</div>
+<div class="mt-4 w-full h-3 bg-secondary-container/20 rounded-full relative overflow-hidden">
+<div class="absolute h-full bg-secondary transition-all duration-700 w-0" id="zScoreFill"></div>
+</div>
+<div class="flex justify-between w-full mt-2 text-[10px] text-on-surface-variant font-bold">
+<span>Lower</span>
+<span>Normal</span>
+<span>Higher</span>
+</div>
+<p class="mt-4 text-body-sm font-semibold" id="zScoreStatus">Chờ dữ liệu...</p>
+</div>
+</div>
+<div class="mt-6 space-y-3">
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="text-body-sm text-on-surface-variant">BMD (g/cm²)</span>
+<span class="font-data-mono text-on-surface font-bold" id="bmdValue">0.000</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="text-body-sm text-on-surface-variant">BMC (g)</span>
+<span class="font-data-mono text-on-surface font-bold">12.42</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="text-body-sm text-on-surface-variant">Diện tích (cm²)</span>
+<span class="font-data-mono text-on-surface font-bold">14.15</span>
+</div>
+</div>
+</div>
+<!-- Scan Logs / Alerts -->
+<div class="h-40 bg-surface-container-highest rounded-xl border border-outline-variant p-4 overflow-hidden flex flex-col">
+<div class="text-label-md font-bold text-on-surface-variant uppercase mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">list_alt</span> Nhật ký hệ thống
+                        </div>
+<div class="flex-1 overflow-y-auto space-y-1 font-data-mono text-[11px] text-on-surface-variant" id="logContainer">
+<p class="text-emerald-600">[09:41:02] Hệ thống khởi động thành công.</p>
+<p>[09:41:05] Đã kết nối với đầu dò DXA (Model-X2).</p>
+<p>[09:41:10] Hiệu chuẩn hoàn tất (Độ lệch: 0.02%).</p>
+<p class="text-primary">[09:42:00] Đang chờ lệnh bắt đầu quét...</p>
+</div>
+</div>
+</div>
+</div>
+<!-- ROI Selection / Technical Controls -->
+<div class="grid grid-cols-4 gap-gutter">
+<div class="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-sm">
+<label class="text-label-md font-bold text-on-surface-variant block mb-2">ĐIỆN ÁP ỐNG (kVp)</label>
+<select class="w-full bg-surface-container border-none rounded-lg text-body-sm focus:ring-primary">
+<option>76 kVp (Tiêu chuẩn)</option>
+<option>100 kVp (Dày)</option>
+<option>140 kVp (Dual Energy)</option>
+</select>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-sm">
+<label class="text-label-md font-bold text-on-surface-variant block mb-2">TỐC ĐỘ QUÉT</label>
+<div class="flex items-center gap-2 mt-2">
+<button class="flex-1 py-1 rounded bg-primary text-white text-[12px] font-bold">Chậm</button>
+<button class="flex-1 py-1 rounded bg-surface-container text-on-surface-variant text-[12px] font-bold">Vừa</button>
+<button class="flex-1 py-1 rounded bg-surface-container text-on-surface-variant text-[12px] font-bold">Nhanh</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-sm">
+<label class="text-label-md font-bold text-on-surface-variant block mb-2">BỘ LỌC HÌNH ẢNH</label>
+<div class="flex gap-4 items-center h-10">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-body-sm">Khử nhiễu</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-body-sm">Sắc nét</span>
+</label>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-sm flex items-center justify-center">
+<button class="w-full h-full bg-secondary text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-secondary-container transition-all active:scale-95 shadow-md">
+<span class="material-symbols-outlined">picture_as_pdf</span> XUẤT KẾT QUẢ TẠM THỜI
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<script>
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const scanIndicator = document.getElementById('scanIndicator');
+        const logContainer = document.getElementById('logContainer');
+        
+        const tScoreValue = document.getElementById('tScoreValue');
+        const tScoreStatus = document.getElementById('tScoreStatus');
+        const tScorePointer = document.getElementById('tScorePointer');
+        
+        const zScoreValue = document.getElementById('zScoreValue');
+        const zScoreStatus = document.getElementById('zScoreStatus');
+        const zScoreFill = document.getElementById('zScoreFill');
+        const bmdValue = document.getElementById('bmdValue');
+
+        let isScanning = false;
+        let progress = 0;
+        let scanInterval;
+
+        function addLog(message, type = 'default') {
+            const time = new Date().toLocaleTimeString('vi-VN', { hour12: false });
+            const p = document.createElement('p');
+            p.className = type === 'error' ? 'text-red-500' : type === 'success' ? 'text-emerald-600' : '';
+            p.textContent = `[${time}] ${message}`;
+            logContainer.prepend(p);
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (isScanning) return;
+            
+            isScanning = true;
+            progress = 0;
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopBtn.disabled = false;
+            stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            scanIndicator.classList.remove('hidden');
+            
+            addLog('Bắt đầu quy trình quét mật độ xương...', 'success');
+            
+            scanInterval = setInterval(() => {
+                progress += Math.random() * 2;
+                if (progress >= 100) {
+                    progress = 100;
+                    completeScan();
+                }
+                
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${Math.floor(progress)}%`;
+                
+                // Update real-time metrics with jitter
+                if (progress > 5) {
+                    updateMetrics();
+                }
+                
+                if (Math.floor(progress) % 20 === 0) {
+                    addLog(`Đang quét khu vực đốt sống L${Math.min(4, Math.ceil(progress/25))}`);
+                }
+            }, 100);
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (!isScanning) return;
+            clearInterval(scanInterval);
+            isScanning = false;
+            addLog('Tiến trình bị tạm dừng bởi người dùng.', 'error');
+            resetControls();
+        });
+
+        function updateMetrics() {
+            // Simulated realistic data
+            const t = (-2.1 + (Math.random() * 0.2)).toFixed(1);
+            const z = (-0.8 + (Math.random() * 0.1)).toFixed(1);
+            const bmd = (0.782 + (Math.random() * 0.01)).toFixed(3);
+            
+            tScoreValue.textContent = t;
+            zScoreValue.textContent = z;
+            bmdValue.textContent = bmd;
+
+            // Update UI Gauges
+            // Map -3 to +1 into 0-100%
+            const tPos = ((parseFloat(t) + 3) / 4) * 100;
+            tScorePointer.style.left = `${Math.min(Math.max(tPos, 0), 100)}%`;
+            
+            // Map -2 to +2 into 0-100%
+            const zPos = ((parseFloat(z) + 2) / 4) * 100;
+            zScoreFill.style.width = `${Math.min(Math.max(zPos, 0), 100)}%`;
+
+            // Status Text
+            if (t < -2.5) {
+                tScoreStatus.textContent = "Loãng xương (Osteoporosis)";
+                tScoreStatus.className = "mt-4 text-body-sm font-semibold text-red-600";
+            } else if (t < -1.0) {
+                tScoreStatus.textContent = "Thiếu xương (Osteopenia)";
+                tScoreStatus.className = "mt-4 text-body-sm font-semibold text-yellow-600";
+            } else {
+                tScoreStatus.textContent = "Bình thường";
+                tScoreStatus.className = "mt-4 text-body-sm font-semibold text-emerald-600";
+            }
+
+            zScoreStatus.textContent = z < -2.0 ? "Thấp hơn trung bình" : "Trong giới hạn bình thường";
+        }
+
+        function completeScan() {
+            clearInterval(scanInterval);
+            isScanning = false;
+            addLog('Quét hoàn tất. Dữ liệu đã được lưu vào hồ sơ.', 'success');
+            scanIndicator.classList.add('hidden');
+            resetControls();
+            
+            // Final values
+            tScoreValue.textContent = "-2.4";
+            zScoreValue.textContent = "-0.9";
+            bmdValue.textContent = "0.791";
+        }
+
+        function resetControls() {
+            startBtn.disabled = false;
+            startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            stopBtn.disabled = true;
+            stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    </script>
+</body></html>

@@ -225,6 +225,17 @@
   margin-bottom: 24px;
 }
 
+.options-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.links-divider {
+  color: #c3c6d6;
+  font-size: 14px;
+}
+
 .checkbox-wrapper {
   display: flex;
   align-items: center;

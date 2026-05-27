@@ -132,9 +132,15 @@ export default function LoginPage() {
                     />
                     <span>{pageMessages.rememberMe}</span>
                   </label>
-                  <Link href="/forgot-password" className={styles["footer-link"]}>
-                    {pageMessages.forgotPassword}
-                  </Link>
+                  <div className={styles["options-links"]}>
+                    <Link href="/register" className={styles["footer-link"]}>
+                      {pageMessages.registerLink}
+                    </Link>
+                    <span className={styles["links-divider"]}>|</span>
+                    <Link href="/forgot-password" className={styles["footer-link"]}>
+                      {pageMessages.forgotPassword}
+                    </Link>
+                  </div>
                 </div>
 
                 <button type="submit" className={styles["btn-primary"]} disabled={isLoading}>
