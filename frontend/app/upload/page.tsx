@@ -453,7 +453,12 @@ export default function UploadPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to start training pipeline");
+        let errMsg = "Không thể kết nối đến server để bắt đầu huấn luyện.";
+        try {
+          const errData = await response.json();
+          errMsg = errData.detail || errMsg;
+        } catch (_) {}
+        throw new Error(errMsg);
       }
 
       const resData = await response.json();
@@ -464,12 +469,12 @@ export default function UploadPage() {
       });
       console.log("Training started:", resData);
       setIsTraining(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error starting training:", error);
       setResultPopup({
         isOpen: true,
         status: "error",
-        message: "Không thể kết nối đến server để bắt đầu huấn luyện.",
+        message: error.message || "Không thể kết nối đến server để bắt đầu huấn luyện.",
       });
     }
   };
