@@ -357,7 +357,14 @@ export default function UploadPage() {
 
   const handleStartProcessing = async () => {
     const queuedItems = items.filter((item) => item.status === "queued" || item.status === "error");
-    if (queuedItems.length === 0) return;
+    if (queuedItems.length === 0) {
+      setResultPopup({
+        isOpen: true,
+        status: "error",
+        message: "Không có dữ liệu mới để upload",
+      });
+      return;
+    }
 
     let hasError = false;
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
