@@ -10,7 +10,7 @@ def _cookie_kwargs(max_age: int) -> dict:
     kwargs = {
         "httponly": True,
         "secure": settings.auth_cookie_secure,
-        "samesite": settings.AUTH_COOKIE_SAMESITE,
+        "samesite":  "lax" if settings.AUTH_COOKIE_SAMESITE.lower() == "lax" else "strict",
         "path": "/",
         "max_age": max_age,
     }
