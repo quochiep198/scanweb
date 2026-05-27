@@ -1,0 +1,199 @@
+.page {
+  display: grid;
+  gap: 12px;
+}
+
+.header {
+  display: grid;
+  gap: 8px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334159;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.3rem, 2.8vw, 1.8rem);
+  line-height: 1.06;
+  letter-spacing: -0.05em;
+  color: #103f9c;
+}
+
+.description {
+  max-width: 720px;
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #4f586c;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.statCard,
+.heroCard,
+.accountCard {
+  border: 1px solid #d5deee;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 16px rgba(25, 48, 96, 0.05);
+}
+
+.statCard {
+  padding: 14px 14px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.statIcon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e7efff, #d9e8ff);
+  color: #155dca;
+}
+
+.statLabel {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334159;
+}
+
+.statValue {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.8vw, 1.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.05em;
+  color: #182132;
+}
+
+.statDetail {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #4f586c;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.9fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.heroCard {
+  padding: 16px 18px;
+  background: linear-gradient(180deg, #145fce, #0f43a9);
+  color: #ffffff;
+}
+
+.heroEyebrow {
+  margin: 0 0 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+
+.heroTitle {
+  margin: 0 0 8px;
+  font-size: clamp(1.15rem, 2.3vw, 1.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+
+.heroDescription {
+  margin: 0;
+  max-width: 680px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  opacity: 0.92;
+}
+
+.accountCard {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: #182132;
+}
+
+.accountList {
+  display: grid;
+  gap: 3px;
+}
+
+.accountItem {
+  display: grid;
+  gap: 2px;
+  padding: 6px 0;
+  border-bottom: 1px solid #edf2fb;
+}
+
+.accountItem:last-child {
+  border-bottom: 0;
+}
+
+.accountLabel {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5b6475;
+}
+
+.accountValue {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #182132;
+}
+
+.statusReady {
+  color: #149246;
+  font-weight: 800;
+}
+
+@media (max-width: 1280px) {
+  .statsGrid,
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .description,
+  .statDetail,
+  .heroDescription,
+  .accountValue {
+    font-size: 0.72rem;
+  }
+
+  .statCard,
+  .heroCard,
+  .accountCard {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
