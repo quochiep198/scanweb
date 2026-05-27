@@ -1,32 +1,63 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useAuth } from "@/app/context/AuthContext";
 import { DashboardShell } from "@/components/layouts/DashboardShell";
 
-const statCards = [
-  {
-    icon: "dataset",
-    title: "Dataset san sang",
-    value: "128 tep",
-    detail: "Dong bo du lieu tu 3 thiet bi DXA trong ngay hom nay.",
-  },
-  {
-    icon: "monitoring",
-    title: "Lan huan luyen gan nhat",
-    value: "09:40",
-    detail: "Mo hinh OsteoScan v2.4 da duoc cap nhat 24 phut truoc.",
-  },
-  {
-    icon: "verified",
-    title: "Ty le du lieu hop le",
-    value: "96.8%",
-    detail: "Chi 4 tep can kiem tra lai metadata truoc khi dua vao train.",
-  },
-];
-
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
+  const [stats, setStats] = useState({
+    uploadTodayCount: 0,
+    trainedTodayCount: 0,
+  });
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const fetchStats = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const response = await fetch(`${API_URL}/v1/dashboard/stats`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setStats({
+            uploadTodayCount: data.upload_today_count,
+            trainedTodayCount: data.trained_today_count,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, [accessToken]);
+
+  const cards = [
+    {
+      icon: "dataset",
+      title: "Mẫu upload hôm nay",
+      value: `${stats.uploadTodayCount} tệp`,
+      detail: "Số lượng ảnh X-ray đã được upload lên hệ thống trong ngày hôm nay.",
+    },
+    {
+      icon: "monitoring",
+      title: "Mẫu đã training hôm nay",
+      value: `${stats.trainedTodayCount} tệp`,
+      detail: "Số lượng mẫu đã hoàn thành huấn luyện cho AI trong ngày hôm nay.",
+    },
+    {
+      icon: "verified",
+      title: "Tỷ lệ dữ liệu hợp lệ",
+      value: "96.8%",
+      detail: "Chi 4 tệp cần kiểm tra lại metadata trước khi đưa vào train.",
+    },
+  ];
 
   return (
     <ProtectedRoute>
@@ -88,7 +119,7 @@ export default function DashboardPage() {
               gap: "18px",
             }}
           >
-            {statCards.map((card) => (
+            {cards.map((card) => (
               <article
                 key={card.title}
                 style={{

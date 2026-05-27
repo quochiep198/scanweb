@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Numeric, Enum, Date, ForeignKey, Boolean
+from sqlalchemy import Column, String, Integer, Numeric, Enum, Date, ForeignKey, Boolean, func
 from app.core.database import Base
 
 class XRayImage(Base):
@@ -14,3 +14,5 @@ class XRayImage(Base):
     pixel_spacing = Column(Numeric(8, 5), nullable=True)
     image_quality = Column(Enum('excellent', 'good', 'acceptable', 'poor', name='image_qualities'), nullable=True)
     is_trained = Column(Boolean, default=False, nullable=False)
+    created_at = Column(Date, default=func.current_date(), nullable=False)
+    trained_date = Column(Date, nullable=True)

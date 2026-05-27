@@ -43,9 +43,11 @@ seed_data()
 # Include routers
 from app.routers.upload import router as upload_router
 from app.routers.training import router as training_router
+from app.routers.dashboard import router as dashboard_router
 app.include_router(auth_router)
 app.include_router(upload_router)
 app.include_router(training_router)
+app.include_router(dashboard_router)
 
 logger.info("Backend logging initialized")
 logger.info("CORS origins: %s", settings.cors_origins)

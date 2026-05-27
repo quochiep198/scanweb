@@ -16,13 +16,13 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Quản lý chung", icon: "dashboard" },
-  { href: "/patients", label: "Hồ sơ bệnh nhân", icon: "person", disabled: true },
+  // { href: "/patients", label: "Hồ sơ bệnh nhân", icon: "person", disabled: true },
   { href: "/upload", label: "Tải lên & Huấn luyện", icon: "upload_file" },
-  { href: "/reports", label: "Báo cáo chẩn đoán", icon: "description", disabled: true },
+  // { href: "/reports", label: "Báo cáo chẩn đoán", icon: "description", disabled: true },
 ];
 
 const footerItems: NavItem[] = [
-  { href: "#", label: "Hỗ trợ kỹ thuật", icon: "support_agent" },
+  // { href: "#", label: "Hỗ trợ kỹ thuật", icon: "support_agent" },
 ];
 
 function getInitials(name?: string) {

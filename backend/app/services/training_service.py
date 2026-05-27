@@ -461,15 +461,17 @@ class TrainingService:
                 except Exception as e:
                     TrainingService.write_log(f"Failed to upload model to R2: {e}")
                     logger.error(f"Failed to upload model to R2: {e}")
-                
-                # 5. Update database xray_images set is_trained = True
+                # 5. Update database xray_images set is_trained = True and trained_date
                 try:
                     # Get the image_paths from the training metadata
                     image_paths = [record["image_path"] for record in metadata]
-                    db.query(XRayImage).filter(XRayImage.image_path.in_(image_paths)).update({"is_trained": True}, synchronize_session=False)
+                    db.query(XRayImage).filter(XRayImage.image_path.in_(image_paths)).update(
+                        {"is_trained": True, "trained_date": datetime.now().date()}, 
+                        synchronize_session=False
+                    )
                     db.commit()
-                    TrainingService.write_log(f"Updated {len(image_paths)} database xray_image records as 'is_trained = True'.")
-                    logger.info(f"Updated {len(image_paths)} database records as trained.")
+                    TrainingService.write_log(f"Updated {len(image_paths)} database xray_image records as 'is_trained = True' and set trained_date.")
+                    logger.info(f"Updated {len(image_paths)} database records as trained and set trained_date.")
                 except Exception as e:
                     db.rollback()
                     TrainingService.write_log(f"Failed to update is_trained database records: {e}")

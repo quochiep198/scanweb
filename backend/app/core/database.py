@@ -29,6 +29,16 @@ def check_and_update_schema():
                     else:
                         conn.execute(text("ALTER TABLE xray_images ADD COLUMN is_trained BOOLEAN NOT NULL DEFAULT FALSE"))
                 logger.info("'is_trained' column added successfully.")
+            if 'created_at' not in columns:
+                logger.info("Adding 'created_at' column to 'xray_images' table...")
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE xray_images ADD COLUMN created_at DATE NOT NULL DEFAULT CURRENT_DATE"))
+                logger.info("'created_at' column added successfully.")
+            if 'trained_date' not in columns:
+                logger.info("Adding 'trained_date' column to 'xray_images' table...")
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE xray_images ADD COLUMN trained_date DATE NULL"))
+                logger.info("'trained_date' column added successfully.")
     except Exception as e:
         logger.error(f"Error checking/updating schema: {e}")
 
