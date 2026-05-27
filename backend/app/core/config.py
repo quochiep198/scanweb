@@ -23,7 +23,14 @@ class Settings(BaseSettings):
     EMAIL_FROM: str
     FRONTEND_URL: str
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
-    BACKEND_CORS_ORIGIN_REGEX: str = r"https://.*\.vercel\.app"
+    BACKEND_CORS_ORIGIN_REGEX: str = (
+        r"^(https://.*\.vercel\.app|"
+        r"https?://(?:localhost|127\.0\.0\.1|"
+        r"192\.168(?:\.\d{1,3}){2}|"
+        r"10(?:\.\d{1,3}){3}|"
+        r"172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})"
+        r"(?::\d+)?)$"
+    )
 
     # Cloudflare R2 Settings
     CLOUDFLARE_R2_ACCOUNT_ID: str = ""

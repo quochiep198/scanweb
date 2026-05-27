@@ -4,6 +4,10 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import { getApiUrl } from "@/app/lib/api";
 import { messages } from "@/app/messages";
 
+const ACCESS_TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
+const USER_KEY = "user";
+
 interface User {
   id: string;
   email: string;
@@ -24,6 +28,58 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function readStoredValue(key: string) {
+  try {
+    const value = localStorage.getItem(key);
+    if (value !== null) {
+      return value;
+    }
+  } catch {}
+
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredValue(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {}
+}
+
+function removeStoredValue(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+
+  try {
+    sessionStorage.removeItem(key);
+  } catch {}
+}
+
+async function fetchCurrentUser(apiUrl: string, token: string): Promise<User | null> {
+  const response = await fetch(`${apiUrl}/v1/protected`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const userData = await response.json();
+  return {
+    id: userData.user_id,
+    email: userData.email,
+    name: userData.name,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -31,32 +87,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedAccessToken = localStorage.getItem("access_token");
-      const storedRefreshToken = localStorage.getItem("refresh_token");
-      const storedUser = localStorage.getItem("user");
+    const bootstrapAuth = async () => {
+      const apiUrl = getApiUrl();
+      const storedAccessToken = readStoredValue(ACCESS_TOKEN_KEY);
+      const storedRefreshToken = readStoredValue(REFRESH_TOKEN_KEY);
+      const storedUser = readStoredValue(USER_KEY);
 
-      if (storedAccessToken) {
-        setAccessToken(storedAccessToken);
-        setRefreshToken(storedRefreshToken);
-        if (storedUser) {
-          try {
-            setUser(JSON.parse(storedUser));
-          } catch (err) {
-            console.error("Error parsing stored user:", err);
-          }
+      if (!storedAccessToken) {
+        setIsLoading(false);
+        return;
+      }
+
+      setAccessToken(storedAccessToken);
+      setRefreshToken(storedRefreshToken);
+
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (err) {
+          console.error("Error parsing stored user:", err);
         }
       }
-    } catch (error) {
-      console.error("Failed to read from localStorage:", error);
+
       try {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("user");
-      } catch (e) {}
-    } finally {
-      setIsLoading(false);
-    }
+        const currentUser = await fetchCurrentUser(apiUrl, storedAccessToken);
+        if (currentUser) {
+          setUser(currentUser);
+          writeStoredValue(USER_KEY, JSON.stringify(currentUser));
+          setIsLoading(false);
+          return;
+        }
+
+        if (!storedRefreshToken) {
+          throw new Error("Missing refresh token");
+        }
+
+        const refreshResponse = await fetch(`${apiUrl}/v1/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: storedRefreshToken }),
+        });
+
+        if (!refreshResponse.ok) {
+          throw new Error("Refresh token expired");
+        }
+
+        const refreshData = await refreshResponse.json();
+        setAccessToken(refreshData.access_token);
+        setRefreshToken(refreshData.refresh_token);
+        writeStoredValue(ACCESS_TOKEN_KEY, refreshData.access_token);
+        writeStoredValue(REFRESH_TOKEN_KEY, refreshData.refresh_token);
+
+        const refreshedUser = await fetchCurrentUser(apiUrl, refreshData.access_token);
+        if (refreshedUser) {
+          setUser(refreshedUser);
+          writeStoredValue(USER_KEY, JSON.stringify(refreshedUser));
+        }
+      } catch (error) {
+        console.error("Failed to restore auth session:", error);
+        setUser(null);
+        setAccessToken(null);
+        setRefreshToken(null);
+        removeStoredValue(ACCESS_TOKEN_KEY);
+        removeStoredValue(REFRESH_TOKEN_KEY);
+        removeStoredValue(USER_KEY);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    bootstrapAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -75,22 +175,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await response.json();
     setAccessToken(data.access_token);
     setRefreshToken(data.refresh_token);
-    localStorage.setItem("access_token", data.access_token);
-    localStorage.setItem("refresh_token", data.refresh_token);
+    writeStoredValue(ACCESS_TOKEN_KEY, data.access_token);
+    writeStoredValue(REFRESH_TOKEN_KEY, data.refresh_token);
 
-    const userResponse = await fetch(`${apiUrl}/v1/protected`, {
-      headers: { Authorization: `Bearer ${data.access_token}` },
-    });
-
-    if (userResponse.ok) {
-      const userData = await userResponse.json();
-      const nextUser = {
-        id: userData.user_id,
-        email: userData.email,
-        name: userData.name,
-      };
-      setUser(nextUser);
-      localStorage.setItem("user", JSON.stringify(nextUser));
+    try {
+      const nextUser = await fetchCurrentUser(apiUrl, data.access_token);
+      if (nextUser) {
+        setUser(nextUser);
+        writeStoredValue(USER_KEY, JSON.stringify(nextUser));
+      } else {
+        setUser(null);
+        removeStoredValue(USER_KEY);
+      }
+    } catch (error) {
+      console.error("Failed to fetch current user after login:", error);
+      setUser(null);
+      removeStoredValue(USER_KEY);
     }
   };
 
@@ -121,9 +221,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
+    removeStoredValue(ACCESS_TOKEN_KEY);
+    removeStoredValue(REFRESH_TOKEN_KEY);
+    removeStoredValue(USER_KEY);
   };
 
   const forgotPassword = async (email: string) => {
