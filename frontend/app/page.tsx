@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 
 export default function HomePage() {
   const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     if (isLoading) {
       return;
     }
 
-    router.replace(isAuthenticated ? "/dashboard" : "/login");
-  }, [isAuthenticated, isLoading, router]);
+    if (isAuthenticated) {
+      window.location.replace("/dashboard");
+    } else {
+      window.location.replace("/login");
+    }
+  }, [isAuthenticated, isLoading]);
 
   return null;
 }
