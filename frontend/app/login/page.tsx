@@ -29,7 +29,9 @@ export default function LoginPage() {
     setDiagChecking(true);
     setDiagStatus("Đang kiểm tra kết nối...");
     try {
+      alert("1. Khởi chạy chẩn đoán...");
       const apiUrl = getApiUrl();
+      alert("2. API URL hiện tại: " + apiUrl);
       
       // Test localStorage
       let storageOk = false;
@@ -38,8 +40,10 @@ export default function LoginPage() {
         storageOk = localStorage.getItem("__diag_test__") === "1";
         localStorage.removeItem("__diag_test__");
       } catch (e) {
+        alert("Lỗi kiểm tra localStorage: " + String(e));
         storageOk = false;
       }
+      alert("3. Trạng thái LocalStorage: " + (storageOk ? "OK" : "Lỗi"));
 
       // Test cookie
       let cookieOk = false;
@@ -47,14 +51,18 @@ export default function LoginPage() {
         document.cookie = "__diag_test__=1; path=/; max-age=10";
         cookieOk = document.cookie.includes("__diag_test__=1");
       } catch (e) {
+        alert("Lỗi kiểm tra Cookie: " + String(e));
         cookieOk = false;
       }
+      alert("4. Trạng thái Cookie: " + (cookieOk ? "OK" : "Lỗi"));
 
       // Test API Health
+      alert("5. Bắt đầu gọi fetch tới " + `${apiUrl}/health`);
       let apiOk = "Không thể kết nối";
       let apiDetail = "";
       try {
         const res = await fetch(`${apiUrl}/health`, { mode: 'cors' });
+        alert("6. Nhận phản hồi HTTP từ API: " + res.status);
         if (res.ok) {
           const data = await res.json();
           apiOk = `Thành công (HTTP ${res.status}, ${JSON.stringify(data)})`;
@@ -62,17 +70,20 @@ export default function LoginPage() {
           apiOk = `Lỗi HTTP ${res.status}`;
         }
       } catch (e: any) {
+        alert("Lỗi fetch API: " + String(e));
         apiOk = `Thất bại`;
         apiDetail = e.message || String(e);
       }
 
-      setDiagStatus(
-        `API URL: ${apiUrl}\n` +
+      const result = `API URL: ${apiUrl}\n` +
         `LocalStorage: ${storageOk ? "Hoạt động" : "Bị chặn/Lỗi"}\n` +
         `Cookies: ${cookieOk ? "Hoạt động" : "Bị chặn/Lỗi"}\n` +
-        `Kết nối API: ${apiOk}${apiDetail ? " (" + apiDetail + ")" : ""}`
-      );
+        `Kết nối API: ${apiOk}${apiDetail ? " (" + apiDetail + ")" : ""}`;
+
+      setDiagStatus(result);
+      alert("7. Kết quả chẩn đoán: \n" + result);
     } catch (err: any) {
+      alert("Lỗi chẩn đoán tổng quát: " + String(err));
       setDiagStatus(`Lỗi chẩn đoán: ${err.message || err}`);
     } finally {
       setDiagChecking(false);
