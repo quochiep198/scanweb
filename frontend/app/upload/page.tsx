@@ -5,6 +5,7 @@ import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { DashboardShell } from "@/components/layouts/DashboardShell";
 import { useAuth } from "@/app/context/AuthContext";
+import { getApiUrl } from "@/app/lib/api";
 
 import styles from "./upload.module.css";
 
@@ -199,8 +200,8 @@ export default function UploadPage() {
   const fetchLogs = async () => {
     if (!accessToken) return;
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      const response = await fetch(`${API_URL}/v1/training/logs`, {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/v1/training/logs`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -237,8 +238,8 @@ export default function UploadPage() {
 
     const fetchOptions = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        const response = await fetch(`${API_URL}/v1/upload/options`, {
+        const apiUrl = getApiUrl();
+        const response = await fetch(`${apiUrl}/v1/upload/options`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
@@ -367,7 +368,7 @@ export default function UploadPage() {
     }
 
     let hasError = false;
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const apiUrl = getApiUrl();
 
     for (const item of queuedItems) {
       if (item.file.size > MAX_FILE_SIZE) {
@@ -406,7 +407,7 @@ export default function UploadPage() {
         formData.append("dataset_split", item.datasetSplit);
 
         await uploadWithProgress(
-          `${API_URL}/v1/upload`,
+          `${apiUrl}/v1/upload`,
           accessToken || "",
           formData,
           (progress) => {
@@ -451,8 +452,8 @@ export default function UploadPage() {
     }
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      const response = await fetch(`${API_URL}/v1/training/train?use_augmentation=${augmentation}`, {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/v1/training/train?use_augmentation=${augmentation}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,

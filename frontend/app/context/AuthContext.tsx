@@ -1,9 +1,8 @@
 "use client";
 
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { getApiUrl } from "@/app/lib/api";
 import { messages } from "@/app/messages";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 interface User {
   id: string;
@@ -61,7 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/v1/auth/login`, {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("refresh_token", data.refresh_token);
 
-    const userResponse = await fetch(`${API_URL}/v1/protected`, {
+    const userResponse = await fetch(`${apiUrl}/v1/protected`, {
       headers: { Authorization: `Bearer ${data.access_token}` },
     });
 
@@ -95,7 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const response = await fetch(`${API_URL}/v1/auth/register`, {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/v1/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
@@ -109,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     if (refreshToken) {
-      await fetch(`${API_URL}/v1/auth/logout`, {
+      const apiUrl = getApiUrl();
+      await fetch(`${apiUrl}/v1/auth/logout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: refreshToken }),
@@ -125,7 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const forgotPassword = async (email: string) => {
-    const response = await fetch(`${API_URL}/v1/auth/forgot-password`, {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/v1/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -138,7 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string, otp: string, newPassword: string) => {
-    const response = await fetch(`${API_URL}/v1/auth/reset-password`, {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/v1/auth/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp, new_password: newPassword }),

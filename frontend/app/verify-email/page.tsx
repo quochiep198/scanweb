@@ -3,9 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "@/app/auth/auth.module.css";
+import { getApiUrl } from "@/app/lib/api";
 import { messages } from "@/app/messages";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 const pageMessages = messages.auth.verifyEmail;
 const shared = messages.shared;
 
@@ -26,7 +25,8 @@ function VerifyEmailContent() {
       }
 
       try {
-        const response = await fetch(`${API_URL}/v1/auth/verify-email?token=${token}`);
+        const apiUrl = getApiUrl();
+        const response = await fetch(`${apiUrl}/v1/auth/verify-email?token=${token}`);
         const data = await response.json();
 
         if (response.ok) {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useAuth } from "@/app/context/AuthContext";
+import { getApiUrl } from "@/app/lib/api";
 import { DashboardShell } from "@/components/layouts/DashboardShell";
 import styles from "./dashboard.module.css";
 
@@ -19,8 +20,8 @@ export default function DashboardPage() {
 
     const fetchStats = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        const response = await fetch(`${API_URL}/v1/dashboard/stats`, {
+        const apiUrl = getApiUrl();
+        const response = await fetch(`${apiUrl}/v1/dashboard/stats`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
