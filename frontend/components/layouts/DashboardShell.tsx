@@ -18,7 +18,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "Quản lý chung", icon: "dashboard" },
   // { href: "/patients", label: "Hồ sơ bệnh nhân", icon: "person", disabled: true },
   { href: "/upload", label: "Tải lên & Huấn luyện", icon: "upload_file" },
-  { href: "/measurement", label: "Đo lường", icon: "straighten" },
+  { href: "/measurement", label: "Phân Tích", icon: "straighten" },
   // { href: "/reports", label: "Báo cáo chẩn đoán", icon: "description", disabled: true },
 ];
 
