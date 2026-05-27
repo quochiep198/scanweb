@@ -34,8 +34,17 @@ def get_dashboard_stats(
         .filter(XRayImage.trained_date == today)
         .count()
     )
-    
+
+    # 2. Count uploads
+    upload_count = (
+        db.query(XRayImage)
+        .count()
+    )
+
     return {
         "upload_today_count": upload_today_count,
-        "trained_today_count": trained_today_count
+        "trained_today_count": trained_today_count,
+        "upload_count": upload_count
     }
+
+

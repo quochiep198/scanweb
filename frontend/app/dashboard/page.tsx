@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     uploadTodayCount: 0,
     trainedTodayCount: 0,
+    uploadCount: 0,
   });
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function DashboardPage() {
           setStats({
             uploadTodayCount: data.upload_today_count,
             trainedTodayCount: data.trained_today_count,
+            uploadCount: data.upload_count,
           });
         }
       } catch (error) {
@@ -51,6 +53,12 @@ export default function DashboardPage() {
       title: "Mẫu đã training hôm nay",
       value: `${stats.trainedTodayCount}`,
       detail: "Số lượng mẫu đã hoàn thành huấn luyện cho AI trong ngày hôm nay.",
+    },
+    {
+      icon: "dataset",
+      title: "Mẫu đã upload",
+      value: `${stats.uploadCount}`,
+      detail: "Tổng số lượng mẫu đã được upload lên hệ thống.",
     }
   ];
 
