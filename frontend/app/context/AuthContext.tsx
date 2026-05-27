@@ -37,10 +37,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedRefreshToken = localStorage.getItem("refresh_token");
       const storedUser = localStorage.getItem("user");
 
-      if (storedAccessToken && storedUser) {
+      if (storedAccessToken) {
         setAccessToken(storedAccessToken);
         setRefreshToken(storedRefreshToken);
-        setUser(JSON.parse(storedUser));
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (err) {
+            console.error("Error parsing stored user:", err);
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to read from localStorage:", error);
