@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
     BACKEND_CORS_ORIGIN_REGEX: str = (
-        r"^(https://.*\.vercel\.app|"
+        r"^(https://.*\.vercel\.app|https://.*\.thtsolution\.online|"
         r"https?://(?:localhost|127\.0\.0\.1|"
         r"192\.168(?:\.\d{1,3}){2}|"
         r"10(?:\.\d{1,3}){3}|"

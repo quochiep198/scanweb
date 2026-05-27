@@ -6,7 +6,20 @@ function trimTrailingSlash(value: string) {
 }
 
 export function getApiUrl() {
-  const configuredUrl = trimTrailingSlash(process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL);
+  let configuredUrl = trimTrailingSlash(process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL);
+
+  if (typeof window !== "undefined") {
+    const currentHost = window.location.hostname;
+    const isProductionEnv = currentHost && (
+      currentHost.includes("thtsolution.online") || 
+      currentHost.includes("vercel.app")
+    );
+    const isLocalhostApi = configuredUrl.includes("localhost") || configuredUrl.includes("127.0.0.1");
+
+    if (isProductionEnv && isLocalhostApi) {
+      configuredUrl = "https://quochiepho-scanweb-api.hf.space";
+    }
+  }
 
   if (typeof window === "undefined") {
     return configuredUrl;

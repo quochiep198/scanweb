@@ -28,6 +28,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
+
+function setCookie(name: string, value: string, maxAgeSeconds: number) {
+  if (typeof document === "undefined") return;
+  const encodedValue = encodeURIComponent(value);
+  document.cookie = `${name}=${encodedValue}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax; Secure`;
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax; Secure`;
+}
+
 function readStoredValue(key: string) {
   try {
     const value = localStorage.getItem(key);
@@ -37,10 +56,20 @@ function readStoredValue(key: string) {
   } catch {}
 
   try {
-    return sessionStorage.getItem(key);
-  } catch {
-    return null;
-  }
+    const value = sessionStorage.getItem(key);
+    if (value !== null) {
+      return value;
+    }
+  } catch {}
+
+  try {
+    const value = getCookie(key);
+    if (value !== null) {
+      return decodeURIComponent(value);
+    }
+  } catch {}
+
+  return null;
 }
 
 function writeStoredValue(key: string, value: string) {
@@ -51,6 +80,11 @@ function writeStoredValue(key: string, value: string) {
   try {
     sessionStorage.setItem(key, value);
   } catch {}
+
+  try {
+    // 7 days cookie duration
+    setCookie(key, value, 604800);
+  } catch {}
 }
 
 function removeStoredValue(key: string) {
@@ -60,6 +94,10 @@ function removeStoredValue(key: string) {
 
   try {
     sessionStorage.removeItem(key);
+  } catch {}
+
+  try {
+    deleteCookie(key);
   } catch {}
 }
 

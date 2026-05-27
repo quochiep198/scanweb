@@ -6,6 +6,7 @@ import Link from "next/link";
 import styles from "@/app/auth/auth.module.css";
 import { useAuth } from "@/app/context/AuthContext";
 import { messages } from "@/app/messages";
+import { getApiUrl } from "@/app/lib/api";
 
 const pageMessages = messages.auth.login;
 const shared = messages.shared;
@@ -20,6 +21,63 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const [diagStatus, setDiagStatus] = useState("");
+  const [diagChecking, setDiagChecking] = useState(false);
+
+  const runDiagnostics = async () => {
+    setDiagChecking(true);
+    setDiagStatus("Đang kiểm tra kết nối...");
+    try {
+      const apiUrl = getApiUrl();
+      
+      // Test localStorage
+      let storageOk = false;
+      try {
+        localStorage.setItem("__diag_test__", "1");
+        storageOk = localStorage.getItem("__diag_test__") === "1";
+        localStorage.removeItem("__diag_test__");
+      } catch (e) {
+        storageOk = false;
+      }
+
+      // Test cookie
+      let cookieOk = false;
+      try {
+        document.cookie = "__diag_test__=1; path=/; max-age=10";
+        cookieOk = document.cookie.includes("__diag_test__=1");
+      } catch (e) {
+        cookieOk = false;
+      }
+
+      // Test API Health
+      let apiOk = "Không thể kết nối";
+      let apiDetail = "";
+      try {
+        const res = await fetch(`${apiUrl}/health`, { mode: 'cors' });
+        if (res.ok) {
+          const data = await res.json();
+          apiOk = `Thành công (HTTP ${res.status}, ${JSON.stringify(data)})`;
+        } else {
+          apiOk = `Lỗi HTTP ${res.status}`;
+        }
+      } catch (e: any) {
+        apiOk = `Thất bại`;
+        apiDetail = e.message || String(e);
+      }
+
+      setDiagStatus(
+        `API URL: ${apiUrl}\n` +
+        `LocalStorage: ${storageOk ? "Hoạt động" : "Bị chặn/Lỗi"}\n` +
+        `Cookies: ${cookieOk ? "Hoạt động" : "Bị chặn/Lỗi"}\n` +
+        `Kết nối API: ${apiOk}${apiDetail ? " (" + apiDetail + ")" : ""}`
+      );
+    } catch (err: any) {
+      setDiagStatus(`Lỗi chẩn đoán: ${err.message || err}`);
+    } finally {
+      setDiagChecking(false);
+    }
+  };
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
@@ -161,6 +219,27 @@ export default function LoginPage() {
                   </Link>
                 </div>
               </form>
+
+              <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', background: '#f8fafc', color: '#334155' }}>
+                <h4 style={{ margin: '0 0 10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600 }}>
+                  <span>Chẩn đoán hệ thống (System Diagnostics)</span>
+                  <button 
+                    type="button" 
+                    onClick={runDiagnostics} 
+                    disabled={diagChecking}
+                    style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', background: '#0052CC', color: '#fff', border: 'none', borderRadius: '4px' }}
+                  >
+                    {diagChecking ? "Đang chạy..." : "Kiểm tra"}
+                  </button>
+                </h4>
+                {diagStatus ? (
+                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'monospace', background: '#f1f5f9', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                    {diagStatus}
+                  </pre>
+                ) : (
+                  <p style={{ margin: 0, color: '#64748b' }}>Nhấn nút "Kiểm tra" để chẩn đoán kết nối API và bộ nhớ.</p>
+                )}
+              </div>
 
               <div className={styles["trust-bar"]}>
                 <div className={styles["trust-item"]}>
