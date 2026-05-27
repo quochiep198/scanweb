@@ -238,11 +238,12 @@ export default function LoginPage() {
                   <span>Chẩn đoán hệ thống (System Diagnostics)</span>
                   <button 
                     type="button" 
+                    id="diag-btn"
                     onClick={runDiagnostics} 
                     disabled={diagChecking}
                     style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', background: '#0052CC', color: '#fff', border: 'none', borderRadius: '4px' }}
                   >
-                    {diagChecking ? "Đang chạy..." : "Kiểm tra"}
+                    Kiểm tra
                   </button>
                 </h4>
                 <pre 
@@ -252,6 +253,80 @@ export default function LoginPage() {
                   Nhấn nút "Kiểm tra" để chẩn đoán kết nối API và bộ nhớ.
                 </pre>
               </div>
+
+              <script dangerouslySetInnerHTML={{ __html: `
+                (function() {
+                  console.log("Raw diagnostics script loaded");
+                  function setupDiag() {
+                    var btn = document.getElementById("diag-btn");
+                    var logDiv = document.getElementById("diag-log-output");
+                    if (!btn || !logDiv) {
+                      setTimeout(setupDiag, 200);
+                      return;
+                    }
+                    
+                    var bound = false;
+                    function runRawDiag() {
+                      logDiv.innerText = "1. Bắt đầu chẩn đoán (Raw HTML Script)...";
+                      try {
+                        var apiUrl = "https://quochiepho-scanweb-api.hf.space";
+                        logDiv.innerText += "\\n2. API URL mặc định: " + apiUrl;
+                        
+                        var storageOk = false;
+                        try {
+                          localStorage.setItem("__raw_test__", "1");
+                          storageOk = localStorage.getItem("__raw_test__") === "1";
+                          localStorage.removeItem("__raw_test__");
+                          logDiv.innerText += "\\n3. LocalStorage: Hoạt động";
+                        } catch(e) {
+                          logDiv.innerText += "\\n3. LocalStorage: Bị lỗi - " + String(e.message || e);
+                        }
+                        
+                        var cookieOk = false;
+                        try {
+                          document.cookie = "__raw_test__=1; path=/; max-age=10";
+                          cookieOk = document.cookie.includes("__raw_test__=1");
+                          logDiv.innerText += "\\n4. Cookies: Hoạt động";
+                        } catch(e) {
+                          logDiv.innerText += "\\n4. Cookies: Bị lỗi - " + String(e.message || e);
+                        }
+                        
+                        logDiv.innerText += "\\n5. Đang kết nối tới API: " + apiUrl + "/health";
+                        
+                        var controller = new AbortController();
+                        var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
+                        
+                        fetch(apiUrl + "/health", { mode: 'cors', signal: controller.signal })
+                          .then(function(res) {
+                            clearTimeout(timeoutId);
+                            logDiv.innerText += "\\n6. API Response: HTTP " + res.status;
+                            return res.json();
+                          })
+                          .then(function(data) {
+                            logDiv.innerText += "\\n7. Dữ liệu API: " + JSON.stringify(data);
+                            logDiv.innerText += "\\n8. Chẩn đoán kết thúc.";
+                          })
+                          .catch(function(err) {
+                            logDiv.innerText += "\\n6. API Response: Thất bại - " + String(err.message || err);
+                            logDiv.innerText += "\\n7. Chẩn đoán kết thúc.";
+                          });
+                      } catch(err) {
+                        logDiv.innerText += "\\nLỗi chẩn đoán: " + String(err.message || err);
+                      }
+                    }
+
+                    btn.addEventListener("click", function(e) {
+                      e.preventDefault();
+                      runRawDiag();
+                    });
+                    btn.addEventListener("touchstart", function(e) {
+                      e.preventDefault();
+                      runRawDiag();
+                    });
+                  }
+                  setupDiag();
+                })();
+              ` }} />
 
               <div className={styles["trust-bar"]}>
                 <div className={styles["trust-item"]}>
