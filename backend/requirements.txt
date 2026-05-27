@@ -15,3 +15,5 @@ Pillow
 torchxrayvision
 monai
 mlflow
+easyocr
+opencv-python-headless
