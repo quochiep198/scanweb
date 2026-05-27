@@ -116,7 +116,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email.trim(), password);
+      await login(email.trim().toLowerCase(), password);
       router.replace("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : messages.auth.errors.loginFailed);
@@ -163,12 +163,16 @@ export default function LoginPage() {
                       <span className="material-symbols-outlined">person</span>
                     </span>
                     <input
-                      type="text"
+                      type="email"
                       className={styles["form-input"]}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="nguyen.van.a@clinic.vn"
                       required
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
                   </div>
                 </div>

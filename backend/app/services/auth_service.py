@@ -25,7 +25,7 @@ def utc_now() -> datetime:
 class AuthService:
     @staticmethod
     def get_user_by_email(db: Session, email: str) -> Optional[User]:
-        return db.query(User).filter(User.email == email).first()
+        return db.query(User).filter(User.email == email.strip().lower()).first()
 
     @staticmethod
     def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
@@ -35,7 +35,7 @@ class AuthService:
     def create_user(db: Session, name: str, email: str, password: str) -> User:
         user = User(
             id=str(uuid.uuid4()),
-            email=email,
+            email=email.strip().lower(),
             name=name,
             password_hash=hash_password(password),
             is_verified=False,

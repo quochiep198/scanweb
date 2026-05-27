@@ -59,7 +59,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register(name.trim(), email.trim(), password);
+      await register(name.trim(), email.trim().toLowerCase(), password);
       setSuccess(true);
       setTimeout(() => {
         router.push("/login");
@@ -194,6 +194,10 @@ export default function RegisterPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="nguyen.van.a@clinic.vn"
                       required
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
                   </div>
                 </div>
