@@ -32,16 +32,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedAccessToken = localStorage.getItem("access_token");
-    const storedRefreshToken = localStorage.getItem("refresh_token");
-    const storedUser = localStorage.getItem("user");
+    try {
+      const storedAccessToken = localStorage.getItem("access_token");
+      const storedRefreshToken = localStorage.getItem("refresh_token");
+      const storedUser = localStorage.getItem("user");
 
-    if (storedAccessToken && storedUser) {
-      setAccessToken(storedAccessToken);
-      setRefreshToken(storedRefreshToken);
-      setUser(JSON.parse(storedUser));
+      if (storedAccessToken && storedUser) {
+        setAccessToken(storedAccessToken);
+        setRefreshToken(storedRefreshToken);
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to read from localStorage:", error);
+      try {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+      } catch (e) {}
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
