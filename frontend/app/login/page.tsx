@@ -26,12 +26,21 @@ export default function LoginPage() {
   const [diagChecking, setDiagChecking] = useState(false);
 
   const runDiagnostics = async () => {
-    setDiagChecking(true);
-    setDiagStatus("Đang kiểm tra kết nối...");
+    const logDiv = document.getElementById("diag-log-output");
+    const appendLog = (text: string) => {
+      if (logDiv) {
+        logDiv.innerText += "\n" + text;
+      }
+      console.log(text);
+    };
+
+    if (logDiv) {
+      logDiv.innerText = "1. Bắt đầu chẩn đoán...";
+    }
+
     try {
-      alert("1. Khởi chạy chẩn đoán...");
       const apiUrl = getApiUrl();
-      alert("2. API URL hiện tại: " + apiUrl);
+      appendLog("2. API URL: " + apiUrl);
       
       // Test localStorage
       let storageOk = false;
@@ -39,54 +48,47 @@ export default function LoginPage() {
         localStorage.setItem("__diag_test__", "1");
         storageOk = localStorage.getItem("__diag_test__") === "1";
         localStorage.removeItem("__diag_test__");
-      } catch (e) {
-        alert("Lỗi kiểm tra localStorage: " + String(e));
-        storageOk = false;
+        appendLog("3. LocalStorage: Hoạt động");
+      } catch (e: any) {
+        appendLog("3. LocalStorage: Bị lỗi - " + String(e.message || e));
       }
-      alert("3. Trạng thái LocalStorage: " + (storageOk ? "OK" : "Lỗi"));
 
       // Test cookie
       let cookieOk = false;
       try {
         document.cookie = "__diag_test__=1; path=/; max-age=10";
         cookieOk = document.cookie.includes("__diag_test__=1");
-      } catch (e) {
-        alert("Lỗi kiểm tra Cookie: " + String(e));
-        cookieOk = false;
+        appendLog("4. Cookies: Hoạt động");
+      } catch (e: any) {
+        appendLog("4. Cookies: Bị lỗi - " + String(e.message || e));
       }
-      alert("4. Trạng thái Cookie: " + (cookieOk ? "OK" : "Lỗi"));
 
       // Test API Health
-      alert("5. Bắt đầu gọi fetch tới " + `${apiUrl}/health`);
-      let apiOk = "Không thể kết nối";
-      let apiDetail = "";
+      appendLog("5. Đang kết nối tới API: " + `${apiUrl}/health`);
       try {
-        const res = await fetch(`${apiUrl}/health`, { mode: 'cors' });
-        alert("6. Nhận phản hồi HTTP từ API: " + res.status);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+        
+        const res = await fetch(`${apiUrl}/health`, { 
+          mode: 'cors',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        appendLog(`6. API Response: HTTP ${res.status}`);
         if (res.ok) {
           const data = await res.json();
-          apiOk = `Thành công (HTTP ${res.status}, ${JSON.stringify(data)})`;
+          appendLog(`7. Dữ liệu API: ${JSON.stringify(data)}`);
         } else {
-          apiOk = `Lỗi HTTP ${res.status}`;
+          appendLog(`7. Kết nối thất bại (Lỗi HTTP)`);
         }
       } catch (e: any) {
-        alert("Lỗi fetch API: " + String(e));
-        apiOk = `Thất bại`;
-        apiDetail = e.message || String(e);
+        appendLog("6. API Response: Thất bại - " + String(e.message || e));
       }
 
-      const result = `API URL: ${apiUrl}\n` +
-        `LocalStorage: ${storageOk ? "Hoạt động" : "Bị chặn/Lỗi"}\n` +
-        `Cookies: ${cookieOk ? "Hoạt động" : "Bị chặn/Lỗi"}\n` +
-        `Kết nối API: ${apiOk}${apiDetail ? " (" + apiDetail + ")" : ""}`;
-
-      setDiagStatus(result);
-      alert("7. Kết quả chẩn đoán: \n" + result);
+      appendLog("8. Chẩn đoán kết thúc.");
     } catch (err: any) {
-      alert("Lỗi chẩn đoán tổng quát: " + String(err));
-      setDiagStatus(`Lỗi chẩn đoán: ${err.message || err}`);
-    } finally {
-      setDiagChecking(false);
+      appendLog("Lỗi chẩn đoán tổng quát: " + String(err.message || err));
     }
   };
 
@@ -243,13 +245,12 @@ export default function LoginPage() {
                     {diagChecking ? "Đang chạy..." : "Kiểm tra"}
                   </button>
                 </h4>
-                {diagStatus ? (
-                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'monospace', background: '#f1f5f9', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                    {diagStatus}
-                  </pre>
-                ) : (
-                  <p style={{ margin: 0, color: '#64748b' }}>Nhấn nút "Kiểm tra" để chẩn đoán kết nối API và bộ nhớ.</p>
-                )}
+                <pre 
+                  id="diag-log-output"
+                  style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'monospace', background: '#f1f5f9', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                >
+                  Nhấn nút "Kiểm tra" để chẩn đoán kết nối API và bộ nhớ.
+                </pre>
               </div>
 
               <div className={styles["trust-bar"]}>
