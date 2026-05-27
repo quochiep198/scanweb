@@ -726,3 +726,67 @@
     opacity: 1;
   }
 }
+
+.logCard {
+  padding: 12px;
+  border: 1px solid #d5deee;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 16px rgba(25, 48, 96, 0.05);
+  display: grid;
+  gap: 8px;
+}
+
+.logHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logTitle {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #182132;
+}
+
+.logStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: #94a3b8;
+}
+
+.statusDotActive {
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse 1.5s infinite;
+}
+
+.logTerminal {
+  height: 250px;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}

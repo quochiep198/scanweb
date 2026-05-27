@@ -14,3 +14,4 @@ pydicom
 Pillow
 torchxrayvision
 monai
+mlflow

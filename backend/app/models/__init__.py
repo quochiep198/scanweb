@@ -8,6 +8,7 @@ from app.models.diagnostic_label import DiagnosticLabel
 from app.models.patient import Patient
 from app.models.xray_image import XRayImage
 from app.models.osteoporosis_label import OsteoporosisLabel
+from app.models.efficientnet_model import OsteoporosisEfficientNetB3
 
 __all__ = [
     "Base",
@@ -20,4 +21,5 @@ __all__ = [
     "Patient",
     "XRayImage",
     "OsteoporosisLabel",
+    "OsteoporosisEfficientNetB3",
 ]

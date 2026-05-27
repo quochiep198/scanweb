@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class R2Service:
     @staticmethod
-    def upload_file(file_content: bytes, filename: str, content_type: str) -> str:
+    def upload_file(file_content: bytes, filename: str, content_type: str, custom_key: str = None) -> str:
         """
         Uploads file to Cloudflare R2.
         Falls back to mock URL if R2 credentials are not set.
@@ -18,13 +18,18 @@ class R2Service:
         bucket_name = settings.CLOUDFLARE_R2_BUCKET_NAME
         public_url = settings.CLOUDFLARE_R2_PUBLIC_URL
 
+        # Determine the key to use in R2
+        if custom_key:
+            key_name = custom_key
+        else:
+            import uuid
+            key_name = f"{uuid.uuid4()}_{filename}"
+
         # Check if R2 is configured
         if not all([account_id, access_key, secret_key, bucket_name]):
             logger.warning("Cloudflare R2 is not fully configured. Falling back to local simulated URL.")
-            import uuid
-            unique_filename = f"{uuid.uuid4()}_{filename}"
             # Return a local simulated path or a mock R2 URL
-            mock_url = f"https://mock-r2.osteoai.com/{bucket_name or 'uploads'}/{unique_filename}"
+            mock_url = f"https://mock-r2.osteoai.com/{bucket_name or 'uploads'}/{key_name}"
             return mock_url
 
         try:
@@ -37,20 +42,19 @@ class R2Service:
                 region_name="auto"
             )
             
-            import uuid
-            unique_filename = f"{uuid.uuid4()}_{filename}"
-            
             s3_client.put_object(
                 Bucket=bucket_name,
-                Key=unique_filename,
+                Key=key_name,
                 Body=file_content,
                 ContentType=content_type
             )
             
             if public_url:
-                return f"{public_url.rstrip('/')}/{unique_filename}"
+                # Ensure correct concatenation of URL and key_name
+                base_url = public_url.rstrip('/')
+                return f"{base_url}/{key_name}"
             else:
-                return f"https://pub-{account_id}.r2.dev/{bucket_name}/{unique_filename}"
+                return f"https://pub-{account_id}.r2.dev/{bucket_name}/{key_name}"
                 
         except Exception as e:
             logger.error(f"Error uploading to Cloudflare R2: {e}")
@@ -59,7 +63,7 @@ class R2Service:
     @staticmethod
     def download_file(image_path: str) -> bytes:
         """
-        Downloads a file from Cloudflare R2 based on the public URL or file name.
+        Downloads a file from Cloudflare R2 based on the public URL or file name/key.
         Falls back to a mock local file read or simulated bytes if R2 credentials are not set
         or if it's a mock R2 URL.
         """
@@ -75,8 +79,20 @@ class R2Service:
             return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82'
 
         try:
-            # Extract key/filename from URL
-            filename = image_path.split("/")[-1]
+            # Extract key/filename from URL path robustly
+            from urllib.parse import urlparse
+            parsed = urlparse(image_path)
+            path = parsed.path.lstrip('/')
+            
+            # If path starts with bucket_name, strip it to get the correct R2 Key
+            if bucket_name and path.startswith(f"{bucket_name}/"):
+                key = path[len(bucket_name)+1:]
+            else:
+                key = path
+                
+            if not key:
+                key = image_path.split("/")[-1]
+
             r2_endpoint = f"https://{account_id}.r2.cloudflarestorage.com"
             s3_client = boto3.client(
                 "s3",
@@ -85,7 +101,7 @@ class R2Service:
                 aws_secret_access_key=secret_key,
                 region_name="auto"
             )
-            response = s3_client.get_object(Bucket=bucket_name, Key=filename)
+            response = s3_client.get_object(Bucket=bucket_name, Key=key)
             return response["Body"].read()
         except Exception as e:
             logger.error(f"Error downloading from Cloudflare R2: {e}")

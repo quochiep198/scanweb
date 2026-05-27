@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
@@ -188,4 +188,48 @@ def test_dataloader(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Dataloader test failed: {str(e)}"
         )
+
+@router.post("/train", status_code=status.HTTP_202_ACCEPTED)
+def train_model(
+    background_tasks: BackgroundTasks,
+    use_augmentation: bool = True,
+    current_user = Depends(get_current_user)
+):
+    """
+    Start the model training pipeline asynchronously in the background (Section 3.3.6).
+    """
+    background_tasks.add_task(
+        TrainingService.run_training_pipeline_task,
+        use_augmentation=use_augmentation
+    )
+    return {
+        "status": "success",
+        "message": "Bắt đầu huấn luyện mô hình EfficientNet-B3 thành công trong nền!"
+    }
+
+@router.get("/logs", status_code=status.HTTP_200_OK)
+def get_training_logs(current_user = Depends(get_current_user)):
+    """
+    Get the active training logs from models/training.log.
+    """
+    import os
+    log_path = "models/training.log"
+    if not os.path.exists(log_path):
+        return {
+            "status": "idle",
+            "logs": "Hệ thống đang rảnh. Chưa bắt đầu huấn luyện."
+        }
+        
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            logs = f.read()
+    except Exception as e:
+        logs = f"Error reading log file: {str(e)}"
+        
+    status_str = "running" if getattr(TrainingService, "is_training_active", False) else "idle"
+    
+    return {
+        "status": status_str,
+        "logs": logs
+    }
 

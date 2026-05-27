@@ -192,6 +192,46 @@ export default function UploadPage() {
     message: string;
   } | null>(null);
 
+  const [logs, setLogs] = useState("Hệ thống đang rảnh. Chưa bắt đầu huấn luyện.");
+  const [isTraining, setIsTraining] = useState(false);
+  const terminalRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchLogs = async () => {
+    if (!accessToken) return;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      const response = await fetch(`${API_URL}/v1/training/logs`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLogs(data.logs);
+        setIsTraining(data.status === "running");
+      }
+    } catch (error) {
+      console.error("Error fetching logs:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!accessToken) return;
+    fetchLogs();
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!isTraining || !accessToken) return;
+    const interval = setInterval(fetchLogs, 1500);
+    return () => clearInterval(interval);
+  }, [isTraining, accessToken]);
+
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [logs]);
+
   useEffect(() => {
     if (!accessToken) return;
 
@@ -405,29 +445,31 @@ export default function UploadPage() {
 
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      const response = await fetch(`${API_URL}/v1/training/metadata`, {
+      const response = await fetch(`${API_URL}/v1/training/train?use_augmentation=${augmentation}`, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch training metadata");
+        throw new Error("Failed to start training pipeline");
       }
 
       const resData = await response.json();
       setResultPopup({
         isOpen: true,
         status: "success",
-        message: `Lấy dữ liệu huấn luyện thành công! Đã tải ${resData.count} bản ghi từ SQL metadata.`,
+        message: resData.message || "Bắt đầu huấn luyện mô hình EfficientNet-B3 thành công trong nền!",
       });
-      console.log("Training metadata loaded:", resData.data);
+      console.log("Training started:", resData);
+      setIsTraining(true);
     } catch (error) {
-      console.error("Error fetching training metadata:", error);
+      console.error("Error starting training:", error);
       setResultPopup({
         isOpen: true,
         status: "error",
-        message: "Không thể kết nối đến server để lấy dữ liệu metadata.",
+        message: "Không thể kết nối đến server để bắt đầu huấn luyện.",
       });
     }
   };
@@ -954,6 +996,19 @@ export default function UploadPage() {
                 <p className={styles.eta}>
                   Thời gian xử lý dự kiến: <strong>~15 phút</strong>
                 </p>
+              </section>
+
+              <section className={styles.logCard}>
+                <div className={styles.logHeader}>
+                  <h3 className={styles.logTitle}>Màn hình log huấn luyện</h3>
+                  <div className={styles.logStatus}>
+                    <span className={`${styles.statusDot} ${isTraining ? styles.statusDotActive : ""}`} />
+                    <span>{isTraining ? "Đang chạy" : "Rảnh"}</span>
+                  </div>
+                </div>
+                <div ref={terminalRef} className={styles.logTerminal}>
+                  {logs}
+                </div>
               </section>
 
               <section className={styles.configCard}>
