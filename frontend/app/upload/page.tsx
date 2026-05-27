@@ -126,14 +126,13 @@ function getStatusText(item: UploadItem) {
 
 const uploadWithProgress = (
   url: string,
-  token: string,
   formData: FormData,
   onProgress: (percent: number) => void
 ): Promise<any> => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.withCredentials = true;
     
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
@@ -167,7 +166,7 @@ const uploadWithProgress = (
 };
 
 export default function UploadPage() {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [scanZones, setScanZones] = useState<{ name: string; value: string }[]>(DEFAULT_SCAN_ZONES);
   const [diagnosticLabels, setDiagnosticLabels] = useState<{ name: string; value: string }[]>(DEFAULT_DIAGNOSTIC_LABELS);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -198,13 +197,11 @@ export default function UploadPage() {
   const terminalRef = useRef<HTMLDivElement | null>(null);
 
   const fetchLogs = async () => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
     try {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/v1/training/logs`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
@@ -217,15 +214,15 @@ export default function UploadPage() {
   };
 
   useEffect(() => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
     fetchLogs();
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!isTraining || !accessToken) return;
+    if (!isTraining || !isAuthenticated) return;
     const interval = setInterval(fetchLogs, 1500);
     return () => clearInterval(interval);
-  }, [isTraining, accessToken]);
+  }, [isTraining, isAuthenticated]);
 
   useEffect(() => {
     if (terminalRef.current) {
@@ -234,15 +231,13 @@ export default function UploadPage() {
   }, [logs]);
 
   useEffect(() => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     const fetchOptions = async () => {
       try {
         const apiUrl = getApiUrl();
         const response = await fetch(`${apiUrl}/v1/upload/options`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          credentials: "include",
         });
         if (response.ok) {
           const data = await response.json();
@@ -259,7 +254,7 @@ export default function UploadPage() {
     };
 
     fetchOptions();
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!showToast) {
@@ -406,14 +401,9 @@ export default function UploadPage() {
         formData.append("label_source", item.labelSource);
         formData.append("dataset_split", item.datasetSplit);
 
-        await uploadWithProgress(
-          `${apiUrl}/v1/upload`,
-          accessToken || "",
-          formData,
-          (progress) => {
-            updateItem(item.id, "progress", progress);
-          }
-        );
+        await uploadWithProgress(`${apiUrl}/v1/upload`, formData, (progress) => {
+          updateItem(item.id, "progress", progress);
+        });
 
         updateItem(item.id, "status", "success");
         updateItem(item.id, "progress", 100);
@@ -442,7 +432,7 @@ export default function UploadPage() {
   };
 
   const handleTrainNow = async () => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       setResultPopup({
         isOpen: true,
         status: "error",
@@ -455,9 +445,7 @@ export default function UploadPage() {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/v1/training/train?use_augmentation=${augmentation}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        credentials: "include",
       });
 
       if (!response.ok) {

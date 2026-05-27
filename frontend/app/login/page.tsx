@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import styles from "@/app/auth/auth.module.css";
 import { useAuth } from "@/app/context/AuthContext";
 import { messages } from "@/app/messages";
-import { getApiUrl } from "@/app/lib/api";
 
 const pageMessages = messages.auth.login;
 const shared = messages.shared;
@@ -21,76 +21,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  const [diagStatus, setDiagStatus] = useState("");
-  const [diagChecking, setDiagChecking] = useState(false);
-
-  const runDiagnostics = async () => {
-    const logDiv = document.getElementById("diag-log-output");
-    const appendLog = (text: string) => {
-      if (logDiv) {
-        logDiv.innerText += "\n" + text;
-      }
-      console.log(text);
-    };
-
-    if (logDiv) {
-      logDiv.innerText = "1. Bắt đầu chẩn đoán...";
-    }
-
-    try {
-      const apiUrl = getApiUrl();
-      appendLog("2. API URL: " + apiUrl);
-      
-      // Test localStorage
-      let storageOk = false;
-      try {
-        localStorage.setItem("__diag_test__", "1");
-        storageOk = localStorage.getItem("__diag_test__") === "1";
-        localStorage.removeItem("__diag_test__");
-        appendLog("3. LocalStorage: Hoạt động");
-      } catch (e: any) {
-        appendLog("3. LocalStorage: Bị lỗi - " + String(e.message || e));
-      }
-
-      // Test cookie
-      let cookieOk = false;
-      try {
-        document.cookie = "__diag_test__=1; path=/; max-age=10";
-        cookieOk = document.cookie.includes("__diag_test__=1");
-        appendLog("4. Cookies: Hoạt động");
-      } catch (e: any) {
-        appendLog("4. Cookies: Bị lỗi - " + String(e.message || e));
-      }
-
-      // Test API Health
-      appendLog("5. Đang kết nối tới API: " + `${apiUrl}/health`);
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-        
-        const res = await fetch(`${apiUrl}/health`, { 
-          mode: 'cors',
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        
-        appendLog(`6. API Response: HTTP ${res.status}`);
-        if (res.ok) {
-          const data = await res.json();
-          appendLog(`7. Dữ liệu API: ${JSON.stringify(data)}`);
-        } else {
-          appendLog(`7. Kết nối thất bại (Lỗi HTTP)`);
-        }
-      } catch (e: any) {
-        appendLog("6. API Response: Thất bại - " + String(e.message || e));
-      }
-
-      appendLog("8. Chẩn đoán kết thúc.");
-    } catch (err: any) {
-      appendLog("Lỗi chẩn đoán tổng quát: " + String(err.message || err));
-    }
-  };
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
@@ -236,101 +166,6 @@ export default function LoginPage() {
                   </Link>
                 </div>
               </form>
-
-              <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', background: '#f8fafc', color: '#334155' }}>
-                <h4 style={{ margin: '0 0 10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600 }}>
-                  <span>Chẩn đoán hệ thống (System Diagnostics)</span>
-                  <button 
-                    type="button" 
-                    id="diag-btn"
-                    onClick={runDiagnostics} 
-                    disabled={diagChecking}
-                    style={{ padding: '4px 8px', fontSize: '11px', cursor: 'pointer', background: '#0052CC', color: '#fff', border: 'none', borderRadius: '4px' }}
-                  >
-                    Kiểm tra
-                  </button>
-                </h4>
-                <pre 
-                  id="diag-log-output"
-                  style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'monospace', background: '#f1f5f9', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                >
-                  Nhấn nút "Kiểm tra" để chẩn đoán kết nối API và bộ nhớ.
-                </pre>
-              </div>
-
-              <script dangerouslySetInnerHTML={{ __html: `
-                (function() {
-                  console.log("Raw diagnostics script loaded");
-                  function setupDiag() {
-                    var btn = document.getElementById("diag-btn");
-                    var logDiv = document.getElementById("diag-log-output");
-                    if (!btn || !logDiv) {
-                      setTimeout(setupDiag, 200);
-                      return;
-                    }
-                    
-                    var bound = false;
-                    function runRawDiag() {
-                      logDiv.innerText = "1. Bắt đầu chẩn đoán (Raw HTML Script)...";
-                      try {
-                        var apiUrl = "https://quochiepho-scanweb-api.hf.space";
-                        logDiv.innerText += "\\n2. API URL mặc định: " + apiUrl;
-                        
-                        var storageOk = false;
-                        try {
-                          localStorage.setItem("__raw_test__", "1");
-                          storageOk = localStorage.getItem("__raw_test__") === "1";
-                          localStorage.removeItem("__raw_test__");
-                          logDiv.innerText += "\\n3. LocalStorage: Hoạt động";
-                        } catch(e) {
-                          logDiv.innerText += "\\n3. LocalStorage: Bị lỗi - " + String(e.message || e);
-                        }
-                        
-                        var cookieOk = false;
-                        try {
-                          document.cookie = "__raw_test__=1; path=/; max-age=10";
-                          cookieOk = document.cookie.includes("__raw_test__=1");
-                          logDiv.innerText += "\\n4. Cookies: Hoạt động";
-                        } catch(e) {
-                          logDiv.innerText += "\\n4. Cookies: Bị lỗi - " + String(e.message || e);
-                        }
-                        
-                        logDiv.innerText += "\\n5. Đang kết nối tới API: " + apiUrl + "/health";
-                        
-                        var controller = new AbortController();
-                        var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
-                        
-                        fetch(apiUrl + "/health", { mode: 'cors', signal: controller.signal })
-                          .then(function(res) {
-                            clearTimeout(timeoutId);
-                            logDiv.innerText += "\\n6. API Response: HTTP " + res.status;
-                            return res.json();
-                          })
-                          .then(function(data) {
-                            logDiv.innerText += "\\n7. Dữ liệu API: " + JSON.stringify(data);
-                            logDiv.innerText += "\\n8. Chẩn đoán kết thúc.";
-                          })
-                          .catch(function(err) {
-                            logDiv.innerText += "\\n6. API Response: Thất bại - " + String(err.message || err);
-                            logDiv.innerText += "\\n7. Chẩn đoán kết thúc.";
-                          });
-                      } catch(err) {
-                        logDiv.innerText += "\\nLỗi chẩn đoán: " + String(err.message || err);
-                      }
-                    }
-
-                    btn.addEventListener("click", function(e) {
-                      e.preventDefault();
-                      runRawDiag();
-                    });
-                    btn.addEventListener("touchstart", function(e) {
-                      e.preventDefault();
-                      runRawDiag();
-                    });
-                  }
-                  setupDiag();
-                })();
-              ` }} />
 
               <div className={styles["trust-bar"]}>
                 <div className={styles["trust-item"]}>

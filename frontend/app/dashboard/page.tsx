@@ -8,7 +8,7 @@ import { DashboardShell } from "@/components/layouts/DashboardShell";
 import styles from "./dashboard.module.css";
 
 export default function DashboardPage() {
-  const { user, accessToken } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [stats, setStats] = useState({
     uploadTodayCount: 0,
     trainedTodayCount: 0,
@@ -16,15 +16,13 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     const fetchStats = async () => {
       try {
         const apiUrl = getApiUrl();
         const response = await fetch(`${apiUrl}/v1/dashboard/stats`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          credentials: "include",
         });
         if (response.ok) {
           const data = await response.json();
@@ -40,7 +38,7 @@ export default function DashboardPage() {
     };
 
     fetchStats();
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   const cards = [
     {

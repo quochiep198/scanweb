@@ -1,7 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import logging
 
@@ -9,7 +8,7 @@ from app.core.config import settings
 from app.core.database import engine, get_db, Base, check_and_update_schema
 from app.routers.auth import router as auth_router
 from app.models import User
-from app.core.security import decode_token
+from app.dependencies.auth import get_current_user
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,9 +55,6 @@ logger.info("R2 Config - ACCESS_KEY_ID present: %s", bool(settings.CLOUDFLARE_R2
 logger.info("R2 Config - SECRET_ACCESS_KEY present: %s", bool(settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY))
 logger.info("R2 Config - BUCKET_NAME present: %s", bool(settings.CLOUDFLARE_R2_BUCKET_NAME))
 logger.info("R2 Config - PUBLIC_URL present: %s", bool(settings.CLOUDFLARE_R2_PUBLIC_URL))
-# Security scheme for Swagger UI
-security = HTTPBearer()
-
 @app.get("/", include_in_schema=False)
 def read_root():
     return RedirectResponse(url="/docs")
@@ -69,35 +65,11 @@ def health():
 
 @app.get("/v1/protected")
 def protected_route(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
 ):
-    """Example protected route requiring JWT token"""
-    token = credentials.credentials
-    payload = decode_token(token)
-
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
-
-    if payload.get("type") != "access":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token type"
-        )
-
-    user = db.query(User).filter(User.id == payload.get("sub")).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
     return {
         "message": "Access granted",
-        "user_id": user.id,
-        "email": user.email,
-        "name": user.name
+        "user_id": current_user.id,
+        "email": current_user.email,
+        "name": current_user.name
     }

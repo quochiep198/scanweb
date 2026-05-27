@@ -1,16 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 import logging
 
+from app.core.auth_cookies import (
+    clear_auth_cookies,
+    get_refresh_token_from_request,
+    set_auth_cookies,
+)
 from app.core.database import get_db
 from app.schemas.auth import (
     RegisterRequest,
     LoginRequest,
-    RefreshRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
-    TokenResponse,
     MessageResponse,
+    UserResponse,
 )
 from app.services.auth_service import AuthService
 from app.services.email_service import send_otp_email, send_verification_email
@@ -56,8 +60,8 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/login", response_model=TokenResponse)
-def login(request: LoginRequest, db: Session = Depends(get_db)):
+@router.post("/login", response_model=MessageResponse)
+def login(request: LoginRequest, response: Response, db: Session = Depends(get_db)):
     """Login with email and password."""
     try:
         user, error = AuthService.authenticate_user(db, request.email, request.password)
@@ -76,21 +80,28 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
     access_token, refresh_token = AuthService.create_tokens(user)
     AuthService.create_refresh_token_record(db, user.id, refresh_token)
+    set_auth_cookies(response, access_token, refresh_token)
 
     logger.info("User logged in: %s", request.email)
 
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-    )
+    return MessageResponse(message="Dang nhap thanh cong", user_id=user.id)
 
 
-@router.post("/refresh", response_model=TokenResponse)
-def refresh_token(request: RefreshRequest, db: Session = Depends(get_db)):
+@router.post("/refresh", response_model=MessageResponse)
+def refresh_token(response: Response, req: Request, db: Session = Depends(get_db)):
     """Refresh access token using refresh token."""
-    token_record, error = AuthService.verify_refresh_token(db, request.refresh_token)
+    refresh_token = get_refresh_token_from_request(req)
+    if not refresh_token:
+        clear_auth_cookies(response)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing",
+        )
+
+    token_record, error = AuthService.verify_refresh_token(db, refresh_token)
 
     if error:
+        clear_auth_cookies(response)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=error,
@@ -103,15 +114,13 @@ def refresh_token(request: RefreshRequest, db: Session = Depends(get_db)):
             detail="User not found or inactive",
         )
 
-    AuthService.revoke_refresh_token(db, request.refresh_token)
+    AuthService.revoke_refresh_token(db, refresh_token)
 
     access_token, new_refresh_token = AuthService.create_tokens(user)
     AuthService.create_refresh_token_record(db, user.id, new_refresh_token)
+    set_auth_cookies(response, access_token, new_refresh_token)
 
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=new_refresh_token,
-    )
+    return MessageResponse(message="Lam moi phien thanh cong", user_id=user.id)
 
 
 @router.post("/forgot-password", response_model=MessageResponse)
@@ -169,10 +178,39 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
 
 
 @router.post("/logout", response_model=MessageResponse)
-def logout(request: RefreshRequest, db: Session = Depends(get_db)):
+def logout(response: Response, req: Request, db: Session = Depends(get_db)):
     """Logout and revoke refresh token."""
-    AuthService.revoke_refresh_token(db, request.refresh_token)
+    refresh_token = get_refresh_token_from_request(req)
+    if refresh_token:
+        AuthService.revoke_refresh_token(db, refresh_token)
+    clear_auth_cookies(response)
     return MessageResponse(message="Dang xuat thanh cong")
+
+
+@router.get("/me", response_model=UserResponse)
+def me(req: Request, db: Session = Depends(get_db)):
+    access_token = req.cookies.get("access_token")
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
+    payload = decode_token(access_token)
+    if not payload or payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+    user = AuthService.get_user_by_id(db, payload.get("sub"))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    return UserResponse.model_validate(user)
 
 
 @router.get("/verify-email", response_model=MessageResponse)

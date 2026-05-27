@@ -28,10 +28,11 @@ export function getApiUrl() {
   try {
     const url = new URL(configuredUrl);
     const currentHost = window.location.hostname;
-    const isViewingFromLan = currentHost && !LOCAL_HOSTS.has(currentHost);
     const usesLoopbackApi = LOCAL_HOSTS.has(url.hostname);
+    const shouldFollowCurrentHost =
+      Boolean(currentHost) && usesLoopbackApi && currentHost !== url.hostname;
 
-    if (isViewingFromLan && usesLoopbackApi) {
+    if (shouldFollowCurrentHost) {
       url.hostname = currentHost;
       return trimTrailingSlash(url.toString());
     }

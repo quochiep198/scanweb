@@ -1,12 +1,9 @@
 "use client";
 
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+
 import { getApiUrl } from "@/app/lib/api";
 import { messages } from "@/app/messages";
-
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
-const USER_KEY = "user";
 
 interface User {
   id: string;
@@ -16,94 +13,22 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  accessToken: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
-
-function setCookie(name: string, value: string, maxAgeSeconds: number) {
-  if (typeof document === "undefined") return;
-  const encodedValue = encodeURIComponent(value);
-  document.cookie = `${name}=${encodedValue}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax; Secure`;
-}
-
-function deleteCookie(name: string) {
-  if (typeof document === "undefined") return;
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax; Secure`;
-}
-
-function readStoredValue(key: string) {
-  try {
-    const value = localStorage.getItem(key);
-    if (value !== null) {
-      return value;
-    }
-  } catch {}
-
-  try {
-    const value = sessionStorage.getItem(key);
-    if (value !== null) {
-      return value;
-    }
-  } catch {}
-
-  try {
-    const value = getCookie(key);
-    if (value !== null) {
-      return decodeURIComponent(value);
-    }
-  } catch {}
-
-  return null;
-}
-
-function writeStoredValue(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {}
-
-  try {
-    sessionStorage.setItem(key, value);
-  } catch {}
-
-  try {
-    // 7 days cookie duration
-    setCookie(key, value, 604800);
-  } catch {}
-}
-
-function removeStoredValue(key: string) {
-  try {
-    localStorage.removeItem(key);
-  } catch {}
-
-  try {
-    sessionStorage.removeItem(key);
-  } catch {}
-
-  try {
-    deleteCookie(key);
-  } catch {}
-}
-
-async function fetchCurrentUser(apiUrl: string, token: string): Promise<User | null> {
-  const response = await fetch(`${apiUrl}/v1/protected`, {
-    headers: { Authorization: `Bearer ${token}` },
+async function fetchCurrentUser(): Promise<User | null> {
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/v1/auth/me`, {
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -112,83 +37,47 @@ async function fetchCurrentUser(apiUrl: string, token: string): Promise<User | n
 
   const userData = await response.json();
   return {
-    id: userData.user_id,
+    id: userData.id,
     email: userData.email,
     name: userData.name,
   };
 }
 
+async function tryRefreshSession(): Promise<boolean> {
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/v1/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  return response.ok;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refreshUser = async () => {
+    const currentUser = await fetchCurrentUser();
+    setUser(currentUser);
+  };
 
   useEffect(() => {
     const bootstrapAuth = async () => {
-      const apiUrl = getApiUrl();
-      const storedAccessToken = readStoredValue(ACCESS_TOKEN_KEY);
-      const storedRefreshToken = readStoredValue(REFRESH_TOKEN_KEY);
-      const storedUser = readStoredValue(USER_KEY);
-
-      if (!storedAccessToken) {
-        setIsLoading(false);
-        return;
-      }
-
-      setAccessToken(storedAccessToken);
-      setRefreshToken(storedRefreshToken);
-
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (err) {
-          console.error("Error parsing stored user:", err);
-        }
-      }
-
       try {
-        const currentUser = await fetchCurrentUser(apiUrl, storedAccessToken);
-        if (currentUser) {
-          setUser(currentUser);
-          writeStoredValue(USER_KEY, JSON.stringify(currentUser));
-          setIsLoading(false);
-          return;
+        let currentUser = await fetchCurrentUser();
+
+        if (!currentUser) {
+          const refreshed = await tryRefreshSession();
+          if (refreshed) {
+            currentUser = await fetchCurrentUser();
+          }
         }
 
-        if (!storedRefreshToken) {
-          throw new Error("Missing refresh token");
-        }
-
-        const refreshResponse = await fetch(`${apiUrl}/v1/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: storedRefreshToken }),
-        });
-
-        if (!refreshResponse.ok) {
-          throw new Error("Refresh token expired");
-        }
-
-        const refreshData = await refreshResponse.json();
-        setAccessToken(refreshData.access_token);
-        setRefreshToken(refreshData.refresh_token);
-        writeStoredValue(ACCESS_TOKEN_KEY, refreshData.access_token);
-        writeStoredValue(REFRESH_TOKEN_KEY, refreshData.refresh_token);
-
-        const refreshedUser = await fetchCurrentUser(apiUrl, refreshData.access_token);
-        if (refreshedUser) {
-          setUser(refreshedUser);
-          writeStoredValue(USER_KEY, JSON.stringify(refreshedUser));
-        }
+        setUser(currentUser);
       } catch (error) {
         console.error("Failed to restore auth session:", error);
         setUser(null);
-        setAccessToken(null);
-        setRefreshToken(null);
-        removeStoredValue(ACCESS_TOKEN_KEY);
-        removeStoredValue(REFRESH_TOKEN_KEY);
-        removeStoredValue(USER_KEY);
       } finally {
         setIsLoading(false);
       }
@@ -202,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch(`${apiUrl}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ email, password }),
     });
 
@@ -210,26 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(error.detail || messages.auth.errors.loginFailed);
     }
 
-    const data = await response.json();
-    setAccessToken(data.access_token);
-    setRefreshToken(data.refresh_token);
-    writeStoredValue(ACCESS_TOKEN_KEY, data.access_token);
-    writeStoredValue(REFRESH_TOKEN_KEY, data.refresh_token);
-
-    try {
-      const nextUser = await fetchCurrentUser(apiUrl, data.access_token);
-      if (nextUser) {
-        setUser(nextUser);
-        writeStoredValue(USER_KEY, JSON.stringify(nextUser));
-      } else {
-        setUser(null);
-        removeStoredValue(USER_KEY);
-      }
-    } catch (error) {
-      console.error("Failed to fetch current user after login:", error);
-      setUser(null);
-      removeStoredValue(USER_KEY);
+    const currentUser = await fetchCurrentUser();
+    if (!currentUser) {
+      throw new Error(messages.auth.errors.loginFailed);
     }
+
+    setUser(currentUser);
   };
 
   const register = async (name: string, email: string, password: string) => {
@@ -237,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch(`${apiUrl}/v1/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ name, email, password }),
     });
 
@@ -247,21 +124,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    if (refreshToken) {
-      const apiUrl = getApiUrl();
-      await fetch(`${apiUrl}/v1/auth/logout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      }).catch(() => {});
-    }
+    const apiUrl = getApiUrl();
+    await fetch(`${apiUrl}/v1/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
 
     setUser(null);
-    setAccessToken(null);
-    setRefreshToken(null);
-    removeStoredValue(ACCESS_TOKEN_KEY);
-    removeStoredValue(REFRESH_TOKEN_KEY);
-    removeStoredValue(USER_KEY);
   };
 
   const forgotPassword = async (email: string) => {
@@ -269,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch(`${apiUrl}/v1/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ email }),
     });
 
@@ -283,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch(`${apiUrl}/v1/auth/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ email, otp, new_password: newPassword }),
     });
 
@@ -296,14 +167,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        accessToken,
         isLoading,
         login,
         register,
         logout,
         forgotPassword,
         resetPassword,
-        isAuthenticated: !!accessToken,
+        isAuthenticated: !!user,
+        refreshUser,
       }}
     >
       {children}

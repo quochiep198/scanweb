@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     CLOUDFLARE_R2_BUCKET_NAME: str = ""
     CLOUDFLARE_R2_PUBLIC_URL: str = ""
 
+    AUTH_COOKIE_DOMAIN: str = ""
+    AUTH_COOKIE_SECURE: bool = False
+    AUTH_COOKIE_SAMESITE: str = "lax"
+
     @property
     def cors_origins(self) -> list[str]:
         origins = {
@@ -51,6 +55,10 @@ class Settings(BaseSettings):
             origins.add(self.FRONTEND_URL.strip().rstrip("/"))
 
         return sorted(origins)
+
+    @property
+    def auth_cookie_secure(self) -> bool:
+        return self.AUTH_COOKIE_SECURE or self.FRONTEND_URL.startswith("https://")
 
     class Config:
         env_file = ".env"
