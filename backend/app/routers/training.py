@@ -193,11 +193,19 @@ def test_dataloader(
 def train_model(
     background_tasks: BackgroundTasks,
     use_augmentation: bool = True,
+    db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """
     Start the model training pipeline asynchronously in the background (Section 3.3.6).
     """
+    metadata = TrainingService.get_training_metadata(db)
+    if len(metadata) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Không có dữ liệu mới để huấn luyện."
+        )
+
     background_tasks.add_task(
         TrainingService.run_training_pipeline_task,
         use_augmentation=use_augmentation

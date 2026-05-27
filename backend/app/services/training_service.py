@@ -217,109 +217,12 @@ class TrainingService:
                 r2_url = None
                 
                 if dataset_size == 0:
-                    TrainingService.write_log("WARNING: Zero records available for training. Running mock training session for pipeline verification.")
-                    # Mock run for testing end-to-end
-                    for epoch in range(1, epochs + 1):
-                        time.sleep(0.5) # Simulate processing time
-                        train_loss = 0.5 - (epoch * 0.05)
-                        train_acc = 0.7 + (epoch * 0.03)
-                        val_loss = 0.65 - (epoch * 0.04)
-                        val_acc = 0.68 + (epoch * 0.02)
-                        f1 = val_acc - 0.02
-                        auc = 0.75 + (epoch * 0.02)
-                        
-                        mlflow.log_metric("train_loss", train_loss, step=epoch)
-                        mlflow.log_metric("validation_loss", val_loss, step=epoch)
-                        mlflow.log_metric("accuracy", val_acc, step=epoch)
-                        mlflow.log_metric("f1_score", f1, step=epoch)
-                        mlflow.log_metric("auc", auc, step=epoch)
-                        
-                        history["epochs"].append(epoch)
-                        history["train_loss"].append(train_loss)
-                        history["train_accuracy"].append(train_acc)
-                        history["validation_loss"].append(val_loss)
-                        history["accuracy"].append(val_acc)
-                        history["f1_score"].append(f1)
-                        history["auc"].append(auc)
-                        
-                        TrainingService.write_log(f"Epoch {epoch}/{epochs}: train_loss={train_loss:.4f}, validation_loss={val_loss:.4f}, accuracy={val_acc:.4f}, f1_score={f1:.4f}, auc={auc:.4f}")
-                        
-                    # Save mock weights
-                    TrainingService.write_log("Saving model weights locally...")
-                    torch.save(model.state_dict(), "models/best_model.pt")
-                    mlflow.log_artifact("models/best_model.pt")
-                    TrainingService.write_log("Saved best model to models/best_model.pt")
-                    
-                    # Create and log other artifacts as required by 3.3.7
-                    TrainingService.write_log("Generating training artifacts: config, metrics & plots...")
-                    # 1. training_config
-                    config_data = {
-                        "model_name": "EfficientNet-B3",
-                        "epochs": epochs,
-                        "batch_size": batch_size,
-                        "learning_rate": lr,
-                        "optimizer": "Adam",
-                        "data_augmentation": use_augmentation,
-                        "dataset_size": dataset_size
-                    }
-                    config_path = "models/training_config.json"
-                    with open(config_path, "w") as f:
-                        json.dump(config_data, f, indent=4)
-                    mlflow.log_artifact(config_path)
-                    
-                    # 2. metrics
-                    metrics_path = "models/metrics.json"
-                    with open(metrics_path, "w") as f:
-                        json.dump(history, f, indent=4)
-                    mlflow.log_artifact(metrics_path)
-                    
-                    # 3. plots
-                    plots_path = "models/plots.png"
-                    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-                    ax1.plot(history["epochs"], history["train_loss"], label="Train Loss", marker='o')
-                    ax1.plot(history["epochs"], history["validation_loss"], label="Val Loss", marker='o')
-                    ax1.set_title("Loss Curves")
-                    ax1.set_xlabel("Epoch")
-                    ax1.set_ylabel("Loss")
-                    ax1.legend()
-                    ax1.grid(True)
-                    
-                    ax2.plot(history["epochs"], history["accuracy"], label="Accuracy", marker='s')
-                    ax2.plot(history["epochs"], history["f1_score"], label="F1 Score", marker='^')
-                    ax2.plot(history["epochs"], history["auc"], label="AUC", marker='d')
-                    ax2.set_title("Metrics Curves")
-                    ax2.set_xlabel("Epoch")
-                    ax2.set_ylabel("Score")
-                    ax2.legend()
-                    ax2.grid(True)
-                    
-                    plt.tight_layout()
-                    plt.savefig(plots_path)
-                    plt.close()
-                    mlflow.log_artifact(plots_path)
-                    
-                    # Upload to Cloudflare R2
-                    try:
-                        TrainingService.write_log("Uploading mock best_model.pt to Cloudflare R2 storage...")
-                        with open("models/best_model.pt", "rb") as f:
-                            model_bytes = f.read()
-                        r2_url = R2Service.upload_file(
-                            file_content=model_bytes,
-                            filename="best_model.pt",
-                            content_type="application/octet-stream",
-                            custom_key="models/best_model.pt"
-                        )
-                        TrainingService.write_log(f"Mock model successfully uploaded to R2. URL: {r2_url}")
-                    except Exception as e:
-                        TrainingService.write_log(f"Failed to upload mock model to R2: {e}")
-                        logger.error(f"Failed to upload mock model to R2: {e}")
-                    
-                    TrainingService.write_log("Mock training pipeline finished successfully.")
+                    TrainingService.write_log("WARNING: Zero records available for training. Exiting pipeline.")
                     return {
-                        "status": "success",
-                        "message": "Mock training completed successfully. Registered in MLflow.",
+                        "status": "warning",
+                        "message": "No new records available for training.",
                         "dataset_size": 0,
-                        "model_url": r2_url
+                        "model_url": None
                     }
                     
                 # Real training loop
