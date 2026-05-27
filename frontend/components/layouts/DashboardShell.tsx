@@ -1,30 +1,24 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { useAuth } from "@/app/context/AuthContext";
 import styles from "@/components/layouts/dashboard-shell.module.css";
 
 type NavItem = {
-  href: string;
+  view: string;
   label: string;
   icon: string;
   disabled?: boolean;
 };
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Quản lý chung", icon: "dashboard" },
-  // { href: "/patients", label: "Hồ sơ bệnh nhân", icon: "person", disabled: true },
-  { href: "/upload", label: "Tải lên & Huấn luyện", icon: "upload_file" },
-  { href: "/measurement", label: "Phân Tích", icon: "straighten" },
-  // { href: "/reports", label: "Báo cáo chẩn đoán", icon: "description", disabled: true },
+  { view: "dashboard", label: "Quản lý chung", icon: "dashboard" },
+  { view: "upload", label: "Tải lên & Huấn luyện", icon: "upload_file" },
+  { view: "measurement", label: "Phân Tích", icon: "straighten" },
 ];
 
-const footerItems: NavItem[] = [
-  // { href: "#", label: "Hỗ trợ kỹ thuật", icon: "support_agent" },
-];
+const footerItems: NavItem[] = [];
 
 function getInitials(name?: string) {
   if (!name) {
@@ -41,10 +35,11 @@ function getInitials(name?: string) {
 
 type DashboardShellProps = {
   children: ReactNode;
+  currentView: string;
+  onViewChange: (view: string) => void;
 };
 
-export function DashboardShell({ children }: DashboardShellProps) {
-  const pathname = usePathname();
+export function DashboardShell({ children, currentView, onViewChange }: DashboardShellProps) {
   const { logout, user } = useAuth();
 
   return (
@@ -87,14 +82,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
           <nav className={styles.nav}>
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = currentView === item.view;
               const className = isActive
                 ? `${styles.navLink} ${styles.navLinkActive}`
                 : styles.navLink;
 
               if (item.disabled) {
                 return (
-                  <span key={item.href} className={className} aria-disabled="true">
+                  <span key={item.view} className={className} aria-disabled="true">
                     <span className="material-symbols-outlined">{item.icon}</span>
                     <span>{item.label}</span>
                   </span>
@@ -102,20 +97,25 @@ export function DashboardShell({ children }: DashboardShellProps) {
               }
 
               return (
-                <Link key={item.href} href={item.href} className={className}>
+                <button
+                  type="button"
+                  key={item.view}
+                  onClick={() => onViewChange(item.view)}
+                  className={className}
+                >
                   <span className="material-symbols-outlined">{item.icon}</span>
                   <span>{item.label}</span>
-                </Link>
+                </button>
               );
             })}
           </nav>
 
           <div className={styles.sidebarFooter}>
             {footerItems.map((item) => (
-              <Link key={item.label} href={item.href} className={styles.navLink}>
+              <button type="button" key={item.label} onClick={() => onViewChange(item.view)} className={styles.navLink}>
                 <span className="material-symbols-outlined">{item.icon}</span>
                 <span>{item.label}</span>
-              </Link>
+              </button>
             ))}
 
             <button type="button" className={styles.navLink} onClick={logout}>

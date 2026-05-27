@@ -8,6 +8,54 @@ from app.schemas.upload import UploadOptionsResponse
 from app.services.r2_service import R2Service
 from app.services.upload_service import UploadService
 from datetime import datetime
+import io
+from PIL import Image
+import pydicom
+import numpy as np
+import cv2
+
+_ocr_reader = None
+
+def get_ocr_reader():
+    global _ocr_reader
+    if _ocr_reader is None:
+        import easyocr
+        # Load English and Vietnamese models
+        _ocr_reader = easyocr.Reader(['vi', 'en'], gpu=False)
+    return _ocr_reader
+
+def redact_burned_text(image_bytes: bytes, filename: str) -> bytes:
+    try:
+        # Convert bytes to OpenCV image
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img is None:
+            return image_bytes
+        
+        # Get OCR Reader and detect text
+        reader = get_ocr_reader()
+        results = reader.readtext(img)
+        
+        # Blur bounding boxes containing text
+        for (bbox, text, prob) in results:
+            pts = np.array(bbox, np.int32)
+            x_min = max(0, int(np.min(pts[:, 0])))
+            y_min = max(0, int(np.min(pts[:, 1])))
+            x_max = min(img.shape[1], int(np.max(pts[:, 0])))
+            y_max = min(img.shape[0], int(np.max(pts[:, 1])))
+            
+            # Apply blackout rectangle to completely obscure text
+            cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 0), -1)
+
+        # Encode back to bytes
+        ext = ".png" if filename.lower().endswith(".png") else ".jpg"
+        success, buffer = cv2.imencode(ext, img)
+        if success:
+            return buffer.tobytes()
+    except Exception as e:
+        print(f"OCR Redaction warning: {e}")
+    
+    return image_bytes
 
 router = APIRouter(prefix="/v1/upload", tags=["Upload"])
 
@@ -137,6 +185,41 @@ def upload_file(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Could not read uploaded file: {str(e)}"
+        )
+
+    # 1.5 Anonymize Patient Information (PHI)
+    try:
+        filename_lower = file.filename.lower() if file.filename else ""
+        if filename_lower.endswith(".dcm"):
+            dicom_data = pydicom.dcmread(io.BytesIO(file_content))
+            tags_to_anonymize = [
+                'PatientName', 'PatientID', 'PatientBirthDate', 'PatientSex', 'PatientAge',
+                'InstitutionName', 'InstitutionAddress', 'InstitutionalDepartmentName',
+                'PhysiciansOfRecord', 'PerformingPhysicianName', 'OperatorsName', 'ReferringPhysicianName'
+            ]
+            for tag in tags_to_anonymize:
+                if tag in dicom_data:
+                    delattr(dicom_data, tag)
+            out_stream = io.BytesIO()
+            dicom_data.save_as(out_stream)
+            file_content = out_stream.getvalue()
+        elif filename_lower.endswith((".png", ".jpg", ".jpeg")):
+            image = Image.open(io.BytesIO(file_content))
+            data = list(image.getdata())
+            image_without_exif = Image.new(image.mode, image.size)
+            image_without_exif.putdata(data)
+            out_stream = io.BytesIO()
+            fmt = "PNG" if filename_lower.endswith(".png") else "JPEG"
+            image_without_exif.save(out_stream, format=fmt)
+            
+            # Additional step: Use OCR to remove burned-in text
+            file_content = redact_burned_text(out_stream.getvalue(), file.filename)
+    except Exception as e:
+        # If anonymization fails, we continue with original file or raise an error depending on strictness.
+        # Since patient privacy is critical, we'll raise an error if parsing fails to avoid leaking PHI.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to anonymize image data: {str(e)}"
         )
 
     # 2. Upload to Cloudflare R2

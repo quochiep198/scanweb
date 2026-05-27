@@ -37,3 +37,4 @@ Thumbs.db
 backend/models/
 backend/mlruns/
 
+/.env.example

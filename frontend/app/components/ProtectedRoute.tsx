@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useEffect, ReactNode } from "react";
 
+import styles from "./loading.module.css";
+
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
@@ -16,9 +18,12 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner" />
-        <p>Đang tải...</p>
+      <div className={styles.overlay}>
+        <div className={styles.modal}>
+          <div className={styles.spinner} />
+          <p className={styles.text}>Đang tải dữ liệu...</p>
+          <p className={styles.subtext}>Vui lòng chờ trong giây lát</p>
+        </div>
       </div>
     );
   }

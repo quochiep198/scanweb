@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useAuth } from "@/app/context/AuthContext";
 import { getApiUrl } from "@/app/lib/api";
-import { DashboardShell } from "@/components/layouts/DashboardShell";
-import styles from "./dashboard.module.css";
+import styles from "../../dashboard/dashboard.module.css";
 
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuth();
@@ -62,9 +60,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <ProtectedRoute>
-      <DashboardShell>
-        <section className={styles.page}>
+    <section className={styles.page}>
           <div className={styles.statsGrid}>
             {cards.map((card) => (
               <article key={card.title} className={styles.statCard}>
@@ -77,8 +73,6 @@ export default function DashboardPage() {
               </article>
             ))}
           </div>
-        </section>
-      </DashboardShell>
-    </ProtectedRoute>
+    </section>
   );
 }

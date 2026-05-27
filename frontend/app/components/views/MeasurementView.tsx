@@ -1,14 +1,10 @@
 "use client";
 
-import ProtectedRoute from "@/app/components/ProtectedRoute";
-import { DashboardShell } from "@/components/layouts/DashboardShell";
-import styles from "./measurement.module.css";
+import styles from "../../measurement/measurement.module.css";
 
 export default function MeasurementPage() {
   return (
-    <ProtectedRoute>
-      <DashboardShell>
-        <div className={styles.container}>
+    <div className={styles.container}>
           <div className={styles.header}>
             <div>
               <h1 className={styles.pageTitle}>Phân Tích</h1>
@@ -170,8 +166,6 @@ export default function MeasurementPage() {
               </div>
             </div>
           </div>
-        </div>
-      </DashboardShell>
-    </ProtectedRoute>
+    </div>
   );
 }

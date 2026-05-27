@@ -2,12 +2,9 @@
 
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 
-import ProtectedRoute from "@/app/components/ProtectedRoute";
-import { DashboardShell } from "@/components/layouts/DashboardShell";
 import { useAuth } from "@/app/context/AuthContext";
 import { getApiUrl } from "@/app/lib/api";
-
-import styles from "./upload.module.css";
+import styles from "../../upload/upload.module.css";
 
 type UploadStatus = "queued" | "uploading" | "success" | "error";
 type ScanRegion = string;
@@ -481,9 +478,7 @@ export default function UploadPage() {
   const readiness = items.length === 0 ? 0 : Math.round((readyCount / items.length) * 100);
 
   return (
-    <ProtectedRoute>
-      <DashboardShell>
-        <div className={styles.page}>
+    <div className={styles.page}>
           <header className={styles.header}>
             <div className={styles.titleBlock}>
               <h1 className={styles.title}>Quản lý tải lên & Huấn luyện AI</h1>
@@ -669,7 +664,7 @@ export default function UploadPage() {
                                 <legend className={styles.groupLegend}>Patients</legend>
                                 <div className={styles.fieldsGrid}>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-anon-code`}>Mã ẩn danh (anonymous_code)</label>
+                                    <label htmlFor={`${item.id}-anon-code`}>Mã ẩn danh</label>
                                     <input
                                       id={`${item.id}-anon-code`}
                                       type="text"
@@ -1084,8 +1079,6 @@ export default function UploadPage() {
               </div>
             </div>
           )}
-        </div>
-      </DashboardShell>
-    </ProtectedRoute>
+    </div>
   );
 }
