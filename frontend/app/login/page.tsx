@@ -141,6 +141,13 @@ export default function LoginPage() {
                   <span>{isLoading ? pageMessages.submitting : pageMessages.submit}</span>
                   <span className="material-symbols-outlined">login</span>
                 </button>
+
+                <div className={styles["register-prompt"]}>
+                  <span>{pageMessages.registerPrompt}</span>
+                  <Link href="/register" className={styles["footer-link"]}>
+                    {pageMessages.registerLink}
+                  </Link>
+                </div>
               </form>
 
               <div className={styles["trust-bar"]}>

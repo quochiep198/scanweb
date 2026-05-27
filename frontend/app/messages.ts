@@ -51,6 +51,8 @@ export const messages = {
       submitting: "Đang đăng nhập...",
       showPassword: "Hiện mật khẩu",
       hidePassword: "Ẩn mật khẩu",
+      registerPrompt: "Chưa có tài khoản? ",
+      registerLink: "Đăng ký ngay",
     },
     register: {
       title: "Đăng ký",

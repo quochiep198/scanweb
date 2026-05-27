@@ -297,6 +297,14 @@
   box-shadow: none;
 }
 
+.register-prompt {
+  margin-top: 16px;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #434654;
+}
+
 /* Trust Bar */
 .trust-bar {
   margin-top: 40px;
