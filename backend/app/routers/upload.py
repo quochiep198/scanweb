@@ -9,10 +9,9 @@ from app.services.r2_service import R2Service
 from app.services.upload_service import UploadService
 from datetime import datetime
 import io
-from PIL import Image
+from PIL import Image, ImageOps, ImageDraw
 import pydicom
 import numpy as np
-import cv2
 
 _ocr_reader = None
 
@@ -24,38 +23,33 @@ def get_ocr_reader():
         _ocr_reader = easyocr.Reader(['vi', 'en'], gpu=False)
     return _ocr_reader
 
-def redact_burned_text(image_bytes: bytes, filename: str) -> bytes:
+def redact_burned_text(image: Image.Image) -> Image.Image:
     try:
-        # Convert bytes to OpenCV image
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is None:
-            return image_bytes
+        # Convert PIL image to numpy array for EasyOCR
+        # EasyOCR works best with RGB, so we convert a copy to RGB safely
+        img_array = np.array(image.convert("RGB"))
         
         # Get OCR Reader and detect text
         reader = get_ocr_reader()
-        results = reader.readtext(img)
+        results = reader.readtext(img_array)
         
         # Blur bounding boxes containing text
+        draw = ImageDraw.Draw(image)
         for (bbox, text, prob) in results:
             pts = np.array(bbox, np.int32)
             x_min = max(0, int(np.min(pts[:, 0])))
             y_min = max(0, int(np.min(pts[:, 1])))
-            x_max = min(img.shape[1], int(np.max(pts[:, 0])))
-            y_max = min(img.shape[0], int(np.max(pts[:, 1])))
+            x_max = min(image.width, int(np.max(pts[:, 0])))
+            y_max = min(image.height, int(np.max(pts[:, 1])))
             
             # Apply blackout rectangle to completely obscure text
-            cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 0), -1)
+            draw.rectangle([x_min, y_min, x_max, y_max], fill="black")
 
-        # Encode back to bytes
-        ext = ".png" if filename.lower().endswith(".png") else ".jpg"
-        success, buffer = cv2.imencode(ext, img)
-        if success:
-            return buffer.tobytes()
+        return image
     except Exception as e:
         print(f"OCR Redaction warning: {e}")
     
-    return image_bytes
+    return image
 
 router = APIRouter(prefix="/v1/upload", tags=["Upload"])
 
@@ -205,15 +199,25 @@ def upload_file(
             file_content = out_stream.getvalue()
         elif filename_lower.endswith((".png", ".jpg", ".jpeg")):
             image = Image.open(io.BytesIO(file_content))
-            data = list(image.getdata())
-            image_without_exif = Image.new(image.mode, image.size)
-            image_without_exif.putdata(data)
-            out_stream = io.BytesIO()
-            fmt = "PNG" if filename_lower.endswith(".png") else "JPEG"
-            image_without_exif.save(out_stream, format=fmt)
             
-            # Additional step: Use OCR to remove burned-in text
-            file_content = redact_burned_text(out_stream.getvalue(), file.filename)
+            # 1. Correct orientation from EXIF (if any) before stripping
+            image = ImageOps.exif_transpose(image)
+            
+            # 2. Use OCR to remove burned-in text directly on PIL image
+            image = redact_burned_text(image)
+            
+            # 3. Save keeping original profile but stripping EXIF
+            fmt = "PNG" if filename_lower.endswith(".png") else "JPEG"
+            if fmt == "JPEG" and image.mode in ("RGBA", "P"):
+                # JPEG doesn't support alpha channel, convert to RGB
+                image = image.convert("RGB")
+                
+            out_stream = io.BytesIO()
+            icc_profile = image.info.get("icc_profile")
+            # Save with 100% quality to avoid degradation
+            image.save(out_stream, format=fmt, quality=100, icc_profile=icc_profile)
+            
+            file_content = out_stream.getvalue()
     except Exception as e:
         # If anonymization fails, we continue with original file or raise an error depending on strictness.
         # Since patient privacy is critical, we'll raise an error if parsing fails to avoid leaking PHI.

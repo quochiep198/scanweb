@@ -26,6 +26,7 @@ Monorepo structure for OsteoAI - medical imaging data collection.
 cd backend
 copy .env.example .env
 pip install -r requirements.txt
+.\.venv\Scripts\activate
 uvicorn app.main:app --reload
 
 # Frontend
