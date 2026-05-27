@@ -32,3 +32,8 @@ env/
 Thumbs.db
 /backend/.env.example
 /frontend/.env.local.example
+
+# Machine Learning outputs
+backend/models/
+backend/mlruns/
+
