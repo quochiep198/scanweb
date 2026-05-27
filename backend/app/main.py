@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -50,6 +51,10 @@ logger.info("Backend logging initialized")
 logger.info("CORS origins: %s", settings.cors_origins)
 # Security scheme for Swagger UI
 security = HTTPBearer()
+
+@app.get("/", include_in_schema=False)
+def read_root():
+    return RedirectResponse(url="/docs")
 
 @app.get('/health')
 def health():
