@@ -24,7 +24,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
-      router.replace("/dashboard");
+      router.replace("/");
     }
   }, [isAuthenticated, isAuthLoading, router]);
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
 
     try {
       await login(email.trim().toLowerCase(), password);
-      router.replace("/dashboard");
+      router.replace("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : messages.auth.errors.loginFailed);
     } finally {
