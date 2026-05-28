@@ -62,26 +62,39 @@ FRONTEND_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-## Vercel Deploy
+## Triển khai thực tế (HuggingFace Spaces & Vercel)
 
-- Frontend project on Vercel:
-  Set Root Directory = `frontend`
-- Frontend environment variables on Vercel:
-  `NEXT_PUBLIC_API_URL=https://your-backend-domain`
-- Backend environment variables on Vercel:
-  `DATABASE_URL`
-  `SECRET_KEY`
-  `ALGORITHM`
-  `ACCESS_TOKEN_EXPIRE_MINUTES`
-  `REFRESH_TOKEN_EXPIRE_DAYS`
-  `OTP_EXPIRE_MINUTES`
-  `OTP_MAX_ATTEMPTS`
-  `OTP_RATE_LIMIT_SECONDS`
-  `LOGIN_MAX_ATTEMPTS`
-  `LOGIN_LOCKOUT_MINUTES`
-  `RESEND_API_KEY`
-  `EMAIL_FROM`
-  `FRONTEND_URL=https://your-frontend-domain`
+Dự án được cấu hình chạy tối ưu theo mô hình:
+- **Backend (FastAPI)** chạy trên **HuggingFace Spaces** (sử dụng Docker).
+- **Frontend (Next.js)** chạy trên **Vercel**.
+
+### 1. Triển khai Backend trên HuggingFace Spaces
+1. Tạo một Space mới trên HuggingFace:
+   - SDK: **Docker**
+   - Chế độ: **Private** (khuyên dùng để bảo vệ mã nguồn) hoặc **Public**.
+2. Đẩy toàn bộ mã nguồn lên Space. File `Dockerfile` ở thư mục gốc sẽ tự động cấu hình và khởi chạy ứng dụng ở cổng `7860`.
+3. **Cấu hình Variables & Secrets trong Settings của Space**:
+   Khai báo các biến môi trường từ file `backend/.env` (vì Git bỏ qua không đẩy file `.env` lên):
+   - `DATABASE_URL` (Bắt buộc - Chuỗi kết nối Neon PostgreSQL)
+   - `SECRET_KEY` (Chuỗi bảo mật JWT)
+   - Các biến cấu hình Cloudflare R2 (nếu có: `CLOUDFLARE_R2_ACCOUNT_ID`, `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`, `CLOUDFLARE_R2_BUCKET_NAME`, `CLOUDFLARE_R2_PUBLIC_URL`).
+4. Kiểm tra xem Space đã ở trạng thái **Running** (màu xanh lá) chưa.
+5. Xác định **Direct App URL** (Đường dẫn chạy trực tiếp) của Space:
+   - Có định dạng: `https://<username>-<tên-space>.hf.space` (Ví dụ: `https://quochiepho-scanweb-api.hf.space`).
+   - *Lưu ý: Không dùng link trang giao diện dạng `huggingface.co/spaces/...`*.
+
+### 2. Triển khai Frontend trên Vercel
+1. Liên kết và nhập dự án của bạn trên Vercel.
+2. Thiết lập cấu hình dự án:
+   - **Root Directory**: `frontend`
+   - **Framework Preset**: `Next.js`
+3. **Cấu hình Environment Variables trên Vercel**:
+   - **`NEXT_PUBLIC_API_URL`**: Điền **Direct App URL** của HuggingFace Space ở trên (Ví dụ: `https://quochiepho-scanweb-api.hf.space` - *Lưu ý không thêm dấu gạch chéo `/` ở cuối*).
+   - **Nếu HuggingFace Space của bạn là Private**:
+     - Thêm biến **`HF_TOKEN`**: Điền mã HuggingFace Access Token của bạn (Tạo trong HuggingFace Settings -> Access Tokens -> chọn loại **Read**).
+     - Token này giúp Vercel vượt qua lớp bảo mật để gọi API của Space Private một cách an toàn.
+4. **Lưu ý quan trọng khi thay đổi cấu hình**:
+   - Mỗi lần thay đổi các biến môi trường (`NEXT_PUBLIC_API_URL` hoặc `HF_TOKEN`) trên Vercel, bạn bắt buộc phải **Re-deploy** dự án thì cấu hình mới mới có hiệu lực trên server.
 
 ## Project Structure
 
@@ -109,9 +122,3 @@ scanweb/
 - [Architecture Overview](./docs/rules/architecture.md)
 - [Backend Guidelines](./docs/rules/backend.md)
 - [Frontend Guidelines](./docs/rules/frontend.md)
-
-## Deploy
-
-- **Frontend**: Vercel (set Root Directory to `frontend`)
-- **Backend**: Vercel Functions or separate service
-- Deploy again
