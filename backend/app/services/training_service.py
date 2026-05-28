@@ -247,6 +247,10 @@ class TrainingService:
                 model.to(device)
                 TrainingService.write_log(f"Device initialized: {device}")
                 
+                # Save initial model state to guarantee best_model.pt exists
+                torch.save(model.state_dict(), "models/best_model.pt")
+                TrainingService.write_log("Initialized models/best_model.pt checkpoint.")
+                
                 TrainingService.write_log("Initializing PyTorch DataLoader...")
                 dataloader = TrainingService.get_training_dataloader(
                     db=db,
