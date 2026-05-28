@@ -106,11 +106,11 @@ class TrainingService:
                 Patient.age,
                 Patient.sex,
                 Patient.bmi,
-                OsteoporosisLabel.dataset_split
+                XRayImage.dataset_split
             )
             .join(OsteoporosisLabel, XRayImage.image_id == OsteoporosisLabel.image_id)
             .join(Patient, XRayImage.patient_id == Patient.patient_id)
-            .filter(OsteoporosisLabel.dataset_split == "train")
+            .filter(XRayImage.dataset_split == "train")
             .filter(XRayImage.is_trained.isnot(True))
             .all()
         )
@@ -252,7 +252,7 @@ class TrainingService:
                     )
                     .join(OsteoporosisLabel, XRayImage.image_id == OsteoporosisLabel.image_id)
                     .join(Patient, XRayImage.patient_id == Patient.patient_id)
-                    .filter(OsteoporosisLabel.dataset_split == "validation")
+                    .filter(XRayImage.dataset_split == "validation")
                     .all()
                 )
                 val_metadata = [
