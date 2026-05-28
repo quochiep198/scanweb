@@ -17,6 +17,12 @@ async function handler(
   headers.delete("connection");
   headers.delete("content-length");
 
+  // Attach Hugging Face Token if proxying to a private HF Space
+  const hfToken = process.env.HF_TOKEN;
+  if (hfToken) {
+    headers.set("Authorization", `Bearer ${hfToken}`);
+  }
+
   const backendResponse = await fetch(targetUrl, {
     method: request.method,
     headers,
