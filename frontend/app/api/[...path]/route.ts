@@ -19,6 +19,7 @@ async function handler(
 
   // Attach Hugging Face Token if proxying to a private HF Space
   const hfToken = process.env.HF_TOKEN;
+  console.log(`[Proxy] targetUrl: ${targetUrl}, hfToken present: ${!!hfToken}`);
   if (hfToken) {
     headers.set("Authorization", `Bearer ${hfToken}`);
   }
