@@ -76,7 +76,22 @@ class OsteoporosisDataset(Dataset):
             }
         except Exception as e:
             logger.error(f"Error loading dataset item at index {idx} (path: {image_path}): {e}")
-            raise e
+            
+            # Try to load a different random item from the dataset to avoid crashing the entire training run
+            import random
+            if not hasattr(self, "_failed_indices"):
+                self._failed_indices = set()
+            self._failed_indices.add(idx)
+            
+            # Find all indices that have not failed yet
+            available_indices = [i for i in range(len(self.metadata)) if i not in self._failed_indices]
+            if not available_indices:
+                logger.error("All dataset items failed to load. Raising exception to halt training.")
+                raise e
+                
+            next_idx = random.choice(available_indices)
+            logger.info(f"Retrying with dataset item at index {next_idx}...")
+            return self.__getitem__(next_idx)
 
 class TrainingService:
     is_training_active = False
