@@ -30,7 +30,10 @@ class UploadService:
         dxa_site: str = None,
         dxa_date: datetime.date = None,
         label_source: str = "DXA",
-        dataset_split: str = None
+        # split, source and duplicate control
+        dataset_split: str = None,
+        source: str = "internal",
+        image_hash: str = None
     ):
         # 1. Check if patient exists
         patient = db.query(Patient).filter(Patient.anonymous_code == anonymous_code).first()
@@ -54,7 +57,7 @@ class UploadService:
             if bmi is not None: patient.bmi = bmi
             db.flush()
 
-        # 2. Create XRayImage
+        # 2. Create XRayImage (saving split, source, and image_hash here)
         xray_image = XRayImage(
             patient_id=patient.patient_id,
             image_path=image_path,
@@ -63,12 +66,16 @@ class UploadService:
             body_part=body_part,
             scanner_vendor=scanner_vendor,
             pixel_spacing=pixel_spacing,
-            image_quality=image_quality
+            image_quality=image_quality,
+            dataset_split=dataset_split,
+            source=source,
+            image_hash=image_hash,
+            is_trained=False
         )
         db.add(xray_image)
         db.flush() # Populate image_id
 
-        # 3. Create OsteoporosisLabel
+        # 3. Create OsteoporosisLabel (removed dataset_split from label)
         osteo_label = OsteoporosisLabel(
             image_id=xray_image.image_id,
             label=label,
@@ -76,8 +83,7 @@ class UploadService:
             bmd=bmd,
             dxa_site=dxa_site,
             dxa_date=dxa_date,
-            label_source=label_source,
-            dataset_split=dataset_split
+            label_source=label_source
         )
         db.add(osteo_label)
         

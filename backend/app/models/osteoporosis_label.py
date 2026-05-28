@@ -12,4 +12,3 @@ class OsteoporosisLabel(Base):
     dxa_site = Column(Enum('lumbar_spine', 'femoral_neck', 'total_hip', 'forearm', 'other', name='dxa_sites'), nullable=True)
     dxa_date = Column(Date, nullable=True)
     label_source = Column(Enum('DXA', 'doctor', 'rule_based', name='label_sources'), default='DXA')
-    dataset_split = Column(Enum('train', 'validation', 'test', name='dataset_splits'), nullable=True)

@@ -197,6 +197,18 @@ def upload_file(
             detail=f"Could not read uploaded file: {str(e)}"
         )
 
+    # Calculate SHA-256 hash to check for duplicate uploads
+    import hashlib
+    image_hash = hashlib.sha256(file_content).hexdigest()
+    
+    from app.models.xray_image import XRayImage
+    duplicate = db.query(XRayImage).filter(XRayImage.image_hash == image_hash).first()
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File anh nay da ton tai trong he thong."
+        )
+
     # 1.5 Anonymize Patient Information (PHI)
     try:
         filename_lower = file.filename.lower() if file.filename else ""
@@ -297,7 +309,9 @@ def upload_file(
             dxa_site=dxa_site_val,
             dxa_date=dxa_date_val,
             label_source=label_source_val,
-            dataset_split=dataset_split_val
+            dataset_split=dataset_split_val,
+            source="internal",
+            image_hash=image_hash
         )
         return {
             "status": "success",

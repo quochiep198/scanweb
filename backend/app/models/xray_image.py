@@ -16,3 +16,6 @@ class XRayImage(Base):
     is_trained = Column(Boolean, default=False, nullable=False)
     created_at = Column(Date, default=func.current_date(), nullable=False)
     trained_date = Column(Date, nullable=True)
+    source = Column(String(50), default="internal", nullable=False)
+    dataset_split = Column(String(50), nullable=True)
+    image_hash = Column(String(64), unique=True, nullable=True)
