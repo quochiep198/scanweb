@@ -258,7 +258,7 @@ class TrainingService:
                 mlflow.log_param("data_augmentation", use_augmentation)
                 
                 TrainingService.write_log("Initializing OsteoporosisEfficientNetB3 model backbone...")
-                model = OsteoporosisEfficientNetB3(num_classes=3, pretrained=False)
+                model = OsteoporosisEfficientNetB3(num_classes=3, pretrained=True)
                 criterion = nn.CrossEntropyLoss()
                 optimizer = optim.Adam(model.parameters(), lr=lr)
                 

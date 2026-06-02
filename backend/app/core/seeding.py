@@ -25,7 +25,7 @@ def seed_data():
         diagnostic_labels = [
             {"name": "Bình thường", "value": "normal"},
             {"name": "Thiếu xương", "value": "osteopenia"},
-            {"name": "Lở xương", "value": "osteoporosis"},
+            {"name": "Loãng xương", "value": "osteoporosis"},
         ]
         for dl in diagnostic_labels:
             exists = db.query(DiagnosticLabel).filter(DiagnosticLabel.value == dl["value"]).first()

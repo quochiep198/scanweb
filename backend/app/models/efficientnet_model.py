@@ -28,7 +28,7 @@ class OsteoporosisEfficientNetB3(nn.Module):
         self.meta_fc = nn.Sequential(
             nn.Linear(3, 16),
             nn.ReLU(),
-            nn.BatchNorm1d(16)
+            nn.LayerNorm(16)
         )
         
         # Combined classifier: inputs image features (1536) + metadata features (16)
@@ -47,19 +47,9 @@ class OsteoporosisEfficientNetB3(nn.Module):
         # Extract image features
         img_feats = self.backbone(x) # shape: (batch_size, 1536)
         
-        # Extract metadata features
-        # BatchNorm1d requires batch_size > 1. If batch_size is 1, bypass BatchNorm1d or handle gracefully.
-        if meta.shape[0] == 1 and self.training:
-            # Avoid batch norm crash during training with batch size 1
-            meta_feats = meta
-            # We can map it via self.meta_fc's Linear layer directly if batch size is 1
-            for layer in self.meta_fc:
-                if isinstance(layer, nn.BatchNorm1d):
-                    continue
-                meta_feats = layer(meta_feats)
-        else:
-            meta_feats = self.meta_fc(meta) # shape: (batch_size, 16)
-            
+        # Extract metadata features using LayerNorm (safe for all batch sizes)
+        meta_feats = self.meta_fc(meta) # shape: (batch_size, 16)
+        
         # Concatenate image features and metadata features
         combined_feats = torch.cat([img_feats, meta_feats], dim=1) # shape: (batch_size, 1552)
         
