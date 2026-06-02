@@ -43,7 +43,7 @@ export function DashboardShell({ children, currentView, onViewChange }: Dashboar
   const { logout, user } = useAuth();
 
   return (
-    <div className={styles.shell}>
+    <div className={`${styles.shell} dashboard-shell-root`}>
       <header className={styles.topbar}>
         <div className={styles.brand}>OsteoScan DXA</div>
 

@@ -13,16 +13,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  height: 80px;
-  padding: 0 28px;
+  gap: 16px;
+  height: 56px;
+  padding: 0 20px;
   background: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid #cfd7e6;
   backdrop-filter: blur(16px);
 }
 
 .brand {
-  font-size: 2rem;
+  font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: #0f43a9;
@@ -30,11 +30,11 @@
 
 .search {
   flex: 1;
-  max-width: 520px;
+  max-width: 400px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 20px;
+  gap: 8px;
+  padding: 0 14px;
   border: 1px solid #b8c4da;
   border-radius: 999px;
   background: #f5f7fb;
@@ -43,10 +43,10 @@
 
 .search input {
   width: 100%;
-  height: 58px;
+  height: 34px;
   border: 0;
   background: transparent;
-  font-size: 1.1rem;
+  font-size: 0.88rem;
   color: #2a3342;
   outline: none;
 }
@@ -58,8 +58,8 @@
 }
 
 .iconButton {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -78,59 +78,63 @@
 }
 
 .avatar {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   border-radius: 999px;
   background: linear-gradient(135deg, #133f9d, #1d77dd);
   color: #fff;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   box-shadow: 0 10px 24px rgba(13, 61, 155, 0.18);
 }
 
 .frame {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
 }
 
 .sidebar {
   position: sticky;
-  top: 80px;
-  height: calc(100vh - 80px);
-  padding: 24px 20px;
+  top: 56px;
+  height: calc(100vh - 56px);
+  padding: 12px 14px;
   border-right: 1px solid #cfd7e6;
   background: rgba(248, 250, 255, 0.96);
 }
 
 .clinicCard {
   display: grid;
-  grid-template-columns: 48px 1fr;
-  gap: 14px;
-  padding: 18px 12px 22px;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  padding: 10px 8px 14px;
 }
 
 .clinicIcon {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 10px;
   background: linear-gradient(180deg, #1763d6, #0d4fc7);
   color: #fff;
 }
 
+.clinicIcon span {
+  font-size: 20px !important;
+}
+
 .clinicTitle {
   margin: 0;
-  font-size: 1.45rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: #0f43a9;
 }
 
 .clinicSubtitle {
-  margin: 4px 0 0;
-  font-size: 0.95rem;
+  margin: 2px 0 0;
+  font-size: 0.75rem;
   line-height: 1.45;
   color: #495062;
   text-transform: uppercase;
@@ -140,22 +144,22 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 24px;
+  gap: 4px;
+  margin-top: 14px;
 }
 
 .navLink {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   width: 100%;
-  padding: 14px 16px;
+  padding: 8px 12px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 8px;
   background: transparent;
   color: #2e3648;
   text-align: left;
-  font-size: 1.05rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
@@ -169,7 +173,7 @@
 .navLinkActive {
   background: linear-gradient(90deg, #1876e8, #1568d6);
   color: #fff;
-  box-shadow: 0 12px 24px rgba(21, 104, 214, 0.22);
+  box-shadow: 0 8px 16px rgba(21, 104, 214, 0.16);
 }
 
 .sidebarFooter {
@@ -183,7 +187,7 @@
 
 .content {
   min-width: 0;
-  padding: 36px 40px 48px;
+  padding: 16px 20px 24px;
 }
 
 @media (max-width: 1100px) {

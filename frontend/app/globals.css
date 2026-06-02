@@ -27,3 +27,45 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Restyle all pages within the dashboard shell with smaller text and tighter margins */
+html:has(.dashboard-shell-root) {
+  font-size: 14.5px !important;
+}
+
+.dashboard-shell-root [class*="Card"],
+.dashboard-shell-root [class*="card"] {
+  padding: 14px 16px !important;
+}
+
+.dashboard-shell-root [class*="Grid"],
+.dashboard-shell-root [class*="grid"] {
+  gap: 12px !important;
+}
+
+.dashboard-shell-root [class*="field"],
+.dashboard-shell-root [class*="Field"] {
+  gap: 4px !important;
+}
+
+.dashboard-shell-root [class*="field"] label,
+.dashboard-shell-root [class*="Field"] label {
+  font-size: 0.68rem !important;
+}
+
+.dashboard-shell-root input,
+.dashboard-shell-root select {
+  min-height: 32px !important;
+  padding: 4px 10px !important;
+  font-size: 0.85rem !important;
+}
+
+.dashboard-shell-root button {
+  min-height: unset !important;
+  padding: 6px 14px !important;
+  font-size: 0.85rem !important;
+}
+
+.dashboard-shell-root button span.material-symbols-outlined {
+  font-size: 20px !important;
+}

@@ -144,9 +144,6 @@ export default function LoginPage() {
                     <span>{pageMessages.rememberMe}</span>
                   </label>
                   <div className={styles["options-links"]}>
-                    <Link href="/register" className={styles["footer-link"]}>
-                      {pageMessages.registerLink}
-                    </Link>
                     <span className={styles["links-divider"]}>|</span>
                     <Link href="/forgot-password" className={styles["footer-link"]}>
                       {pageMessages.forgotPassword}
@@ -199,7 +196,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className={`${styles["feature-card"]} ${styles["default"]}`}>
+              {/* <div className={`${styles["feature-card"]} ${styles["default"]}`}>
                 <div className={`${styles["feature-icon"]} ${styles["default"]}`}>
                   <span className="material-symbols-outlined">analytics</span>
                 </div>
@@ -207,7 +204,7 @@ export default function LoginPage() {
                   <h4>{shared.featureReportTitle}</h4>
                   <p>{shared.featureReportDescription}</p>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
