@@ -182,7 +182,7 @@ export default function UploadPage() {
   const [items, setItems] = useState<UploadItem[]>([]);
   const [augmentation, setAugmentation] = useState(false);
   const [crossValidation, setCrossValidation] = useState(true);
-  const [selectedModel, setSelectedModel] = useState("OsteoScan v2.4 (Phan doan xuong)");
+  const [selectedModel, setSelectedModel] = useState("EfficientNet-B3");
   const [resultPopup, setResultPopup] = useState<{
     isOpen: boolean;
     status: "success" | "error";
@@ -343,7 +343,23 @@ export default function UploadPage() {
           return item;
         }
 
-        return { ...item, [key]: value };
+        const newItem = { ...item, [key]: value };
+
+        // Automatically calculate BMI if height or weight changes
+        if (key === "heightCm" || key === "weightKg") {
+          const height = parseFloat(newItem.heightCm);
+          const weight = parseFloat(newItem.weightKg);
+
+          if (!isNaN(height) && height > 0 && !isNaN(weight) && weight > 0) {
+            // BMI = weight / (height / 100)^2
+            const calculatedBmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
+            newItem.bmi = calculatedBmi;
+          } else {
+            newItem.bmi = "";
+          }
+        }
+
+        return newItem;
       })
     );
   };
@@ -653,7 +669,7 @@ export default function UploadPage() {
                               </span>
                               {expandedItems[item.id]
                                 ? "Thu gọn thông số lâm sàng"
-                                : "Cấu hình chi tiết dữ liệu lâm sàng (18 thông số)"}
+                                : "Cấu hình chi tiết dữ liệu lâm sàng"}
                             </button>
                           </div>
 
@@ -702,50 +718,48 @@ export default function UploadPage() {
                                     </select>
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-height`}>Chiều cao (height_cm)</label>
-                                    <input
-                                      id={`${item.id}-height`}
-                                      type="text"
-                                      value={item.heightCm}
-                                      placeholder="VD: 165.5"
-                                      onChange={(event) =>
-                                        updateItem(item.id, "heightCm", event.target.value)
-                                      }
-                                    />
-                                  </div>
-                                  <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-weight`}>Cân nặng (weight_kg)</label>
-                                    <input
-                                      id={`${item.id}-weight`}
-                                      type="text"
-                                      value={item.weightKg}
-                                      placeholder="VD: 58.2"
-                                      onChange={(event) =>
-                                        updateItem(item.id, "weightKg", event.target.value)
-                                      }
-                                    />
-                                  </div>
-                                  <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-bmi`}>Chỉ số BMI (bmi)</label>
-                                    <input
-                                      id={`${item.id}-bmi`}
-                                      type="text"
-                                      value={item.bmi}
-                                      placeholder="VD: 21.3"
-                                      onChange={(event) =>
-                                        updateItem(item.id, "bmi", event.target.value)
-                                      }
-                                    />
-                                  </div>
+                                     <label htmlFor={`${item.id}-height`}>Chiều cao (height_cm)</label>
+                                     <input
+                                       id={`${item.id}-height`}
+                                       type="text"
+                                       value={item.heightCm}
+                                       placeholder="VD: 165.5"
+                                       onChange={(event) =>
+                                         updateItem(item.id, "heightCm", event.target.value)
+                                       }
+                                     />
+                                   </div>
+                                   <div className={styles.field}>
+                                     <label htmlFor={`${item.id}-weight`}>Cân nặng (weight_kg)</label>
+                                     <input
+                                       id={`${item.id}-weight`}
+                                       type="text"
+                                       value={item.weightKg}
+                                       placeholder="VD: 58.2"
+                                       onChange={(event) =>
+                                         updateItem(item.id, "weightKg", event.target.value)
+                                       }
+                                     />
+                                   </div>
+                                   <div className={styles.field}>
+                                     <label htmlFor={`${item.id}-bmi`}>Chỉ số BMI (bmi) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}></span></label>
+                                     <input
+                                       id={`${item.id}-bmi`}
+                                       type="text"
+                                       value={item.bmi}
+                                       placeholder="Tự động tính"
+                                       disabled
+                                     />
+                                   </div>
                                 </div>
                               </fieldset>
 
                               {/* XRay Images Group */}
-                              <fieldset className={styles.fieldGroup}>
+                              {/* <fieldset className={styles.fieldGroup}>
                                 <legend className={styles.groupLegend}>Xray_images</legend>
                                 <div className={styles.fieldsGrid}>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-xray-date`}>Ngày chụp (xray_date)</label>
+                                    <label htmlFor={`${item.id}-xray-date`}>Ngày chụp (xray_date) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <input
                                       id={`${item.id}-xray-date`}
                                       type="date"
@@ -753,16 +767,18 @@ export default function UploadPage() {
                                       onChange={(event) =>
                                         updateItem(item.id, "xrayDate", event.target.value)
                                       }
+                                      disabled
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-view-type`}>Tư thế (view_type)</label>
+                                    <label htmlFor={`${item.id}-view-type`}>Tư thế (view_type) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <select
                                       id={`${item.id}-view-type`}
                                       value={item.viewType}
                                       onChange={(event) =>
                                         updateItem(item.id, "viewType", event.target.value)
                                       }
+                                      disabled
                                     >
                                       <option value="AP">AP (Trước - Sau)</option>
                                       <option value="Lateral">Lateral (Nghiêng)</option>
@@ -771,13 +787,14 @@ export default function UploadPage() {
                                     </select>
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-body-part`}>Vùng quét (body_part)</label>
+                                    <label htmlFor={`${item.id}-body-part`}>Vùng quét (body_part) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <select
                                       id={`${item.id}-body-part`}
                                       value={item.bodyPart}
                                       onChange={(event) =>
                                         updateItem(item.id, "bodyPart", event.target.value)
                                       }
+                                      disabled
                                     >
                                       {scanZones.map((zone) => (
                                         <option key={zone.value} value={zone.value}>
@@ -787,7 +804,7 @@ export default function UploadPage() {
                                     </select>
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-vendor`}>Hãng máy (scanner_vendor)</label>
+                                    <label htmlFor={`${item.id}-vendor`}>Hãng máy (scanner_vendor) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <input
                                       id={`${item.id}-vendor`}
                                       type="text"
@@ -796,10 +813,11 @@ export default function UploadPage() {
                                       onChange={(event) =>
                                         updateItem(item.id, "scannerVendor", event.target.value)
                                       }
+                                      disabled
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-spacing`}>Khoảng cách pixel (pixel_spacing)</label>
+                                    <label htmlFor={`${item.id}-spacing`}>Khoảng cách pixel (pixel_spacing) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <input
                                       id={`${item.id}-spacing`}
                                       type="text"
@@ -808,16 +826,18 @@ export default function UploadPage() {
                                       onChange={(event) =>
                                         updateItem(item.id, "pixelSpacing", event.target.value)
                                       }
+                                      disabled
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-quality`}>Chất lượng (image_quality)</label>
+                                    <label htmlFor={`${item.id}-quality`}>Chất lượng (image_quality) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <select
                                       id={`${item.id}-quality`}
                                       value={item.imageQuality}
                                       onChange={(event) =>
                                         updateItem(item.id, "imageQuality", event.target.value)
                                       }
+                                      disabled
                                     >
                                       <option value="excellent">Excellent (Xuất sắc)</option>
                                       <option value="good">Good (Tốt)</option>
@@ -826,7 +846,7 @@ export default function UploadPage() {
                                     </select>
                                   </div>
                                 </div>
-                              </fieldset>
+                              </fieldset> */}
 
                               {/* Osteoporosis Labels Group */}
                               <fieldset className={styles.fieldGroup}>
@@ -848,8 +868,8 @@ export default function UploadPage() {
                                       ))}
                                     </select>
                                   </div>
-                                  <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-tscore`}>Chỉ số T-score (t_score)</label>
+                                  {/* <div className={styles.field}>
+                                    <label htmlFor={`${item.id}-tscore`}>Chỉ số T-score (t_score) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <input
                                       id={`${item.id}-tscore`}
                                       type="text"
@@ -858,10 +878,11 @@ export default function UploadPage() {
                                       onChange={(event) =>
                                         updateItem(item.id, "tScore", event.target.value)
                                       }
+                                      disabled
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-bmd`}>Mật độ xương (bmd)</label>
+                                    <label htmlFor={`${item.id}-bmd`}>Mật độ xương (bmd) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <input
                                       id={`${item.id}-bmd`}
                                       type="text"
@@ -870,16 +891,18 @@ export default function UploadPage() {
                                       onChange={(event) =>
                                         updateItem(item.id, "bmd", event.target.value)
                                       }
+                                      disabled
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-dxa-site`}>Vị trí DXA (dxa_site)</label>
+                                    <label htmlFor={`${item.id}-dxa-site`}>Vị trí DXA (dxa_site) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <select
                                       id={`${item.id}-dxa-site`}
                                       value={item.dxaSite}
                                       onChange={(event) =>
                                         updateItem(item.id, "dxaSite", event.target.value)
                                       }
+                                      disabled
                                     >
                                       <option value="lumbar_spine">Cột sống thắt lưng</option>
                                       <option value="femoral_neck">Cổ xương đùi</option>
@@ -889,7 +912,7 @@ export default function UploadPage() {
                                     </select>
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-dxa-date`}>Ngày đo DXA (dxa_date)</label>
+                                    <label htmlFor={`${item.id}-dxa-date`}>Ngày đo DXA (dxa_date) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <input
                                       id={`${item.id}-dxa-date`}
                                       type="date"
@@ -897,22 +920,24 @@ export default function UploadPage() {
                                       onChange={(event) =>
                                         updateItem(item.id, "dxaDate", event.target.value)
                                       }
+                                      disabled
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-source`}>Nguồn nhãn (label_source)</label>
+                                    <label htmlFor={`${item.id}-source`}>Nguồn nhãn (label_source) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
                                     <select
                                       id={`${item.id}-source`}
                                       value={item.labelSource}
                                       onChange={(event) =>
                                         updateItem(item.id, "labelSource", event.target.value)
                                       }
+                                      disabled
                                     >
                                       <option value="DXA">DXA (Thiết bị DXA)</option>
                                       <option value="doctor">Doctor (Bác sĩ chẩn đoán)</option>
                                       <option value="rule_based">Rule-based (Thuật toán tự động)</option>
                                     </select>
-                                  </div>
+                                  </div> */}
                                   <div className={styles.field}>
                                     <label htmlFor={`${item.id}-split`}>Phân chia tập dữ liệu (dataset_split)</label>
                                     <select
@@ -1007,40 +1032,41 @@ export default function UploadPage() {
                 </div>
               </section>
 
-              <section className={styles.configCard}>
+              {/* <section className={styles.configCard}>
                 <p className={styles.configLabel}>Cấu hình mô hình</p>
 
                 <div className={styles.configField}>
-                  <label htmlFor="model-select">Mô hình cơ sở</label>
+                  <label htmlFor="model-select">Mô hình cơ sở <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Cố định)</span></label>
                   <select
                     id="model-select"
                     value={selectedModel}
                     onChange={(event) => setSelectedModel(event.target.value)}
+                    disabled
                   >
-                    <option>OsteoScan v2.4 (Phân đoạn xương)</option>
-                    <option>BoneDensity-Net (Phân loại T-score)</option>
-                    <option>Fracture-Check v1.0 (Phát hiện gãy xương)</option>
+                    <option value="EfficientNet-B3">EfficientNet-B3 (Phân loại loãng xương)</option>
                   </select>
                 </div>
 
-                <label className={styles.checkRow}>
+                <label className={styles.checkRow} style={{ opacity: 0.6, cursor: "not-allowed" }}>
                   <input
                     type="checkbox"
                     checked={augmentation}
                     onChange={(event) => setAugmentation(event.target.checked)}
+                    disabled
                   />
-                  <span>Sử dụng Data Augmentation</span>
+                  <span>Sử dụng Data Augmentation <span style={{fontSize: "0.7rem", color: "#94a3b8"}}>(Cố định - Không dùng)</span></span>
                 </label>
 
-                <label className={styles.checkRow}>
+                <label className={styles.checkRow} style={{ opacity: 0.6, cursor: "not-allowed" }}>
                   <input
                     type="checkbox"
                     checked={crossValidation}
                     onChange={(event) => setCrossValidation(event.target.checked)}
+                    disabled
                   />
-                  <span>Tự động hóa Cross-validation</span>
+                  <span>Tự động hóa Cross-validation <span style={{fontSize: "0.7rem", color: "#94a3b8"}}>(Cố định - Bật)</span></span>
                 </label>
-              </section>
+              </section> */}
             </aside>
           </div>
 
