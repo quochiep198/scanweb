@@ -193,6 +193,59 @@ export default function UploadPage() {
   const [isTraining, setIsTraining] = useState(false);
   const terminalRef = useRef<HTMLDivElement | null>(null);
 
+  // Training History States
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyLimit] = useState(5);
+  const [historySearchTrainer, setHistorySearchTrainer] = useState("");
+  const [historySearchDate, setHistorySearchDate] = useState("");
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+  const fetchHistory = async (page: number, trainer: string = "", date: string = "") => {
+    if (!isAuthenticated) return;
+    setIsHistoryLoading(true);
+    try {
+      const apiUrl = getApiUrl();
+      let url = `${apiUrl}/v1/training/history?page=${page}&limit=${historyLimit}`;
+      if (trainer.trim()) {
+        url += `&search_trainer=${encodeURIComponent(trainer.trim())}`;
+      }
+      if (date.trim()) {
+        url += `&search_date=${encodeURIComponent(date.trim())}`;
+      }
+      const response = await fetch(url, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setHistoryItems(data.data);
+        setHistoryTotal(data.total);
+        setHistoryPage(data.page);
+      }
+    } catch (error) {
+      console.error("Error fetching training history:", error);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isHistoryOpen) {
+      fetchHistory(1, historySearchTrainer, historySearchDate);
+    }
+  }, [isHistoryOpen]);
+
+  useEffect(() => {
+    if (isHistoryOpen) {
+      const timer = setTimeout(() => {
+        fetchHistory(1, historySearchTrainer, historySearchDate);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [historySearchTrainer, historySearchDate]);
+
   const fetchLogs = async () => {
     if (!isAuthenticated) return;
     try {
@@ -505,7 +558,11 @@ export default function UploadPage() {
             </div>
 
             <div className={styles.headerActions}>
-              <button type="button" className={styles.ghostButton}>
+              <button
+                type="button"
+                className={styles.ghostButton}
+                onClick={() => setIsHistoryOpen(true)}
+              >
                 <span className="material-symbols-outlined">history</span>
                 Lịch sử huấn luyện
               </button>
@@ -1102,6 +1159,145 @@ export default function UploadPage() {
                 >
                   Đóng
                 </button>
+              </div>
+            </div>
+          )}
+
+          {isHistoryOpen && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalContainer}>
+                <header className={styles.modalHeader}>
+                  <h3 className={styles.modalTitle}>Lịch sử huấn luyện</h3>
+                  <button
+                    type="button"
+                    className={styles.closeButton}
+                    onClick={() => setIsHistoryOpen(false)}
+                  >
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </header>
+
+                <div className={styles.modalBody}>
+                  <div className={styles.searchBar}>
+                    <div className={styles.searchInputWrapper}>
+                      <span className={`material-symbols-outlined ${styles.searchIcon}`}>search</span>
+                      <input
+                        type="text"
+                        className={styles.searchInput}
+                        placeholder="Tìm theo người huấn luyện..."
+                        value={historySearchTrainer}
+                        onChange={(e) => setHistorySearchTrainer(e.target.value)}
+                      />
+                    </div>
+                    <input
+                      type="date"
+                      className={styles.dateInput}
+                      value={historySearchDate}
+                      onChange={(e) => setHistorySearchDate(e.target.value)}
+                    />
+                    {(historySearchTrainer || historySearchDate) && (
+                      <button
+                        type="button"
+                        className={styles.pageButton}
+                        onClick={() => {
+                          setHistorySearchTrainer("");
+                          setHistorySearchDate("");
+                        }}
+                      >
+                        Xóa bộ lọc
+                      </button>
+                    )}
+                  </div>
+
+                  {isHistoryLoading ? (
+                    <div className={styles.emptyState}>Đang tải dữ liệu...</div>
+                  ) : historyItems.length === 0 ? (
+                    <div className={styles.emptyState}>Không tìm thấy lịch sử huấn luyện nào.</div>
+                  ) : (
+                    <>
+                      <div className={styles.historyTableWrapper}>
+                        <table className={styles.historyTable}>
+                          <thead>
+                            <tr>
+                              <th>Ngày tạo</th>
+                              <th>Người huấn luyện</th>
+                              <th>Thông tin lâm sàng</th>
+                              <th>Kết quả</th>
+                              <th>Chỉ số (Accuracy / Loss)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {historyItems.map((item) => (
+                              <tr key={item.id}>
+                                <td>{item.created_at ? new Date(item.created_at).toLocaleString("vi-VN") : "N/A"}</td>
+                                <td>{item.trainer_name}</td>
+                                <td className={styles.clinicalInfoCell} title={item.clinical_info}>
+                                  {item.clinical_info}
+                                </td>
+                                <td>
+                                  <span
+                                    className={`${styles.statusBadge} ${
+                                      item.status === "success"
+                                        ? styles.success
+                                        : item.status === "failed"
+                                        ? styles.failed
+                                        : styles.running
+                                    }`}
+                                  >
+                                    {item.status === "success"
+                                      ? "Thành công"
+                                      : item.status === "failed"
+                                      ? "Thất bại"
+                                      : "Đang chạy"}
+                                  </span>
+                                </td>
+                                <td>
+                                  {item.status === "success" ? (
+                                    <span>
+                                      Acc: {item.accuracy !== null ? `${(item.accuracy * 100).toFixed(1)}%` : "N/A"} / Loss: {item.loss !== null ? item.loss.toFixed(4) : "N/A"}
+                                    </span>
+                                  ) : item.status === "failed" ? (
+                                    <span className={styles.errorText} title={item.error_message}>
+                                      Lỗi: {item.error_message}
+                                    </span>
+                                  ) : (
+                                    <span>-</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className={styles.pagination}>
+                        <span>
+                          Hiển thị {Math.min((historyPage - 1) * historyLimit + 1, historyTotal)} -{" "}
+                          {Math.min(historyPage * historyLimit, historyTotal)} trong tổng số{" "}
+                          {historyTotal} kết quả
+                        </span>
+                        <div className={styles.paginationButtons}>
+                          <button
+                            type="button"
+                            className={styles.pageButton}
+                            disabled={historyPage === 1}
+                            onClick={() => fetchHistory(historyPage - 1, historySearchTrainer, historySearchDate)}
+                          >
+                            Trước
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.pageButton}
+                            disabled={historyPage * historyLimit >= historyTotal}
+                            onClick={() => fetchHistory(historyPage + 1, historySearchTrainer, historySearchDate)}
+                          >
+                            Sau
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}

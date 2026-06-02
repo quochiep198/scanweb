@@ -164,10 +164,12 @@ class TrainingService:
         )
 
     @staticmethod
-    def run_training_pipeline(db: Session, use_augmentation: bool = True):
+    def run_training_pipeline(db: Session, trainer_id: str, use_augmentation: bool = True):
         import os
         import time
         import json
+        import uuid
+        from datetime import datetime
         import mlflow
         import torch
         import torch.nn as nn
@@ -177,6 +179,7 @@ class TrainingService:
         from app.models.efficientnet_model import OsteoporosisEfficientNetB3
         from app.models.xray_image import XRayImage
         from app.models.osteoporosis_label import OsteoporosisLabel
+        from app.models.training_history import TrainingHistory
         
         # Set active flag and initialize logs
         TrainingService.is_training_active = True
@@ -193,6 +196,36 @@ class TrainingService:
             dataset_size = len(metadata)
             logger.info(f"Starting training pipeline with {dataset_size} records")
             TrainingService.write_log(f"Found {dataset_size} untrained records with dataset_split='train' in database.")
+
+            # Compile clinical summary
+            label_counts = {"normal": 0, "osteopenia": 0, "osteoporosis": 0}
+            ages = []
+            for row in metadata:
+                lbl = row.get("label") if isinstance(row, dict) else getattr(row, "label", None)
+                if lbl in label_counts:
+                    label_counts[lbl] += 1
+                
+                age_val = row.get("age") if isinstance(row, dict) else getattr(row, "age", None)
+                if age_val is not None:
+                    ages.append(int(age_val))
+            
+            age_summary = f"Độ tuổi: {min(ages)}-{max(ages)}" if ages else "Độ tuổi: N/A"
+            clinical_summary = f"Tổng số: {dataset_size} ảnh. Nhãn: Bình thường ({label_counts['normal']}), Thiếu xương ({label_counts['osteopenia']}), Loãng xương ({label_counts['osteoporosis']}). {age_summary}"
+
+            # Create Training History record in DB
+            history_id = str(uuid.uuid4())
+            training_history_record = TrainingHistory(
+                id=history_id,
+                run_name=f"EfficientNet-B3 Run {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                trainer_id=trainer_id,
+                status="running",
+                clinical_info=clinical_summary,
+                dataset_size=dataset_size,
+                created_at=datetime.now()
+            )
+            db.add(training_history_record)
+            db.commit()
+
             
             # Set hyperparameters
             epochs = 5
@@ -481,6 +514,7 @@ class TrainingService:
                 except Exception as e:
                     TrainingService.write_log(f"Failed to upload model to R2: {e}")
                     logger.error(f"Failed to upload model to R2: {e}")
+                    
                 # 5. Update database xray_images set is_trained = True and trained_date
                 try:
                     # Get the image_paths from the training metadata
@@ -497,6 +531,25 @@ class TrainingService:
                     TrainingService.write_log(f"Failed to update is_trained database records: {e}")
                     logger.error(f"Failed to update is_trained database records: {e}")
                     
+                # 6. Update database record to success
+                try:
+                    final_accuracy = history["accuracy"][-1] if history["accuracy"] else None
+                    final_loss = history["validation_loss"][-1] if history["validation_loss"] else None
+                    final_f1 = history["f1_score"][-1] if history["f1_score"] else None
+                    final_auc = history["auc"][-1] if history["auc"] else None
+
+                    db.query(TrainingHistory).filter(TrainingHistory.id == history_id).update({
+                        "status": "success",
+                        "accuracy": final_accuracy,
+                        "loss": final_loss,
+                        "f1_score": final_f1,
+                        "auc": final_auc,
+                        "completed_at": datetime.now()
+                    })
+                    db.commit()
+                except Exception as db_err:
+                    logger.error(f"Failed to update success status in training history: {db_err}")
+
                 TrainingService.write_log("Training pipeline completed successfully.")
                 return {
                     "status": "success",
@@ -507,18 +560,30 @@ class TrainingService:
         except Exception as e:
             TrainingService.write_log(f"CRITICAL ERROR during training pipeline: {e}")
             logger.error(f"Training pipeline error: {e}")
+            # Update database record to failed
+            try:
+                db.query(TrainingHistory).filter(TrainingHistory.id == history_id).update({
+                    "status": "failed",
+                    "error_message": str(e),
+                    "completed_at": datetime.now()
+                })
+                db.commit()
+            except Exception as db_err:
+                logger.error(f"Failed to update failed status in training history: {db_err}")
             raise e
         finally:
             TrainingService.is_training_active = False
 
     @staticmethod
-    def run_training_pipeline_task(use_augmentation: bool = True):
+    def run_training_pipeline_task(trainer_id: str, use_augmentation: bool = True):
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
-            return TrainingService.run_training_pipeline(db, use_augmentation)
+            return TrainingService.run_training_pipeline(db, trainer_id, use_augmentation)
         except Exception as e:
             logger.error(f"Training background task failed: {e}")
             raise e
         finally:
             db.close()
+
+

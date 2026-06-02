@@ -10,6 +10,7 @@ from app.models.xray_image import XRayImage
 from app.models.osteoporosis_label import OsteoporosisLabel
 from app.models.efficientnet_model import OsteoporosisEfficientNetB3
 from app.models.measurement_result import MeasurementResult
+from app.models.training_history import TrainingHistory
 
 __all__ = [
     "Base",
@@ -24,4 +25,5 @@ __all__ = [
     "OsteoporosisLabel",
     "OsteoporosisEfficientNetB3",
     "MeasurementResult",
+    "TrainingHistory",
 ]

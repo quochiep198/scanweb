@@ -208,12 +208,85 @@ def train_model(
 
     background_tasks.add_task(
         TrainingService.run_training_pipeline_task,
+        trainer_id=current_user.id,
         use_augmentation=use_augmentation
     )
     return {
         "status": "success",
         "message": "Bắt đầu huấn luyện mô hình EfficientNet-B3 thành công trong nền!"
     }
+
+@router.get("/history", status_code=status.HTTP_200_OK)
+def get_training_history(
+    page: int = 1,
+    limit: int = 10,
+    search_date: str = None, # format: YYYY-MM-DD
+    search_trainer: str = None,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Retrieve paginated training run histories with optional date and trainer search (Section 6).
+    """
+    from app.models.training_history import TrainingHistory
+    from app.models.user import User
+    from sqlalchemy import func
+    from datetime import datetime
+
+    query = db.query(TrainingHistory).join(User, TrainingHistory.trainer_id == User.id)
+
+    # Search by date
+    if search_date:
+        try:
+            parsed_date = datetime.strptime(search_date.strip(), "%Y-%m-%d").date()
+            query = query.filter(func.date(TrainingHistory.created_at) == parsed_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Định dạng ngày không hợp lệ. Vui lòng sử dụng YYYY-MM-DD."
+            )
+
+    # Search by trainer name
+    if search_trainer:
+        query = query.filter(User.name.ilike(f"%{search_trainer.strip()}%"))
+
+    # Sorting
+    query = query.order_by(TrainingHistory.created_at.desc())
+
+    # Count total
+    total_count = query.count()
+
+    # Pagination
+    offset = (page - 1) * limit
+    results = query.offset(offset).limit(limit).all()
+
+    data = []
+    for r in results:
+        data.append({
+            "id": r.id,
+            "run_name": r.run_name,
+            "trainer_id": r.trainer_id,
+            "trainer_name": r.trainer.name if r.trainer else "N/A",
+            "status": r.status,
+            "clinical_info": r.clinical_info,
+            "dataset_size": r.dataset_size,
+            "accuracy": r.accuracy,
+            "loss": r.loss,
+            "f1_score": r.f1_score,
+            "auc": r.auc,
+            "error_message": r.error_message,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "completed_at": r.completed_at.isoformat() if r.completed_at else None
+        })
+
+    return {
+        "status": "success",
+        "total": total_count,
+        "page": page,
+        "limit": limit,
+        "data": data
+    }
+
 
 @router.get("/logs", status_code=status.HTTP_200_OK)
 def get_training_logs(current_user = Depends(get_current_user)):

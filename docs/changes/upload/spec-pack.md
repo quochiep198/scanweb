@@ -414,3 +414,10 @@ CREATE TABLE osteoporosis_labels (
       dxa_date,(calendar)
       label_source(input text)
       dataset_split(input text)
+
+## 6. Nút Lịch sử huấn luyện
+Tôi muốn tạo một giao diện dạng modal để hiển thị lịch sử huấn luyện, có phân trang và đầy đủ thông tin để có thể quản lý
+- Thông tin lâm sàng, tên
+- Người huấn luyện
+- Kết quả thành công hay thất bại
+- Cho phép search theo ngày hoặc tên người huấn luyện (user đăng nhập)
