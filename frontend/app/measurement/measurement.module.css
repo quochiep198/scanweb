@@ -2,13 +2,18 @@
   max-width: 1600px;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
+  height: calc(100vh - 170px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .pageTitle {
@@ -79,13 +84,17 @@
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 20px;
+  flex: 1;
+  min-height: 0;
 }
 
 .leftCol {
   grid-column: span 12;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
 }
 
 @media (min-width: 1024px) {
@@ -98,7 +107,11 @@
   grid-column: span 12;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 @media (min-width: 1024px) {
@@ -108,22 +121,24 @@
 }
 
 .uploadArea {
-  border: 1px dashed #d5deee;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 6px 16px rgba(25, 48, 96, 0.05);
-  padding: 20px;
+  display: none; /* Bỏ container uploadArea cũ, tích hợp trực tiếp vào scanPreview */
+}
+
+.uploadAreaInner {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  padding: 40px;
+  width: 100%;
+  height: 100%;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: background-color 0.2s;
 }
 
-.uploadArea:hover {
-  border-color: #155dca;
+.uploadAreaInner:hover {
+  background-color: rgba(21, 93, 202, 0.02);
 }
 
 .uploadIconWrapper {
@@ -134,7 +149,7 @@
   transition: opacity 0.2s;
 }
 
-.uploadArea:hover .uploadIconWrapper {
+.uploadAreaInner:hover .uploadIconWrapper {
   opacity: 0.8;
 }
 
@@ -160,20 +175,39 @@
 }
 
 .scanPreview {
-  background-color: #000000;
+  background-color: #0d0e12;
   border-radius: 10px;
   overflow: hidden;
   position: relative;
-  height: 520px;
+  flex: 1;
+  min-height: 0;
   box-shadow: 0 6px 16px rgba(25, 48, 96, 0.05);
   border: 1px solid #d5deee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.scanPreviewEmpty {
+  border: 2px dashed #b8c4da;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.scanPreviewEmpty:hover {
+  border-color: #155dca;
+  background: #ffffff;
+}
+
+.scanPreviewActive {
+  border: 2px dashed #155dca;
+  background: #edf2fc;
 }
 
 .scanImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.8;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  opacity: 0.95;
 }
 
 .aiOverlays {
@@ -601,3 +635,237 @@
     font-size: 0.72rem;
   }
 }
+
+.inputsCard {
+  border: 1px solid #d5deee;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 16px rgba(25, 48, 96, 0.05);
+  padding: 20px;
+  margin-bottom: 4px;
+}
+
+.inputsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334159;
+}
+
+.field input,
+.field select {
+  padding: 10px 12px;
+  border: 1px solid #d5deee;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #ffffff;
+  color: #182132;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #155dca;
+  box-shadow: 0 0 0 3px rgba(21, 93, 202, 0.1);
+}
+
+.errorBox {
+  padding: 12px;
+  background-color: rgba(186, 26, 26, 0.05);
+  border: 1px solid rgba(186, 26, 26, 0.2);
+  border-radius: 8px;
+  color: #ba1a1a;
+  font-size: 0.82rem;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.errorBox span {
+  font-size: 18px;
+}
+
+.uploadInput {
+  display: none;
+}
+
+.uploadBtn {
+  margin-top: 8px;
+  padding: 6px 14px;
+  background: #e7efff;
+  color: #155dca;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.uploadBtn:hover {
+  background: #d9e8ff;
+}
+
+.printableReport {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  
+  body * {
+    visibility: hidden;
+  }
+  
+  .printableReport, .printableReport * {
+    visibility: visible;
+  }
+  
+  .printableReport {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: #ffffff;
+    color: #111827;
+    padding: 30px;
+    box-sizing: border-box;
+  }
+  
+  .printHeader {
+    border-bottom: 2px solid #111827;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  
+  .printTitleBlock h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 4px 0;
+  }
+  
+  .printTitleBlock p {
+    font-size: 0.85rem;
+    color: #4b5563;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .printDate {
+    font-size: 0.85rem;
+    color: #4b5563;
+  }
+  
+  .printSection {
+    margin-bottom: 24px;
+  }
+  
+  .printSectionTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 6px;
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+  }
+  
+  .printGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .printField {
+    font-size: 0.9rem;
+    display: flex;
+    gap: 8px;
+  }
+  
+  .printFieldLabel {
+    font-weight: 600;
+    color: #374151;
+    min-width: 160px;
+  }
+  
+  .printFieldValue {
+    color: #111827;
+  }
+  
+  .printResultBox {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .printResultTitle {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 0 0 12px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .printResultLabel {
+    font-weight: 700;
+  }
+  
+  .printProbsList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+    margin-top: 10px;
+  }
+  
+  .printProbItem {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed #e5e7eb;
+    padding-bottom: 4px;
+  }
+  
+  .printFooter {
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+  }
+  
+  .printSignArea {
+    text-align: center;
+    width: 220px;
+  }
+  
+  .printSignTitle {
+    font-weight: 600;
+    margin-bottom: 60px;
+  }
+}
+

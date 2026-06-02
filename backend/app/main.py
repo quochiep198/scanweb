@@ -43,10 +43,12 @@ seed_data()
 from app.routers.upload import router as upload_router
 from app.routers.training import router as training_router
 from app.routers.dashboard import router as dashboard_router
+from app.routers.measure import router as measure_router
 app.include_router(auth_router)
 app.include_router(upload_router)
 app.include_router(training_router)
 app.include_router(dashboard_router)
+app.include_router(measure_router)
 
 logger.info("Backend logging initialized")
 logger.info("CORS origins: %s", settings.cors_origins)
@@ -55,6 +57,7 @@ logger.info("R2 Config - ACCESS_KEY_ID present: %s", bool(settings.CLOUDFLARE_R2
 logger.info("R2 Config - SECRET_ACCESS_KEY present: %s", bool(settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY))
 logger.info("R2 Config - BUCKET_NAME present: %s", bool(settings.CLOUDFLARE_R2_BUCKET_NAME))
 logger.info("R2 Config - PUBLIC_URL present: %s", bool(settings.CLOUDFLARE_R2_PUBLIC_URL))
+
 @app.get("/", include_in_schema=False)
 def read_root():
     return RedirectResponse(url="/docs")
