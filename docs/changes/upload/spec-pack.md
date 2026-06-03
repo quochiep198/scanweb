@@ -40,6 +40,7 @@ Dữ liệu được lấy động từ cơ sở dữ liệu:
 - `xray_images` : `image_path` sẽ lưu đường dẫn R2 (tương đối hoặc tuyệt đối), đồng thời mặc định `is_trained` là `FALSE`, `created_at` tự động lấy ngày hiện tại, `image_hash` được tính toán bằng SHA256 của file ảnh để tránh upload trùng lặp dữ liệu.
 - Sau khi lưu dữ liệu thành công phải có popup báo hoàn thành : "Đã đăng ký dữ liệu thành công" 
 - Nếu có bất cứ lỗi nào (như trùng hash ảnh, sql exception) thì hiển thị : "Đăng ký thất bại"
+- Bổ sung : hiện lên progress tiến trình đang chạy, được bao nhiêu %
 
 ### 3.2.1. Ẩn danh thông tin nhạy cảm của bệnh nhân (PHI De-identification)
 Trước khi lưu trữ ảnh lên Cloudflare R2 (trong cả luồng upload dữ liệu huấn luyện và luồng gửi ảnh dự đoán), hệ thống bắt buộc phải thực hiện khử thông tin nhận dạng cá nhân (PHI) thông qua `AnonymizeService`:

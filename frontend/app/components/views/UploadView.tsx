@@ -181,11 +181,17 @@ export default function UploadPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const itemsRef = useRef<UploadItem[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [items, setItems] = useState<UploadItem[]>([]);
   const [augmentation, setAugmentation] = useState(false);
   const [crossValidation, setCrossValidation] = useState(true);
   const [selectedModel, setSelectedModel] = useState("EfficientNet-B3");
+
+  const totalItems = items.length;
+  const overallProgress = totalItems > 0
+    ? Math.round(items.reduce((acc, item) => acc + (item.progress || 0), 0) / totalItems)
+    : 0;
   const [resultPopup, setResultPopup] = useState<{
     isOpen: boolean;
     status: "success" | "error";
@@ -431,72 +437,77 @@ export default function UploadPage() {
       return;
     }
 
+    setIsProcessing(true);
     let hasError = false;
     const apiUrl = getApiUrl();
 
-    for (const item of queuedItems) {
-      if (item.file.size > MAX_FILE_SIZE) {
-        updateItem(item.id, "status", "error");
-        updateItem(item.id, "errorMessage", m.messages.fileTooLarge);
+    try {
+      for (const item of queuedItems) {
+        if (item.file.size > MAX_FILE_SIZE) {
+          updateItem(item.id, "status", "error");
+          updateItem(item.id, "errorMessage", m.messages.fileTooLarge);
+          updateItem(item.id, "progress", 0);
+          hasError = true;
+          continue;
+        }
+
+        updateItem(item.id, "status", "uploading");
         updateItem(item.id, "progress", 0);
-        hasError = true;
-        continue;
+        updateItem(item.id, "errorMessage", "");
+
+        try {
+          const formData = new FormData();
+          formData.append("file", item.file);
+          formData.append("anonymous_code", item.anonymousCode);
+          formData.append("age", item.age);
+          formData.append("sex", item.sex);
+          formData.append("height_cm", item.heightCm);
+          formData.append("weight_kg", item.weightKg);
+          formData.append("bmi", item.bmi);
+          formData.append("xray_date", item.xrayDate);
+          formData.append("view_type", item.viewType);
+          formData.append("body_part", item.bodyPart);
+          formData.append("scanner_vendor", item.scannerVendor);
+          formData.append("pixel_spacing", item.pixelSpacing);
+          formData.append("image_quality", item.imageQuality);
+          formData.append("label", item.label);
+          formData.append("t_score", item.tScore);
+          formData.append("bmd", item.bmd);
+          formData.append("dxa_site", item.dxaSite);
+          formData.append("dxa_date", item.dxaDate);
+          formData.append("label_source", item.labelSource);
+          formData.append("dataset_split", item.datasetSplit);
+
+          await uploadWithProgress(`${apiUrl}/v1/upload`, formData, (progress) => {
+            updateItem(item.id, "progress", progress);
+          });
+
+          updateItem(item.id, "status", "success");
+          updateItem(item.id, "progress", 100);
+        } catch (error: any) {
+          console.error("Upload error for item", item.id, error);
+          updateItem(item.id, "status", "error");
+          updateItem(item.id, "errorMessage", error.detail || error.message || m.messages.uploadFailed);
+          updateItem(item.id, "progress", 0);
+          hasError = true;
+        }
       }
 
-      updateItem(item.id, "status", "uploading");
-      updateItem(item.id, "progress", 0);
-      updateItem(item.id, "errorMessage", "");
-
-      try {
-        const formData = new FormData();
-        formData.append("file", item.file);
-        formData.append("anonymous_code", item.anonymousCode);
-        formData.append("age", item.age);
-        formData.append("sex", item.sex);
-        formData.append("height_cm", item.heightCm);
-        formData.append("weight_kg", item.weightKg);
-        formData.append("bmi", item.bmi);
-        formData.append("xray_date", item.xrayDate);
-        formData.append("view_type", item.viewType);
-        formData.append("body_part", item.bodyPart);
-        formData.append("scanner_vendor", item.scannerVendor);
-        formData.append("pixel_spacing", item.pixelSpacing);
-        formData.append("image_quality", item.imageQuality);
-        formData.append("label", item.label);
-        formData.append("t_score", item.tScore);
-        formData.append("bmd", item.bmd);
-        formData.append("dxa_site", item.dxaSite);
-        formData.append("dxa_date", item.dxaDate);
-        formData.append("label_source", item.labelSource);
-        formData.append("dataset_split", item.datasetSplit);
-
-        await uploadWithProgress(`${apiUrl}/v1/upload`, formData, (progress) => {
-          updateItem(item.id, "progress", progress);
+      if (hasError) {
+        setResultPopup({
+          isOpen: true,
+          status: "error",
+          message: m.messages.uploadFailed,
         });
-
-        updateItem(item.id, "status", "success");
-        updateItem(item.id, "progress", 100);
-      } catch (error: any) {
-        console.error("Upload error for item", item.id, error);
-        updateItem(item.id, "status", "error");
-        updateItem(item.id, "errorMessage", error.detail || error.message || m.messages.uploadFailed);
-        updateItem(item.id, "progress", 0);
-        hasError = true;
+      } else {
+        setResultPopup({
+          isOpen: true,
+          status: "success",
+          message: m.messages.uploadSuccess,
+        });
       }
-    }
-
-    if (hasError) {
-      setResultPopup({
-        isOpen: true,
-        status: "error",
-        message: m.messages.uploadFailed,
-      });
-    } else {
-      setResultPopup({
-        isOpen: true,
-        status: "success",
-        message: m.messages.uploadSuccess,
-      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -564,11 +575,19 @@ export default function UploadPage() {
                 type="button"
                 className={styles.ghostButton}
                 onClick={() => setIsHistoryOpen(true)}
+                disabled={isProcessing}
+                style={isProcessing ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
               >
                 <span className="material-symbols-outlined">history</span>
                 {m.view.btnHistory}
               </button>
-              <button type="button" className={styles.primaryButton} onClick={handleStartProcessing}>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={handleStartProcessing}
+                disabled={isProcessing || isTraining}
+                style={(isProcessing || isTraining) ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
+              >
                 <span className="material-symbols-outlined">model_training</span>
                 {m.view.btnStart}
               </button>
@@ -582,6 +601,7 @@ export default function UploadPage() {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
+                style={isProcessing ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "none" } : undefined}
               >
                 <div className={styles.uploadIcon}>
                   <span className="material-symbols-outlined" style={{ fontSize: "24px" }}>
@@ -610,10 +630,32 @@ export default function UploadPage() {
               <section className={styles.queueCard}>
                 <div className={styles.queueHeader}>
                   <h3 className={styles.queueTitle}>{m.view.queueTitle(items.length)}</h3>
-                  <button type="button" className={styles.clearButton} onClick={handleClearAll}>
+                  <button
+                    type="button"
+                    className={styles.clearButton}
+                    onClick={handleClearAll}
+                    disabled={isProcessing}
+                    style={isProcessing ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
+                  >
                     {m.view.btnClearAll}
                   </button>
                 </div>
+
+                {isProcessing && (
+                  <div style={{ padding: "12px 14px 4px", borderBottom: "1px solid #d8e1f1" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                      <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#103f9c" }}>
+                        {m.status.processingOverall(overallProgress)}
+                      </span>
+                    </div>
+                    <div className={styles.progressTrack} style={{ height: "8px" }}>
+                      <div
+                        className={styles.progressFill}
+                        style={{ width: `${overallProgress}%`, transition: "width 0.3s ease" }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {items.length === 0 ? (
                   <div className={styles.queueEmpty}>
@@ -660,6 +702,8 @@ export default function UploadPage() {
                               className={styles.removeButton}
                               onClick={() => handleRemove(item.id)}
                               aria-label={`Xoa ${item.file.name}`}
+                              disabled={isProcessing}
+                              style={isProcessing ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
                             >
                               <span className="material-symbols-outlined">
                                 {item.status === "uploading" ? "close" : "delete"}

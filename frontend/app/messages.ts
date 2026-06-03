@@ -265,6 +265,7 @@ export const messages = {
       success: "Hoàn tất tải lên",
       errorDefault: "Lỗi xử lý",
       uploading: (progress: number) => `Đang tải lên (${progress}%)`,
+      processingOverall: (progress: number) => `Đang tải lên và xử lý toàn bộ (${progress}%)`,
       queued: "Cho xử lý",
       idleLogs: "Hệ thống đang rảnh. Chưa bắt đầu huấn luyện.",
       running: "Đang chạy",
