@@ -12,6 +12,7 @@ from app.models.efficientnet_model import OsteoporosisEfficientNetB3
 from app.models.measurement_result import MeasurementResult
 from app.models.training_history import TrainingHistory
 from app.models.blacklisted_token import BlacklistedToken
+from app.models.training_log import TrainingLog
 
 __all__ = [
     "Base",
@@ -28,4 +29,5 @@ __all__ = [
     "MeasurementResult",
     "TrainingHistory",
     "BlacklistedToken",
+    "TrainingLog",
 ]

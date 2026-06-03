@@ -74,7 +74,9 @@ class AnonymizeService:
                 tags_to_anonymize = [
                     'PatientName', 'PatientID', 'PatientBirthDate', 'PatientSex', 'PatientAge',
                     'InstitutionName', 'InstitutionAddress', 'InstitutionalDepartmentName',
-                    'PhysiciansOfRecord', 'PerformingPhysicianName', 'OperatorsName', 'ReferringPhysicianName'
+                    'PhysiciansOfRecord', 'PerformingPhysicianName', 'OperatorsName', 'ReferringPhysicianName',
+                    'StudyDate', 'SeriesDate', 'AcquisitionDate', 'ContentDate',
+                    'StudyTime', 'SeriesTime'
                 ]
                 for tag in tags_to_anonymize:
                     if tag in dicom_data:

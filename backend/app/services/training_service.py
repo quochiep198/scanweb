@@ -97,13 +97,22 @@ class TrainingService:
     is_training_active = False
 
     @staticmethod
-    def write_log(message: str, mode: str = "a"):
+    def write_log(message: str, db: Session = None, run_id: str = None, mode: str = "a"):
         import os
         from datetime import datetime
         os.makedirs("models", exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open("models/training.log", mode, encoding="utf-8") as f:
             f.write(f"[{timestamp}] {message}\n")
+
+        if db is not None and run_id is not None:
+            try:
+                from app.models.training_log import TrainingLog
+                log_entry = TrainingLog(run_id=run_id, message=message)
+                db.add(log_entry)
+                db.commit()
+            except Exception as e:
+                logger.error(f"Failed to write log to DB: {e}")
 
     @staticmethod
     def get_training_metadata(db: Session):
@@ -181,21 +190,14 @@ class TrainingService:
         from app.models.osteoporosis_label import OsteoporosisLabel
         from app.models.training_history import TrainingHistory
         
-        # Set active flag and initialize logs
-        TrainingService.is_training_active = True
-        TrainingService.write_log("Starting training pipeline for Osteoporosis detection...", "w")
-        TrainingService.write_log(f"Configuring parameters: model=EfficientNet-B3, epochs=5, batch_size=8, learning_rate=1e-4, augmentation={use_augmentation}")
-        
         try:
             # Ensure models directory exists
             os.makedirs("models", exist_ok=True)
             
             # 1. Fetch metadata
-            TrainingService.write_log("Querying clinical metadata from SQL database...")
             metadata = TrainingService.get_training_metadata(db)
             dataset_size = len(metadata)
             logger.info(f"Starting training pipeline with {dataset_size} records")
-            TrainingService.write_log(f"Found {dataset_size} untrained records with dataset_split='train' in database.")
 
             # Compile clinical summary
             label_counts = {"normal": 0, "osteopenia": 0, "osteoporosis": 0}
@@ -225,6 +227,21 @@ class TrainingService:
             )
             db.add(training_history_record)
             db.commit()
+
+            # Set active flag
+            TrainingService.is_training_active = True
+
+            # Monkey-patch write_log to write to both DB and local file
+            old_write_log = TrainingService.write_log
+            def temp_write_log(message: str, mode: str = "a"):
+                old_write_log(message, db, history_id, mode)
+            TrainingService.write_log = temp_write_log
+
+            # Write initial logs (now they will go to DB as well)
+            TrainingService.write_log("Starting training pipeline for Osteoporosis detection...", "w")
+            TrainingService.write_log(f"Configuring parameters: model=EfficientNet-B3, epochs=5, batch_size=8, learning_rate=1e-4, augmentation={use_augmentation}")
+            TrainingService.write_log("Querying clinical metadata from SQL database...")
+            TrainingService.write_log(f"Found {dataset_size} untrained records with dataset_split='train' in database.")
 
             
             # Set hyperparameters
@@ -573,6 +590,8 @@ class TrainingService:
             raise e
         finally:
             TrainingService.is_training_active = False
+            if 'old_write_log' in locals():
+                TrainingService.write_log = old_write_log
 
     @staticmethod
     def run_training_pipeline_task(trainer_id: str, use_augmentation: bool = True):

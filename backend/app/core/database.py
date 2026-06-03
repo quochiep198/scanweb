@@ -64,8 +64,34 @@ def check_and_update_schema():
                         if engine.dialect.name == 'sqlite':
                             if 'DEFAULT FALSE' in col_type:
                                 sql_type = col_type.replace('DEFAULT FALSE', 'DEFAULT 0')
-                        conn.execute(text(f"ALTER TABLE measurement_results ADD COLUMN {col_name} {sql_type}"))
+                    conn.execute(text(f"ALTER TABLE measurement_results ADD COLUMN {col_name} {sql_type}"))
                     logger.info(f"'{col_name}' column added successfully.")
+
+        # Check and create training_logs table
+        if 'training_logs' not in inspector.get_table_names():
+            logger.info("Creating 'training_logs' table...")
+            with engine.begin() as conn:
+                if engine.dialect.name == 'sqlite':
+                    conn.execute(text("""
+                        CREATE TABLE training_logs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            run_id VARCHAR(36) NOT NULL,
+                            message TEXT NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (run_id) REFERENCES training_history(id) ON DELETE CASCADE
+                        )
+                    """))
+                else:
+                    conn.execute(text("""
+                        CREATE TABLE training_logs (
+                            id SERIAL PRIMARY KEY,
+                            run_id VARCHAR(36) NOT NULL,
+                            message TEXT NOT NULL,
+                            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (run_id) REFERENCES training_history(id) ON DELETE CASCADE
+                        )
+                    """))
+            logger.info("'training_logs' table created successfully.")
     except Exception as e:
         logger.error(f"Error checking/updating schema: {e}")
 

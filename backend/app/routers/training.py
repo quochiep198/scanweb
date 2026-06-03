@@ -7,6 +7,8 @@ from app.services.r2_service import R2Service
 from app.services.image_loader_service import ImageLoaderService
 from app.services.xray_analyzer_service import XRayAnalyzerService
 from app.services.monai_processing_service import MonaiProcessingService
+from app.models.training_history import TrainingHistory
+from app.models.training_log import TrainingLog
 
 router = APIRouter(prefix="/v1/training", tags=["Training"])
 
@@ -199,6 +201,14 @@ def train_model(
     """
     Start the model training pipeline asynchronously in the background (Section 3.3.6).
     """
+    # Check if there is already an active training running in the database
+    active_run = db.query(TrainingHistory).filter(TrainingHistory.status == "running").first()
+    if active_run:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Đang có tiến trình huấn luyện khác đang chạy."
+        )
+
     metadata = TrainingService.get_training_metadata(db)
     if len(metadata) == 0:
         raise HTTPException(
@@ -289,26 +299,51 @@ def get_training_history(
 
 
 @router.get("/logs", status_code=status.HTTP_200_OK)
-def get_training_logs(current_user = Depends(get_current_user)):
+def get_training_logs(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
-    Get the active training logs from models/training.log.
+    Get the active training logs from the database, falling back to models/training.log.
     """
-    import os
-    log_path = "models/training.log"
-    if not os.path.exists(log_path):
-        return {
-            "status": "idle",
-            "logs": "Hệ thống đang rảnh. Chưa bắt đầu huấn luyện."
-        }
-        
-    try:
-        with open(log_path, "r", encoding="utf-8") as f:
-            logs = f.read()
-    except Exception as e:
-        logs = f"Error reading log file: {str(e)}"
-        
-    status_str = "running" if getattr(TrainingService, "is_training_active", False) else "idle"
+    # 1. Fetch the latest run
+    latest_run = db.query(TrainingHistory).order_by(TrainingHistory.created_at.desc()).first()
     
+    is_active = False
+    if latest_run and latest_run.status == "running":
+        is_active = True
+        
+    status_str = "running" if is_active else "idle"
+    
+    # 2. Try fetching logs from database
+    logs = ""
+    if latest_run:
+        db_logs = (
+            db.query(TrainingLog)
+            .filter(TrainingLog.run_id == latest_run.id)
+            .order_by(TrainingLog.created_at.asc(), TrainingLog.id.asc())
+            .all()
+        )
+        if db_logs:
+            log_lines = []
+            for log in db_logs:
+                ts_str = log.created_at.strftime("%Y-%m-%d %H:%M:%S") if log.created_at else ""
+                log_lines.append(f"[{ts_str}] {log.message}")
+            logs = "\n".join(log_lines)
+            
+    # 3. Fallback to local log file if database has no logs
+    if not logs:
+        import os
+        log_path = "models/training.log"
+        if os.path.exists(log_path):
+            try:
+                with open(log_path, "r", encoding="utf-8") as f:
+                    logs = f.read()
+            except Exception as e:
+                logs = f"Error reading log file: {str(e)}"
+        else:
+            logs = "Hệ thống đang rảnh. Chưa bắt đầu huấn luyện."
+            
     return {
         "status": status_str,
         "logs": logs
