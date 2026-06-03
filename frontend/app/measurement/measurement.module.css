@@ -869,3 +869,126 @@
   }
 }
 
+.reviewCard {
+  border: 1px solid #d5deee;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 16px rgba(25, 48, 96, 0.05);
+  padding: 20px;
+}
+
+.reviewTitle {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: #182132;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reviewTitle span {
+  color: #155dca;
+}
+
+.reviewForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #4f586c;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxField input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.textareaField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.textareaField label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334159;
+}
+
+.textareaField textarea {
+  padding: 10px 12px;
+  border: 1px solid #d5deee;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #ffffff;
+  color: #182132;
+  outline: none;
+  transition: all 0.2s;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.textareaField textarea:focus {
+  border-color: #155dca;
+  box-shadow: 0 0 0 3px rgba(21, 93, 202, 0.1);
+}
+
+.reviewActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.successBox {
+  padding: 12px;
+  background-color: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  color: #10b981;
+  font-size: 0.82rem;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.successBox span {
+  font-size: 18px;
+}
+
+.reviewStatusRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #4f586c;
+  cursor: pointer;
+}
+
+.radioLabel input {
+  cursor: pointer;
+}
+
+

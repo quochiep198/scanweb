@@ -1,13 +1,23 @@
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
+from typing import Optional
+import logging
+
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
 from app.services.measure_service import MeasureService
-import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/measure", tags=["Measurement"])
+
+class ConfirmReviewRequest(BaseModel):
+    review_status: str = Field(..., description="Trạng thái review (confirmed_correct, corrected_by_doctor, rejected, uncertain)")
+    doctor_confirmed_label: Optional[str] = Field(None, description="Nhãn do bác sĩ chọn (normal, osteopenia, osteoporosis)")
+    error_type: Optional[str] = Field("none", description="Loại lỗi (none, under_prediction, over_prediction, poor_image_quality, wrong_input, uncertain, other)")
+    approved_for_next_training: bool = Field(False, description="Có duyệt đưa vào tập train tiếp theo không")
+    review_note: Optional[str] = Field(None, description="Ghi chú lâm sàng của bác sĩ")
 
 @router.post("/predict", status_code=status.HTTP_200_OK)
 def predict_osteoporosis(
@@ -118,3 +128,52 @@ def predict_osteoporosis(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Phân tích kết quả thất bại"
             )
+
+@router.put("/confirm/{measurement_id}", status_code=status.HTTP_200_OK)
+def confirm_measurement_result(
+    measurement_id: int,
+    req_body: ConfirmReviewRequest,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    try:
+        # Perform review confirm using Service
+        updated_result = MeasureService.confirm_review(
+            db=db,
+            measurement_id=measurement_id,
+            review_status=req_body.review_status,
+            doctor_confirmed_label=req_body.doctor_confirmed_label,
+            error_type=req_body.error_type,
+            approved_for_next_training=req_body.approved_for_next_training,
+            review_note=req_body.review_note,
+            reviewer_id=current_user.id
+        )
+        return {
+            "success": True,
+            "message": "Xác nhận kết quả phân tích thành công",
+            "data": {
+                "measurement_id": updated_result.measurement_id,
+                "review_status": updated_result.review_status,
+                "doctor_confirmed_label": updated_result.doctor_confirmed_label,
+                "is_ai_correct": updated_result.is_ai_correct,
+                "image_r2_key": updated_result.image_r2_key
+            }
+        }
+    except FileNotFoundError as e:
+        logger.error(f"Review confirm failed - record not found: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except ValueError as e:
+        logger.error(f"Review confirm failed - invalid values: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Review confirm failed due to internal error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Xác nhận kết quả thất bại"
+        )

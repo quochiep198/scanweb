@@ -39,6 +39,33 @@ def check_and_update_schema():
                 with engine.begin() as conn:
                     conn.execute(text("ALTER TABLE xray_images ADD COLUMN trained_date DATE NULL"))
                 logger.info("'trained_date' column added successfully.")
+
+        if 'measurement_results' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('measurement_results')]
+            new_columns = {
+                'image_r2_key': 'VARCHAR(500) NULL',
+                'image_sha256_hash': 'VARCHAR(64) NULL',
+                'doctor_confirmed_label': 'VARCHAR(50) NULL',
+                'is_ai_correct': 'BOOLEAN NULL',
+                'review_status': "VARCHAR(50) NULL DEFAULT 'pending'",
+                'error_type': "VARCHAR(50) NULL DEFAULT 'none'",
+                'approved_for_next_training': 'BOOLEAN NULL DEFAULT FALSE',
+                'review_note': 'TEXT NULL',
+                'reviewed_by': 'VARCHAR(36) NULL',
+                'reviewed_at': 'TIMESTAMP NULL' if engine.dialect.name != 'sqlite' else 'DATETIME NULL',
+                'model_version': 'VARCHAR(100) NULL',
+                'dataset_version': 'VARCHAR(100) NULL'
+            }
+            for col_name, col_type in new_columns.items():
+                if col_name not in columns:
+                    logger.info(f"Adding '{col_name}' column to 'measurement_results' table...")
+                    with engine.begin() as conn:
+                        sql_type = col_type
+                        if engine.dialect.name == 'sqlite':
+                            if 'DEFAULT FALSE' in col_type:
+                                sql_type = col_type.replace('DEFAULT FALSE', 'DEFAULT 0')
+                        conn.execute(text(f"ALTER TABLE measurement_results ADD COLUMN {col_name} {sql_type}"))
+                    logger.info(f"'{col_name}' column added successfully.")
     except Exception as e:
         logger.error(f"Error checking/updating schema: {e}")
 

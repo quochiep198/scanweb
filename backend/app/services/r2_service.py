@@ -106,3 +106,61 @@ class R2Service:
         except Exception as e:
             logger.error(f"Error downloading from Cloudflare R2: {e}")
             raise e
+
+    @staticmethod
+    def copy_file(source_key: str, dest_key: str) -> str:
+        """
+        Copies a file in Cloudflare R2 from source_key to dest_key.
+        """
+        account_id = settings.CLOUDFLARE_R2_ACCOUNT_ID
+        access_key = settings.CLOUDFLARE_R2_ACCESS_KEY_ID
+        secret_key = settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY
+        bucket_name = settings.CLOUDFLARE_R2_BUCKET_NAME
+        public_url = settings.CLOUDFLARE_R2_PUBLIC_URL
+
+        # Check if R2 is configured and it is not a mock URL
+        if not all([account_id, access_key, secret_key, bucket_name]) or "mock-r2" in source_key:
+            logger.warning(f"R2 is not configured or mock path used. Returning simulated copy key: {dest_key}")
+            mock_url = f"https://mock-r2.osteoai.com/{bucket_name or 'uploads'}/{dest_key}"
+            return mock_url
+
+        try:
+            # Extract key/filename from URL path robustly if source_key is a URL
+            from urllib.parse import urlparse
+            if source_key.startswith("http"):
+                parsed = urlparse(source_key)
+                path = parsed.path.lstrip('/')
+                if bucket_name and path.startswith(f"{bucket_name}/"):
+                    key = path[len(bucket_name)+1:]
+                else:
+                    key = path
+                if not key:
+                    key = source_key.split("/")[-1]
+            else:
+                key = source_key
+
+            r2_endpoint = f"https://{account_id}.r2.cloudflarestorage.com"
+            s3_client = boto3.client(
+                "s3",
+                endpoint_url=r2_endpoint,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                region_name="auto"
+            )
+            
+            copy_source = {'Bucket': bucket_name, 'Key': key}
+            s3_client.copy_object(
+                CopySource=copy_source,
+                Bucket=bucket_name,
+                Key=dest_key
+            )
+            logger.info(f"Successfully copied {key} to {dest_key} in R2")
+            
+            if public_url:
+                base_url = public_url.rstrip('/')
+                return f"{base_url}/{dest_key}"
+            else:
+                return f"https://pub-{account_id}.r2.dev/{bucket_name}/{dest_key}"
+        except Exception as e:
+            logger.error(f"Error copying file in R2: {e}")
+            raise e

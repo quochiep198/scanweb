@@ -336,14 +336,33 @@ Thực hiện in các thông tin sau, chô nào không có thì để trống
 - Không thay thế kết luận chẩn đoán của bác sĩ
 - Nếu cần chẩn đoán mật độ xương chính thức, nên đối chiếu với DXA/BMD
 ```
+## 6.7 Bổ sung nút Confirm kết quả từ bác sĩ (Đồng ý hoặc Reject)
 
+Bổ sung thêm luồng nghiệp vụ xác nhận hoặc bác bỏ kết quả dự đoán của AI bởi bác sĩ có chuyên môn (Human-in-the-loop). Việc này giúp thu thập các dữ liệu AI dự đoán sai để phục vụ cho việc huấn luyện lại (retraining) sau này.
 
-## 6.7 API
+### 6.7.1 Cơ chế lưu trữ ảnh tạm thời (R2 Temporary Storage - Giải pháp A)
 
-### 6.7.1 Predict osteoporosis
+Để đáp ứng yêu cầu **không lưu trữ ảnh phân tích lâu dài** trên R2 nhằm bảo mật và tối ưu chi phí, nhưng vẫn **giữ lại được các ảnh bị đoán sai để huấn luyện lại**, luồng xử lý file ảnh được quy định như sau:
+1. **Khi chạy phân tích (Inference):** 
+   - Backend nhận file ảnh tải lên và tự động upload lên thư mục tạm trên Cloudflare R2 với tiền tố: `temp_measurements/YYYY/MM/DD/{uuid}_{filename}`.
+   - Thư mục `temp_measurements/` trên R2 được cấu hình **Lifecycle Rule tự động xóa vĩnh viễn (Auto-delete) sau 24 giờ**.
+   - Lưu trữ tạm thời đường dẫn này vào trường `image_r2_key` trong bảng `measurement_results`.
+2. **Khi bác sĩ xác nhận kết quả (Doctor Review):**
+   - **Trường hợp 1 (Xác nhận AI ĐÚNG hoặc Không đồng ý đưa vào tập train tiếp theo):** Backend giữ nguyên thông tin. Khi hết 24 giờ kể từ lúc upload, Cloudflare R2 sẽ tự động xóa file ảnh đó đi. Trường `image_r2_key` sẽ trỏ tới file không còn tồn tại (hợp lệ cho việc bảo mật).
+   - **Trường hợp 2 (Xác nhận AI SAI và Đồng ý đưa vào tập train tiếp theo `approved_for_next_training = TRUE`):** Backend sẽ thực hiện sao chép file ảnh từ thư mục tạm sang thư mục lưu trữ huấn luyện chính thức trên R2: `retraining_dataset/YYYY/MM/DD/{uuid}_{filename}`. Cập nhật lại đường dẫn mới này vào trường `image_r2_key` để lưu vĩnh viễn phục vụ cho việc train sau này.
+
+### 6.7.2 Phân quyền & Quản lý phiên bản (Model & Dataset Version)
+- **Phân quyền:** Chỉ người dùng có vai trò là bác sĩ/admin mới được quyền thực hiện xác nhận kết quả.
+- **Quản lý phiên bản:** Hệ thống sử dụng biến môi trường hoặc file cấu hình ở Backend để định danh phiên bản của model hiện tại (`ACTIVE_MODEL_VERSION`) và tập dữ liệu dùng để huấn luyện model đó (`ACTIVE_DATASET_VERSION`). Khi tạo bản ghi phân tích, backend sẽ tự động điền các thông tin này vào bản ghi để làm cơ sở đối chiếu sau này.
+
+---
+
+## 6.8 Đặc tả API
+
+### 6.8.1 Dự đoán loãng xương (Predict osteoporosis)
 
 ```text
-POST /api/measure/predict
+POST /api/v1/measure/predict
 ```
 
 Content-Type:
@@ -368,6 +387,7 @@ Response thành công:
   "success": true,
   "message": "Phân tích kết quả thành công",
   "data": {
+    "measurement_id": 128,
     "predicted_label": "osteoporosis",
     "predicted_label_display": "Loãng xương",
     "confidence": 0.91,
@@ -391,9 +411,57 @@ Response thất bại:
 }
 ```
 
+### 6.8.2 Bác sĩ xác nhận kết quả (Doctor Review Confirm)
+
+```text
+PUT /api/v1/measure/confirm/{measurement_id}
+```
+
+Content-Type:
+
+```text
+application/json
+```
+
+Request:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `review_status` | String | Yes | `confirmed_correct` (đúng), `corrected_by_doctor` (sai và sửa), `rejected` (loại bỏ), `uncertain` (không rõ) |
+| `doctor_confirmed_label` | String | No | `normal`, `osteopenia`, `osteoporosis`. Bắt buộc nếu status là `corrected_by_doctor`. |
+| `error_type` | String | No | Loại lỗi: `none`, `under_prediction`, `over_prediction`, `poor_image_quality`, `wrong_input`, `uncertain`, `other`. Mặc định `none`. |
+| `approved_for_next_training` | Boolean | Yes | `true` (đồng ý đưa vào dataset train tiếp theo), `false` (không đồng ý) |
+| `review_note` | String | No | Ghi chú của bác sĩ |
+
+Response thành công:
+
+```json
+{
+  "success": true,
+  "message": "Xác nhận kết quả phân tích thành công",
+  "data": {
+    "measurement_id": 128,
+    "review_status": "corrected_by_doctor",
+    "doctor_confirmed_label": "osteopenia",
+    "is_ai_correct": false,
+    "image_r2_key": "retraining_dataset/2026/06/03/abc_xray.png"
+  }
+}
+```
+
+Response thất bại:
+
+```json
+{
+  "success": false,
+  "message": "Xác nhận kết quả thất bại hoặc bản ghi không tồn tại",
+  "error_code": "REVIEW_CONFIRM_FAILED"
+}
+```
+
 ---
 
-## 6.8 Error handling
+## 6.9 Error handling
 
 | Mã lỗi | Điều kiện | Message hiển thị |
 |---|---|---|
@@ -407,56 +475,93 @@ Response thất bại:
 | `MODEL_LOAD_FAILED` | Load model lỗi | Không thể tải model dự đoán |
 | `PREPROCESS_FAILED` | Lỗi preprocess ảnh/metadata | Xử lý ảnh thất bại |
 | `PREDICTION_FAILED` | Lỗi inference | Phân tích kết quả thất bại |
+| `MEASUREMENT_NOT_FOUND`| Không tìm thấy bản ghi phân tích | Bản ghi phân tích không tồn tại |
+| `UNAUTHORIZED_REVIEW`  | Người dùng không có quyền bác sĩ/admin | Bạn không có quyền xác nhận kết quả này |
 
 Message chung:
 
-- Thành công: `Phân tích kết quả thành công`
-- Thất bại: `Phân tích kết quả thất bại`
+- Thành công: `Phân tích kết quả thành công` / `Xác nhận kết quả phân tích thành công`
+- Thất bại: `Phân tích kết quả thất bại` / `Xác nhận kết quả thất bại`
 
 ---
 
-## 6.9 Lưu lịch sử phân tích
+## 6.10 Lưu lịch sử phân tích
 
-### 6.9.1 Trạng thái
+### 6.10.1 Trạng thái
 
-Đã chốt phương án lưu lịch sử phân tích vào database theo thông tin user đăng nhập.
+Đã chốt phương án lưu lịch sử phân tích và review của bác sĩ vào database theo thông tin user đăng nhập.
 
-### 6.9.2 Quy định lưu trữ
+### 6.10.2 Quy định lưu trữ
 
 Không ghi kết quả phân tích vào `osteoporosis_labels` vì bảng đó đang phục vụ dữ liệu nhãn huấn luyện.
-Tạo bảng riêng `measurement_results` để lưu trữ lịch sử:
+Tạo bảng riêng `measurement_results` để lưu trữ lịch sử và thông tin review:
 
 ```sql
 CREATE TABLE measurement_results (
     measurement_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id VARCHAR(36) NOT NULL, -- Khóa ngoại liên kết tới bảng users.id kiểu String(36)
-    image_filename VARCHAR(255), -- Chỉ lưu tên file ảnh gốc do không lưu ảnh trên R2
+
+    user_id VARCHAR(36) NOT NULL,
+
+    image_filename VARCHAR(255),
+    image_r2_key VARCHAR(500) NULL,
+    image_sha256_hash VARCHAR(64) NULL,
+
     age INT,
     sex ENUM('M', 'F', 'Other'),
     bmi DECIMAL(5,2),
+
     predicted_label ENUM('normal', 'osteopenia', 'osteoporosis') NOT NULL,
     confidence DECIMAL(6,5),
+
     normal_probability DECIMAL(6,5),
     osteopenia_probability DECIMAL(6,5),
     osteoporosis_probability DECIMAL(6,5),
+
+    doctor_confirmed_label ENUM('normal', 'osteopenia', 'osteoporosis') NULL,
+    is_ai_correct BOOLEAN NULL,
+
+    review_status ENUM(
+        'pending',
+        'confirmed_correct',
+        'corrected_by_doctor',
+        'rejected',
+        'uncertain'
+    ) DEFAULT 'pending',
+
+    error_type ENUM(
+        'none',
+        'under_prediction',
+        'over_prediction',
+        'poor_image_quality',
+        'wrong_input',
+        'uncertain',
+        'other'
+    ) DEFAULT 'none',
+
+    approved_for_next_training BOOLEAN DEFAULT FALSE,
+
+    review_note TEXT NULL,
+    reviewed_by VARCHAR(36) NULL,
+    reviewed_at DATETIME NULL,
+
     model_path VARCHAR(500),
+    model_version VARCHAR(100) NULL,
+    dataset_version VARCHAR(100) NULL,
+
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
 );
 ```
 
 ---
 
-## 6.10 Lưu file ảnh phân tích
+## 6.11 Lưu file ảnh phân tích và Quy tắc xử lý ảnh
 
-### 6.10.1 Trạng thái
-
-Đã chốt phương án **không lưu** file ảnh lên Cloudflare R2 nhằm bảo mật thông tin và tối ưu chi phí lưu trữ.
-
-### 6.10.2 Quy tắc xử lý ảnh
-
-- File ảnh tải lên trong request sẽ được backend lưu tạm thời (trong RAM hoặc bộ nhớ tạm cục bộ) để tiền xử lý và chạy inference, sau đó phải xóa ngay lập tức.
-- Không lưu ảnh phân tích vào bảng `xray_images` và không lưu lên Cloudflare R2.
+- File ảnh tải lên trong request ban đầu sẽ được backend lưu tạm thời lên Cloudflare R2 tại đường dẫn `temp_measurements/` với thời gian tồn tại (TTL) là 24 giờ.
+- Nếu bác sĩ không review hoặc review đúng (không tích chọn training lại), ảnh sẽ tự động bị xóa vĩnh viễn trên R2 sau 24h.
+- Nếu bác sĩ review sai và duyệt đưa vào tập train tiếp theo, hệ thống sẽ thực hiện sao chép ảnh sang thư mục lưu trữ lâu dài `retraining_dataset/` và cập nhật đường dẫn mới vào database.
 
 ---
 
@@ -737,7 +842,54 @@ Màn hình hiển thị: Không tìm thấy model dự đoán
 
 ---
 
-## 11.4. Wireframe ASCII - Trang thai loi
+## 11.4. Wireframe ASCII - Giao diện bác sĩ Review/Confirm kết quả
+
+```text
++-----------------------------------------------------------------------------------------------+
+| Measurement & AI Analysis                                                   [Export PDF][Save] |
+| Patient Code: DXA-2023-8842                                                                   |
++-----------------------------------------------------------------------------------------------+
+|                                                                                               |
+| +--------------------------------------------------+ +---------------------------------------+ |
+| | Upload / Replace Scan                            | | Diagnostic Metrics                    | |
+| | [Click or Drag DXA Scan]                         | |                                       | |
+| | DICOM, JPEG, PNG - Max 50MB                      | | +--------------+ +------------------+ | |
+| +--------------------------------------------------+ | | T-Score      | | Z-Score          | | |
+|                                                      | | -2.8         | | -1.2             | | |
+| +--------------------------------------------------+ | | Low Bone Mass| | Normal range     | | |
+| | Scan Preview                                     | | +--------------+ +------------------+ | |
+| |                                                  | |                                       | |
+| | +----------------------------------------------+ | | Bone Mineral Density - BMD            | |
+| | | [AI ANALYSIS ACTIVE]        [Zoom][Grid]     | | | 0.842 g/cm2                           | |
+| | |                                              | | | Deviation from mean: -14.2%           | |
+| | |              DXA / X-ray Image               | | |                                       | |
+| | |              Heatmap Overlay                 | | | Classification                         | |
+| | |                                              | | | [Osteoporosis] (AI Prediction)        | |
+| | | +----------------+ +----------------------+  | | |                                       | |
+| | | |Detected Region | |Processing Confidence|  | | | Osteoporosis    Osteopenia    Normal   | |
+| | | |Lumbar L1-L4    | |99.4%                |  | | | [====^=============================]   | |
+| | | +----------------+ +----------------------+  | | +---------------------------------------+ |
+| | +----------------------------------------------+ |                                         |
+| +--------------------------------------------------+ +---------------------------------------+ |
+|                                                      | Doctor Clinical Review (Xác nhận BS)  | |
+|                                                      |                                       | |
+|                                                      | Trạng thái: [Đồng ý AI] [Sửa kết quả] | |
+|                                                      | Nhãn xác nhận:                        | |
+|                                                      | ( ) Bình thường ( ) Thiếu (o) Loãng   | |
+|                                                      | Loại lỗi:                             | |
+|                                                      | [ AI dự đoán thấp hơn thực tế    [v] ]| |
+|                                                      |                                       | |
+|                                                      | [x] Đồng ý lưu làm dữ liệu train lại  | |
+|                                                      | Ghi chú lâm sàng:                     | |
+|                                                      | [Ảnh có vết mờ nhẹ ở L3           ] | |
+|                                                      |                     [Lưu xác nhận]    | |
+|                                                      +---------------------------------------+ |
++-----------------------------------------------------------------------------------------------+
+```
+
+---
+
+## 11.5. Wireframe ASCII - Trang thai loi
 
 ```text
 +-----------------------------------------------------------------------------------------------+
@@ -781,7 +933,7 @@ Màn hình hiển thị: Không tìm thấy model dự đoán
 | ID | Vấn đề cần xác nhận | Xác nhận|
 |---|---|---|
 | OI-01 | Chức năng Phân tích loãng xương có yêu cầu Admin only hay người dùng thường cũng được dùng? | Tạm thời là admin |
-| OI-02 | Ảnh dùng để Phân tích có cần lưu lên Cloudflare R2 không, hay chỉ xử lý tạm thời rồi xóa? | Không lưu lên R2, chỉ lưu tạm và xóa sau khi inference. |
+| OI-02 | Ảnh dùng để Phân tích có cần lưu lên Cloudflare R2 không, hay chỉ xử lý tạm thời rồi xóa? | Lưu tạm trên R2 (tự động xóa sau 24h), chỉ chuyển sang lưu trữ lâu dài nếu bác sĩ review sai và duyệt training lại. |
 | OI-03 | Có cần lưu lịch sử Phân tích vào DB không? | Có lưu lịch sử vào DB |
 | OI-04 | Nếu lưu lịch sử Phân tích, cần lưu theo user/login hiện tại hay chỉ lưu dữ liệu Phân tích chung? | Lưu kèm user_id (VARCHAR(36)) liên kết với bảng users. |
 | OI-05 | `best_model.pt` được lưu cố định tại local server, trong thư mục `models/`, hay trên Cloudflare R2? | Trên R2, backend lưu cache cục bộ và giữ trên RAM. |
@@ -789,7 +941,7 @@ Màn hình hiển thị: Không tìm thấy model dự đoán
 | OI-07 | Có cần hỗ trợ upload nhiều ảnh để Phân tích hàng loạt trong version này không? | Chỉ 1 ảnh thôi |
 | OI-08 | Có cần hiển thị biểu đồ/xác suất từng lớp không, hay chỉ hiển thị kết luận cuối cùng? | Tạm thời hiện kết quả cuối cùng. |
 | OI-09 | Có cần xuất kết quả Phân tích ra PDF/Excel không? | Xuất ra PDF phân tích qua nút in PDF ở phía Frontend (Client-side PDF generation). |
-| OI-10 | Có cần lưu model version / MLflow run id trong kết quả Phân tích không? | Không |
+| OI-10 | Có cần lưu model version / MLflow run id trong kết quả Phân tích không? | Có, lưu model_version và dataset_version từ cấu hình hệ thống. |
 
 ---
 
@@ -798,20 +950,24 @@ Màn hình hiển thị: Không tìm thấy model dự đoán
 | AC | Màn hình | API | Backend | DB | Test |
 |---|---|---|---|---|---|
 | AC-01 | Phân tích loãng xương | [MISSING] | [MISSING] | Không | UI test |
-| AC-02 | Phân tích loãng xương | `/api/measure/predict` | Validate file | Không | API test |
-| AC-03 | Phân tích loãng xương | `/api/measure/predict` | Validate extension | Không | API test |
-| AC-04 | Phân tích loãng xương | `/api/measure/predict` | Validate size | Không | API test |
-| AC-05 | Phân tích loãng xương | `/api/measure/predict` | Validate metadata | Không | UI/API test |
-| AC-06 | Phân tích loãng xương | `/api/measure/predict` | Controller | Không | Integration test |
-| AC-07 | [MISSING] | `/api/measure/predict` | Model loader | Không | Unit/Integration test |
-| AC-08 | [MISSING] | `/api/measure/predict` | Inference service | Không | Unit test |
-| AC-09 | [MISSING] | `/api/measure/predict` | Preprocess service | Không | Unit test |
-| AC-10 | Phân tích loãng xương | `/api/measure/predict` | Inference service | Không | API test |
+| AC-02 | Phân tích loãng xương | `/api/v1/measure/predict` | Validate file | Không | API test |
+| AC-03 | Phân tích loãng xương | `/api/v1/measure/predict` | Validate extension | Không | API test |
+| AC-04 | Phân tích loãng xương | `/api/v1/measure/predict` | Validate size | Không | API test |
+| AC-05 | Phân tích loãng xương | `/api/v1/measure/predict` | Validate metadata | Không | UI/API test |
+| AC-06 | Phân tích loãng xương | `/api/v1/measure/predict` | Controller | Không | Integration test |
+| AC-07 | [MISSING] | `/api/v1/measure/predict` | Model loader | Không | Unit/Integration test |
+| AC-08 | [MISSING] | `/api/v1/measure/predict` | Inference service | Không | Unit test |
+| AC-09 | [MISSING] | `/api/v1/measure/predict` | Preprocess service | Không | Unit test |
+| AC-10 | Phân tích loãng xương | `/api/v1/measure/predict` | Inference service | Không | API test |
 | AC-11 | Phân tích loãng xương | [MISSING] | [MISSING] | Không | UI test |
-| AC-12 | Phân tích loãng xương | `/api/measure/predict` | Response success | Không | UI/API test |
-| AC-13 | Phân tích loãng xương | `/api/measure/predict` | Error handling | Không | UI/API test |
-| AC-14 | [MISSING] | `/api/measure/predict` | Không ghi training label | `osteoporosis_labels` không thay đổi | DB test |
-| AC-15 | [MISSING] | `/api/measure/predict` | Temporary file handling | Không | Integration test |
+| AC-12 | Phân tích loãng xương | `/api/v1/measure/predict` | Response success | Không | UI/API test |
+| AC-13 | Phân tích loãng xương | `/api/v1/measure/predict` | Error handling | Không | UI/API test |
+| AC-14 | [MISSING] | `/api/v1/measure/predict` | Không ghi training label | `osteoporosis_labels` không thay đổi | DB test |
+| AC-15 | [MISSING] | `/api/v1/measure/predict` | Temporary file handling | Không | Integration test |
+| AC-16 | Phân tích loãng xương | `/api/v1/measure/confirm/{id}` | Bác sĩ gửi xác nhận | Lưu thông tin review | UI test |
+| AC-17 | Phân tích loãng xương | `/api/v1/measure/confirm/{id}` | Validate quyền BS | Lưu user_id review | API test |
+| AC-18 | [MISSING] | `/api/v1/measure/confirm/{id}` | Copy/Move ảnh trên R2 | Cập nhật `image_r2_key` | Integration test |
+| AC-19 | [MISSING] | `/api/v1/measure/confirm/{id}` | Lifecycle xóa R2 tạm | Xóa file tạm sau 24h | System test |
 
 ---
 

@@ -18,6 +18,16 @@ export default function MeasurementPage() {
   const [resultData, setResultData] = useState<any>(null);
   const [isDragActive, setIsDragActive] = useState<boolean>(false);
 
+  // Doctor Review states
+  const [reviewStatus, setReviewStatus] = useState<string>("confirmed_correct");
+  const [doctorConfirmedLabel, setDoctorConfirmedLabel] = useState<string>("");
+  const [errorType, setErrorType] = useState<string>("none");
+  const [approvedForNextTraining, setApprovedForNextTraining] = useState<boolean>(false);
+  const [reviewNote, setReviewNote] = useState<string>("");
+  const [isSavingReview, setIsSavingReview] = useState<boolean>(false);
+  const [reviewSuccessMsg, setReviewSuccessMsg] = useState<string | null>(null);
+  const [reviewErrorMsg, setReviewErrorMsg] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenPicker = () => {
@@ -57,6 +67,8 @@ export default function MeasurementPage() {
     setSelectedFile(file);
     setErrorMsg(null);
     setResultData(null);
+    setReviewSuccessMsg(null);
+    setReviewErrorMsg(null);
     
     // Create new object URL for preview
     const url = URL.createObjectURL(file);
@@ -72,6 +84,8 @@ export default function MeasurementPage() {
     }
     setResultData(null);
     setErrorMsg(null);
+    setReviewSuccessMsg(null);
+    setReviewErrorMsg(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -135,6 +149,13 @@ export default function MeasurementPage() {
 
       if (resData && resData.success && resData.data) {
         setResultData(resData.data);
+        setDoctorConfirmedLabel(resData.data.predicted_label);
+        setReviewStatus("confirmed_correct");
+        setErrorType("none");
+        setApprovedForNextTraining(false);
+        setReviewNote("");
+        setReviewSuccessMsg(null);
+        setReviewErrorMsg(null);
       } else {
         throw new Error("Dữ liệu trả về từ server không đúng định dạng.");
       }
@@ -148,6 +169,51 @@ export default function MeasurementPage() {
 
   const handlePrintPDF = () => {
     window.print();
+  };
+
+  const handleSaveReview = async () => {
+    if (!resultData || !resultData.measurement_id) {
+      setReviewErrorMsg("Không tìm thấy thông tin bản ghi phân tích để lưu review.");
+      return;
+    }
+
+    setIsSavingReview(true);
+    setReviewSuccessMsg(null);
+    setReviewErrorMsg(null);
+
+    const apiUrl = getApiUrl();
+    try {
+      const response = await fetch(`${apiUrl}/v1/measure/confirm/${resultData.measurement_id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          review_status: reviewStatus,
+          doctor_confirmed_label: reviewStatus === "confirmed_correct" ? resultData.predicted_label : doctorConfirmedLabel,
+          error_type: reviewStatus === "confirmed_correct" ? "none" : errorType,
+          approved_for_next_training: approvedForNextTraining,
+          review_note: reviewNote,
+        }),
+      });
+
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.detail || resData.message || "Xác nhận kết quả thất bại.");
+      }
+
+      if (resData.success) {
+        setReviewSuccessMsg("Xác nhận và lưu kết quả review của bác sĩ thành công!");
+      } else {
+        throw new Error("Lưu kết quả review không thành công.");
+      }
+    } catch (err: any) {
+      console.error("Save review error:", err);
+      setReviewErrorMsg(err.message || "Không thể kết nối đến server để lưu review.");
+    } finally {
+      setIsSavingReview(false);
+    }
   };
 
   const confidenceText = resultData ? `${Math.round(resultData.confidence * 100)}%` : "N/A";
@@ -479,6 +545,131 @@ export default function MeasurementPage() {
               )}
             </ul>
           </div>
+
+          {resultData && (
+            <div className={styles.reviewCard} style={{ marginTop: "16px" }}>
+              <h3 className={styles.reviewTitle}>
+                <span className="material-symbols-outlined">rate_review</span>
+                Xác nhận & Review Kết quả (Dành cho Bác sĩ)
+              </h3>
+              
+              <div className={styles.reviewForm}>
+                {/* Trạng thái xác nhận */}
+                <div className={styles.field}>
+                  <label>Trạng thái Review *</label>
+                  <div className={styles.reviewStatusRow}>
+                    <label className={styles.radioLabel}>
+                      <input
+                        type="radio"
+                        name="reviewStatus"
+                        value="confirmed_correct"
+                        checked={reviewStatus === "confirmed_correct"}
+                        onChange={() => setReviewStatus("confirmed_correct")}
+                      />
+                      Đồng ý kết quả AI
+                    </label>
+                    <label className={styles.radioLabel}>
+                      <input
+                        type="radio"
+                        name="reviewStatus"
+                        value="corrected_by_doctor"
+                        checked={reviewStatus === "corrected_by_doctor"}
+                        onChange={() => setReviewStatus("corrected_by_doctor")}
+                      />
+                      Sửa nhãn chẩn đoán
+                    </label>
+                  </div>
+                </div>
+
+                {/* Nhãn sửa (nếu chọn corrected_by_doctor) */}
+                {reviewStatus === "corrected_by_doctor" && (
+                  <div className={styles.field}>
+                    <label htmlFor="doctor-label">Nhãn chính xác của bác sĩ *</label>
+                    <select
+                      id="doctor-label"
+                      value={doctorConfirmedLabel}
+                      onChange={(e) => setDoctorConfirmedLabel(e.target.value)}
+                    >
+                      <option value="normal">Bình thường (Normal)</option>
+                      <option value="osteopenia">Thiếu xương (Osteopenia)</option>
+                      <option value="osteoporosis">Loãng xương (Osteoporosis)</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Loại lỗi (nếu chọn corrected_by_doctor) */}
+                {reviewStatus === "corrected_by_doctor" && (
+                  <div className={styles.field}>
+                    <label htmlFor="error-type">Phân loại lỗi dự đoán *</label>
+                    <select
+                      id="error-type"
+                      value={errorType}
+                      onChange={(e) => setErrorType(e.target.value)}
+                    >
+                      <option value="none">Không có lỗi (None)</option>
+                      <option value="under_prediction">AI dự đoán thấp hơn thực tế (Under-prediction)</option>
+                      <option value="over_prediction">AI dự đoán cao hơn thực tế (Over-prediction)</option>
+                      <option value="poor_image_quality">Chất lượng ảnh kém ảnh hưởng kết quả</option>
+                      <option value="wrong_input">Thông tin metadata đầu vào sai lệch</option>
+                      <option value="other">Lỗi khác (Other)</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Đồng ý training lại */}
+                {reviewStatus === "corrected_by_doctor" && (
+                  <label className={styles.checkboxField}>
+                    <input
+                      type="checkbox"
+                      checked={approvedForNextTraining}
+                      onChange={(e) => setApprovedForNextTraining(e.target.checked)}
+                    />
+                    Đồng ý lưu ảnh này để huấn luyện lại (Retraining)
+                  </label>
+                )}
+
+                {/* Ghi chú */}
+                <div className={styles.textareaField}>
+                  <label htmlFor="review-note">Ghi chú của bác sĩ</label>
+                  <textarea
+                    id="review-note"
+                    placeholder="Nhập ghi chú lâm sàng hoặc lý do thay đổi nhãn..."
+                    value={reviewNote}
+                    onChange={(e) => setReviewNote(e.target.value)}
+                  />
+                </div>
+
+                {/* Báo lỗi / thành công */}
+                {reviewErrorMsg && (
+                  <div className={styles.errorBox}>
+                    <span className="material-symbols-outlined">error</span>
+                    <div>{reviewErrorMsg}</div>
+                  </div>
+                )}
+
+                {reviewSuccessMsg && (
+                  <div className={styles.successBox}>
+                    <span className="material-symbols-outlined">check_circle</span>
+                    <div>{reviewSuccessMsg}</div>
+                  </div>
+                )}
+
+                {/* Nút lưu */}
+                <div className={styles.reviewActions}>
+                  <button
+                    className={styles.btnPrimary}
+                    onClick={handleSaveReview}
+                    disabled={isSavingReview}
+                  >
+                    <span className="material-symbols-outlined">
+                      {isSavingReview ? "sync" : "save"}
+                    </span>
+                    {isSavingReview ? "Đang Lưu..." : "Lưu Xác Nhận"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

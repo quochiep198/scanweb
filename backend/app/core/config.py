@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     CLOUDFLARE_R2_BUCKET_NAME: str = ""
     CLOUDFLARE_R2_PUBLIC_URL: str = ""
 
+    # Model & Dataset version control
+    ACTIVE_MODEL_VERSION: str = "v1.0.0"
+    ACTIVE_DATASET_VERSION: str = "dataset_v1.0"
+
     AUTH_COOKIE_DOMAIN: str = ""
     AUTH_COOKIE_SECURE: bool = False
     AUTH_COOKIE_SAMESITE: str = "lax"
