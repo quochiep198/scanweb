@@ -59,8 +59,8 @@ def create_verification_token(user_id: str, email: str) -> str:
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 def generate_otp() -> str:
-    import random
-    return str(random.randint(100000, 999999))
+    import secrets
+    return "".join(secrets.choice("0123456789") for _ in range(6))
 
 def validate_password(password: str) -> tuple[bool, str]:
     """

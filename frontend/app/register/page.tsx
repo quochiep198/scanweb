@@ -128,7 +128,7 @@ export default function RegisterPage() {
         </main>
         <footer className={styles["login-footer"]}>
           <div className={styles["footer-copyright"]}>
-            Ban quyen 2024 <strong>{messages.brand.name}</strong>. All rights reserved.
+            Ban quyen 2026 <strong>{messages.brand.name}</strong>. All rights reserved.
           </div>
         </footer>
       </div>

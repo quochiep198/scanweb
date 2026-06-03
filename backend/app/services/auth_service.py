@@ -193,3 +193,17 @@ class AuthService:
                 return False, f"Vui long doi {remaining} giay truoc khi yeu cau ma moi"
 
         return True, ""
+
+    @staticmethod
+    def blacklist_access_token(db: Session, token: str):
+        from app.models.blacklisted_token import BlacklistedToken
+        exists = db.query(BlacklistedToken).filter(BlacklistedToken.token == token).first()
+        if not exists:
+            blacklisted = BlacklistedToken(token=token)
+            db.add(blacklisted)
+            db.commit()
+
+    @staticmethod
+    def is_token_blacklisted(db: Session, token: str) -> bool:
+        from app.models.blacklisted_token import BlacklistedToken
+        return db.query(BlacklistedToken).filter(BlacklistedToken.token == token).first() is not None

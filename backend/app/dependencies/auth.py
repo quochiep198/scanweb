@@ -17,6 +17,13 @@ def get_current_user(
             detail="Authentication required"
         )
 
+    from app.services.auth_service import AuthService
+    if AuthService.is_token_blacklisted(db, token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been blacklisted"
+        )
+
     payload = decode_token(token)
 
     if not payload:

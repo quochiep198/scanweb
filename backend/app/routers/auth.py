@@ -179,7 +179,12 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
 
 @router.post("/logout", response_model=MessageResponse)
 def logout(response: Response, req: Request, db: Session = Depends(get_db)):
-    """Logout and revoke refresh token."""
+    """Logout and revoke refresh token and blacklist access token."""
+    from app.core.auth_cookies import get_access_token_from_request
+    access_token = get_access_token_from_request(req)
+    if access_token:
+        AuthService.blacklist_access_token(db, access_token)
+
     refresh_token = get_refresh_token_from_request(req)
     if refresh_token:
         AuthService.revoke_refresh_token(db, refresh_token)
