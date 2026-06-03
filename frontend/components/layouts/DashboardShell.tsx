@@ -45,7 +45,7 @@ export function DashboardShell({ children, currentView, onViewChange }: Dashboar
   return (
     <div className={`${styles.shell} dashboard-shell-root`}>
       <header className={styles.topbar}>
-        <div className={styles.brand}>OsteoScan DXA</div>
+        <div className={styles.brand}>OsteoScan AI</div>
 
         <label className={styles.search} aria-label="Tim kiem">
           <span className="material-symbols-outlined">search</span>

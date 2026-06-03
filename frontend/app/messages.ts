@@ -1,21 +1,21 @@
 export const messages = {
   brand: {
-    name: "OsteoScan DXA",
-    tagline: "Diagnostic Excellence",
+    name: "OsteoScan AI",
+    tagline: "",
   },
   shared: {
-    heroTitle: "Phân tích mật độ xương theo thế hệ mới.",
+    heroTitle: "Hỗ trợ sàng lọc nguy cơ loãng xương bằng AI..",
     heroDescription:
-      "OsteoScan DXA cung cấp độ chính xác tối ưu trong chẩn đoán loãng xương và đánh giá rủi ro gãy xương cho bệnh nhân.",
+      "OsteoScan AI giúp phòng khám phân tích ảnh X-ray/DICOM, hỗ trợ bác sĩ đánh giá nguy cơ loãng xương và chuẩn hóa báo cáo.",
     loading: "Vui lòng chờ trong giây lát",
     loginLink: "Quay lại đăng nhập",
     loginNow: "Đăng nhập ngay",
     support: "Hỗ trợ",
     privacy: "Chính sách bảo mật",
     systemActive: "Hệ thống đang hoạt động",
-    featureSpeedTitle: "Xử lý thời gian thực",
+    featureSpeedTitle: "Phân tích nhanh",
     featureSpeedDescription:
-      "Kết quả phân tích có ngay sau khi quét với sai số tối thiểu.",
+      "Kết quả AI được trả về trong thời gian ngắn để bác sĩ tham khảo và xác nhận.",
     featureReportTitle: "Báo cáo chuyên sâu",
     featureReportDescription:
       "Biểu đồ hóa các chỉ số BMD, T-score và Z-score trực quan.",
@@ -52,7 +52,7 @@ export const messages = {
       showPassword: "Hiện mật khẩu",
       hidePassword: "Ẩn mật khẩu",
       registerPrompt: "Chưa có tài khoản? ",
-      registerLink: "Đăng ký ngay",
+      registerLink: "Liên hệ quản trị viên",
     },
     register: {
       title: "Đăng ký",

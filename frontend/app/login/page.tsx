@@ -167,15 +167,15 @@ export default function LoginPage() {
               <div className={styles["trust-bar"]}>
                 <div className={styles["trust-item"]}>
                   <span className="material-symbols-outlined">verified_user</span>
-                  <span>HIPAA Compliant</span>
+                  <span>Lưu trữ riêng tư</span>
                 </div>
                 <div className={styles["trust-item"]}>
                   <span className="material-symbols-outlined">shield</span>
-                  <span>SSL Secure</span>
+                  <span>Truy cập bảo mật</span>
                 </div>
                 <div className={styles["trust-item"]}>
                   <span className="material-symbols-outlined">lock_person</span>
-                  <span>256-bit AES</span>
+                  <span>Mã hóa kết nối</span>
                 </div>
               </div>
             </div>
