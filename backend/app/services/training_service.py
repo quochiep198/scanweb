@@ -226,8 +226,7 @@ class TrainingService:
                     trainer_id=trainer_id,
                     status="running",
                     clinical_info=clinical_summary,
-                    dataset_size=dataset_size,
-                    created_at=datetime.now()
+                    dataset_size=dataset_size
                 )
                 db.add(training_history_record)
                 db.commit()
@@ -565,7 +564,7 @@ class TrainingService:
                         "loss": final_loss,
                         "f1_score": final_f1,
                         "auc": final_auc,
-                        "completed_at": datetime.now()
+                        "completed_at": datetime.utcnow()
                     })
                     db.commit()
                 except Exception as db_err:
@@ -586,7 +585,7 @@ class TrainingService:
                 db.query(TrainingHistory).filter(TrainingHistory.id == history_id).update({
                     "status": "failed",
                     "error_message": str(e),
-                    "completed_at": datetime.now()
+                    "completed_at": datetime.utcnow()
                 })
                 db.commit()
             except Exception as db_err:
