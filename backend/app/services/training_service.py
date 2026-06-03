@@ -176,7 +176,7 @@ class TrainingService:
         )
 
     @staticmethod
-    def run_training_pipeline(db: Session, trainer_id: str, use_augmentation: bool = True):
+    def run_training_pipeline(db: Session, trainer_id: str, history_id: str = None, use_augmentation: bool = True):
         import os
         import time
         import json
@@ -217,19 +217,20 @@ class TrainingService:
             age_summary = f"Độ tuổi: {min(ages)}-{max(ages)}" if ages else "Độ tuổi: N/A"
             clinical_summary = f"Tổng số: {dataset_size} ảnh. Nhãn: Bình thường ({label_counts['normal']}), Thiếu xương ({label_counts['osteopenia']}), Loãng xương ({label_counts['osteoporosis']}). {age_summary}"
 
-            # Create Training History record in DB
-            history_id = str(uuid.uuid4())
-            training_history_record = TrainingHistory(
-                id=history_id,
-                run_name=f"EfficientNet-B3 Run {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-                trainer_id=trainer_id,
-                status="running",
-                clinical_info=clinical_summary,
-                dataset_size=dataset_size,
-                created_at=datetime.now()
-            )
-            db.add(training_history_record)
-            db.commit()
+            # Create Training History record in DB if not provided
+            if not history_id:
+                history_id = str(uuid.uuid4())
+                training_history_record = TrainingHistory(
+                    id=history_id,
+                    run_name=f"EfficientNet-B3 Run {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                    trainer_id=trainer_id,
+                    status="running",
+                    clinical_info=clinical_summary,
+                    dataset_size=dataset_size,
+                    created_at=datetime.now()
+                )
+                db.add(training_history_record)
+                db.commit()
 
             # Set active flag
             TrainingService.is_training_active = True
@@ -597,11 +598,11 @@ class TrainingService:
                 TrainingService.write_log = old_write_log
 
     @staticmethod
-    def run_training_pipeline_task(trainer_id: str, use_augmentation: bool = True):
+    def run_training_pipeline_task(trainer_id: str, history_id: str = None, use_augmentation: bool = True):
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
-            return TrainingService.run_training_pipeline(db, trainer_id, use_augmentation)
+            return TrainingService.run_training_pipeline(db, trainer_id, history_id, use_augmentation)
         except Exception as e:
             logger.error(f"Training background task failed: {e}")
             raise e
