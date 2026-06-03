@@ -38,16 +38,35 @@ class MeasureService:
         global _cached_models
         
         version = settings.ACTIVE_MODEL_VERSION
-        if version in _cached_models:
-            return _cached_models[version]
-            
-        device = MeasureService.get_device()
         local_path = f"models/best_model_{version}.pt"
         r2_key = f"models/{version}/best_model.pt"
         
-        # 1. Check if model exists locally
+        # 1. Fetch metadata from R2 to check if local file is outdated
+        r2_metadata = R2Service.get_file_metadata(r2_key)
+        should_download = False
+        
         if not os.path.exists(local_path):
-            logger.info(f"Model {local_path} not found locally. Attempting to download key {r2_key} from Cloudflare R2...")
+            should_download = True
+        elif r2_metadata:
+            import datetime
+            r2_mtime = r2_metadata["LastModified"]
+            local_mtime = datetime.datetime.fromtimestamp(os.path.getmtime(local_path), datetime.timezone.utc)
+            if r2_mtime > local_mtime + datetime.timedelta(seconds=2):
+                logger.info(f"Model update detected on Cloudflare R2 (R2: {r2_mtime}, Local: {local_mtime}). Overwriting local cache.")
+                should_download = True
+                # Clear in-memory cache to force reloading weights from disk
+                if version in _cached_models:
+                    del _cached_models[version]
+
+        # 2. Return from in-memory cache if it is still valid
+        if not should_download and version in _cached_models:
+            return _cached_models[version]
+            
+        device = MeasureService.get_device()
+
+        # 3. If outdated or missing, download from R2
+        if should_download:
+            logger.info(f"Model {local_path} not found locally or outdated. Attempting to download key {r2_key} from Cloudflare R2...")
             try:
                 os.makedirs("models", exist_ok=True)
                 try:

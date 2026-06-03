@@ -164,3 +164,49 @@ class R2Service:
         except Exception as e:
             logger.error(f"Error copying file in R2: {e}")
             raise e
+
+    @staticmethod
+    def get_file_metadata(key: str) -> dict | None:
+        """
+        Retrieves metadata (LastModified, ETag, ContentLength) for a file in Cloudflare R2.
+        Returns None if file not found or R2 not configured.
+        """
+        account_id = settings.CLOUDFLARE_R2_ACCOUNT_ID
+        access_key = settings.CLOUDFLARE_R2_ACCESS_KEY_ID
+        secret_key = settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY
+        bucket_name = settings.CLOUDFLARE_R2_BUCKET_NAME
+
+        if not all([account_id, access_key, secret_key, bucket_name]) or "mock-r2" in key:
+            return None
+
+        try:
+            # Extract key/filename from URL path robustly
+            from urllib.parse import urlparse
+            if key.startswith("http"):
+                parsed = urlparse(key)
+                path = parsed.path.lstrip('/')
+                if bucket_name and path.startswith(f"{bucket_name}/"):
+                    key = path[len(bucket_name)+1:]
+                else:
+                    key = path
+                if not key:
+                    key = key.split("/")[-1]
+
+            r2_endpoint = f"https://{account_id}.r2.cloudflarestorage.com"
+            s3_client = boto3.client(
+                "s3",
+                endpoint_url=r2_endpoint,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                region_name="auto"
+            )
+            response = s3_client.head_object(Bucket=bucket_name, Key=key)
+            return {
+                "LastModified": response.get("LastModified"),
+                "ETag": response.get("ETag"),
+                "ContentLength": response.get("ContentLength")
+            }
+        except Exception as e:
+            logger.warning(f"Failed to fetch metadata for R2 key {key}: {e}")
+            return None
+

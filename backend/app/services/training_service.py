@@ -302,7 +302,9 @@ class TrainingService:
                 
                 # Save initial model state to guarantee best_model.pt exists
                 torch.save(model.state_dict(), "models/best_model.pt")
-                TrainingService.write_log("Initialized models/best_model.pt checkpoint.")
+                from app.core.config import settings
+                torch.save(model.state_dict(), f"models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+                TrainingService.write_log(f"Initialized models/best_model.pt and models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt checkpoints.")
                 
                 TrainingService.write_log("Initializing PyTorch DataLoader...")
                 dataloader = TrainingService.get_training_dataloader(
@@ -442,6 +444,8 @@ class TrainingService:
                             best_loss = epoch_val_loss
                             TrainingService.write_log(f"Validation loss decreased ({best_loss:.4f}). Saving model state dictionary...")
                             torch.save(model.state_dict(), "models/best_model.pt")
+                            from app.core.config import settings
+                            torch.save(model.state_dict(), f"models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt")
                     else:
                         # Save best model based on training loss if no validation split is present
                         epoch_val_loss = epoch_loss
@@ -465,6 +469,8 @@ class TrainingService:
                             best_loss = epoch_loss
                             TrainingService.write_log(f"Train loss decreased ({best_loss:.4f}). Saving model state dictionary...")
                             torch.save(model.state_dict(), "models/best_model.pt")
+                            from app.core.config import settings
+                            torch.save(model.state_dict(), f"models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt")
                             
                 # Log best model artifact
                 mlflow.log_artifact("models/best_model.pt")
@@ -521,16 +527,31 @@ class TrainingService:
                 
                 # Upload to Cloudflare R2
                 try:
-                    TrainingService.write_log("Uploading models/best_model.pt to Cloudflare R2 storage...")
+                    from app.core.config import settings
+                    TrainingService.write_log("Uploading model weights to Cloudflare R2 storage...")
                     with open("models/best_model.pt", "rb") as f:
                         model_bytes = f.read()
+                    
+                    # 1. Upload to versioned key
+                    versioned_key = f"models/{settings.ACTIVE_MODEL_VERSION}/best_model.pt"
                     r2_url = R2Service.upload_file(
                         file_content=model_bytes,
                         filename="best_model.pt",
                         content_type="application/octet-stream",
-                        custom_key="models/best_model.pt"
+                        custom_key=versioned_key
                     )
-                    TrainingService.write_log(f"Model successfully uploaded to R2. URL: {r2_url}")
+                    TrainingService.write_log(f"Model successfully uploaded to R2 under key {versioned_key}.")
+                    
+                    # 2. Upload to default key
+                    try:
+                        R2Service.upload_file(
+                            file_content=model_bytes,
+                            filename="best_model.pt",
+                            content_type="application/octet-stream",
+                            custom_key="models/best_model.pt"
+                        )
+                    except Exception as upload_default_err:
+                        logger.warning(f"Failed to upload default models/best_model.pt fallback key to R2: {upload_default_err}")
                 except Exception as e:
                     TrainingService.write_log(f"Failed to upload model to R2: {e}")
                     logger.error(f"Failed to upload model to R2: {e}")
