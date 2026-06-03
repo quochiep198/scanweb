@@ -7,65 +7,14 @@ from app.models.diagnostic_label import DiagnosticLabel
 from app.schemas.upload import UploadOptionsResponse
 from app.services.r2_service import R2Service
 from app.services.upload_service import UploadService
+from app.services.anonymize_service import AnonymizeService
 from datetime import datetime
 import io
 from PIL import Image, ImageOps, ImageDraw
 import pydicom
 import numpy as np
 
-_ocr_reader = None
 
-def get_ocr_reader():
-    global _ocr_reader
-    if _ocr_reader is None:
-        import easyocr
-        # Load English and Vietnamese models
-        _ocr_reader = easyocr.Reader(['vi', 'en'], gpu=False)
-    return _ocr_reader
-
-def redact_burned_text(image: Image.Image) -> Image.Image:
-    try:
-        # Convert PIL image to numpy array for EasyOCR
-        # EasyOCR works best with RGB, so we convert a copy to RGB safely
-        img_array = np.array(image.convert("RGB"))
-        
-        # Get OCR Reader and detect text
-        reader = get_ocr_reader()
-        results = reader.readtext(img_array)
-        
-        # Blur bounding boxes containing text
-        draw = ImageDraw.Draw(image)
-        img_area = image.width * image.height
-        
-        for (bbox, text, prob) in results:
-            # Skip low confidence detections
-            if prob < 0.45:
-                continue
-                
-            pts = np.array(bbox, np.int32)
-            x_min = max(0, int(np.min(pts[:, 0])))
-            y_min = max(0, int(np.min(pts[:, 1])))
-            x_max = min(image.width, int(np.max(pts[:, 0])))
-            y_max = min(image.height, int(np.max(pts[:, 1])))
-            
-            # Skip unreasonably large bounding boxes (false positives on bones)
-            box_width = x_max - x_min
-            box_height = y_max - y_min
-            box_area = box_width * box_height
-            
-            if box_area > (img_area * 0.05): # Text shouldn't take > 5% of total image
-                continue
-            if box_height > (image.height * 0.1): # Text height shouldn't be > 10% of image height
-                continue
-            
-            # Apply blackout rectangle to completely obscure text
-            draw.rectangle([x_min, y_min, x_max, y_max], fill="black")
-
-        return image
-    except Exception as e:
-        print(f"OCR Redaction warning: {e}")
-    
-    return image
 
 router = APIRouter(prefix="/v1/upload", tags=["Upload"])
 
@@ -211,44 +160,8 @@ def upload_file(
 
     # 1.5 Anonymize Patient Information (PHI)
     try:
-        filename_lower = file.filename.lower() if file.filename else ""
-        if filename_lower.endswith(".dcm"):
-            dicom_data = pydicom.dcmread(io.BytesIO(file_content))
-            tags_to_anonymize = [
-                'PatientName', 'PatientID', 'PatientBirthDate', 'PatientSex', 'PatientAge',
-                'InstitutionName', 'InstitutionAddress', 'InstitutionalDepartmentName',
-                'PhysiciansOfRecord', 'PerformingPhysicianName', 'OperatorsName', 'ReferringPhysicianName'
-            ]
-            for tag in tags_to_anonymize:
-                if tag in dicom_data:
-                    delattr(dicom_data, tag)
-            out_stream = io.BytesIO()
-            dicom_data.save_as(out_stream)
-            file_content = out_stream.getvalue()
-        elif filename_lower.endswith((".png", ".jpg", ".jpeg")):
-            image = Image.open(io.BytesIO(file_content))
-            
-            # 1. Correct orientation from EXIF (if any) before stripping
-            image = ImageOps.exif_transpose(image)
-            
-            # 2. Use OCR to remove burned-in text directly on PIL image
-            image = redact_burned_text(image)
-            
-            # 3. Save keeping original profile but stripping EXIF
-            fmt = "PNG" if filename_lower.endswith(".png") else "JPEG"
-            if fmt == "JPEG" and image.mode in ("RGBA", "P"):
-                # JPEG doesn't support alpha channel, convert to RGB
-                image = image.convert("RGB")
-                
-            out_stream = io.BytesIO()
-            icc_profile = image.info.get("icc_profile")
-            # Save with 100% quality to avoid degradation
-            image.save(out_stream, format=fmt, quality=100, icc_profile=icc_profile)
-            
-            file_content = out_stream.getvalue()
+        file_content = AnonymizeService.anonymize_image(file_content, file.filename)
     except Exception as e:
-        # If anonymization fails, we continue with original file or raise an error depending on strictness.
-        # Since patient privacy is critical, we'll raise an error if parsing fails to avoid leaking PHI.
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to anonymize image data: {str(e)}"

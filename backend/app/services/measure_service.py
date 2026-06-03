@@ -14,6 +14,7 @@ from app.models.efficientnet_model import OsteoporosisEfficientNetB3
 from app.models.measurement_result import MeasurementResult
 from app.services.r2_service import R2Service
 from app.services.image_loader_service import ImageLoaderService
+from app.services.anonymize_service import AnonymizeService
 from app.services.xray_analyzer_service import XRayAnalyzerService
 from app.services.monai_processing_service import MonaiProcessingService
 
@@ -108,6 +109,13 @@ class MeasureService:
         Uploads image temporarily to R2.
         """
         try:
+            # 0. Anonymize image data (remove metadata and redact burned-in text)
+            try:
+                file_content = AnonymizeService.anonymize_image(file_content, filename)
+            except Exception as e:
+                logger.error(f"Failed to anonymize image data during predict flow: {e}")
+                raise ValueError(f"Không thể khử thông tin nhạy cảm của ảnh: {str(e)}")
+
             # 1. Load model (from cache or R2/file)
             model = MeasureService.load_model()
             device = MeasureService.get_device()

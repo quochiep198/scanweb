@@ -41,6 +41,23 @@ Dữ liệu được lấy động từ cơ sở dữ liệu:
 - Sau khi lưu dữ liệu thành công phải có popup báo hoàn thành : "Đã đăng ký dữ liệu thành công" 
 - Nếu có bất cứ lỗi nào (như trùng hash ảnh, sql exception) thì hiển thị : "Đăng ký thất bại"
 
+### 3.2.1. Ẩn danh thông tin nhạy cảm của bệnh nhân (PHI De-identification)
+Trước khi lưu trữ ảnh lên Cloudflare R2 (trong cả luồng upload dữ liệu huấn luyện và luồng gửi ảnh dự đoán), hệ thống bắt buộc phải thực hiện khử thông tin nhận dạng cá nhân (PHI) thông qua `AnonymizeService`:
+1. **Đối với ảnh định dạng DICOM (`.dcm`)**:
+   - Xóa bỏ hoàn toàn 12 tags metadata nhạy cảm nếu có trong file:
+     - `PatientName`, `PatientID`, `PatientBirthDate`, `PatientSex`, `PatientAge` (Thông tin bệnh nhân).
+     - `InstitutionName`, `InstitutionAddress`, `InstitutionalDepartmentName` (Thông tin cơ sở y tế).
+     - `PhysiciansOfRecord`, `PerformingPhysicianName`, `OperatorsName`, `ReferringPhysicianName` (Thông tin bác sĩ/kỹ thuật viên).
+2. **Đối với ảnh thường (`.png`, `.jpg`, `.jpeg`)**:
+   - **Xoay ảnh theo EXIF**: Tự động chuyển đổi hướng ảnh phù hợp bằng `ImageOps.exif_transpose` trước khi xóa metadata.
+   - **Xóa bỏ Metadata EXIF**: Toàn bộ dữ liệu EXIF thô sẽ bị loại bỏ khi lưu file để tránh rò rỉ thông tin thiết bị, thời gian, vị trí chụp. Giữ lại `icc_profile` để đảm bảo màu sắc ảnh X-quang không bị sai lệch.
+   - **Che chữ in đè (Burned-in Text Redaction)**:
+     - Sử dụng mô hình **EasyOCR** (hỗ trợ ngôn ngữ tiếng Anh và tiếng Việt) để nhận diện các vùng văn bản in trực tiếp lên phim chụp.
+     - Vẽ đè hình chữ nhật màu đen (blackout) che kín các vùng văn bản này.
+     - Thiết lập ngưỡng tin cậy OCR tối thiểu là `0.45`.
+     - Chỉ áp dụng che các vùng văn bản nhỏ (diện tích không vượt quá 5% tổng diện tích ảnh và chiều cao không vượt quá 10% chiều cao ảnh) để tránh nhận diện nhầm các cấu trúc xương hoặc chi tiết giải phẫu lớn.
+
+
 # 3.3 Luồng nhấn nút Huấn Luyện Ngay
 
 Khi người dùng nhấn nút **Huấn Luyện Ngay**, hệ thống sẽ bắt đầu pipeline training AI phát hiện loãng xương từ dữ liệu X-quang.

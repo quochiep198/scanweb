@@ -110,6 +110,12 @@ def predict_osteoporosis(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy model dự đoán"
         )
+    except ValueError as e:
+        logger.error(f"Prediction failed due to validation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Prediction failed during inference pipeline: {e}")
         err_msg = str(e)
