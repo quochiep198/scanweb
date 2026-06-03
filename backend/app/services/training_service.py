@@ -1,3 +1,6 @@
+import os
+os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sqlalchemy.orm import Session
