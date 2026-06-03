@@ -210,15 +210,47 @@ def train_model(
         )
 
     metadata = TrainingService.get_training_metadata(db)
-    if len(metadata) == 0:
+    dataset_size = len(metadata)
+    if dataset_size == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Không có dữ liệu mới để huấn luyện."
         )
 
+    # Create the TrainingHistory record synchronously in the API thread
+    import uuid
+    from datetime import datetime
+    
+    # Compile clinical summary for immediate feedback
+    label_counts = {"normal": 0, "osteopenia": 0, "osteoporosis": 0}
+    ages = []
+    for row in metadata:
+        lbl = row.get("label")
+        if lbl in label_counts:
+            label_counts[lbl] += 1
+        age_val = row.get("age")
+        if age_val is not None:
+            ages.append(int(age_val))
+    
+    age_summary = f"Độ tuổi: {min(ages)}-{max(ages)}" if ages else "Độ tuổi: N/A"
+    clinical_summary = f"Tổng số: {dataset_size} ảnh. Nhãn: Bình thường ({label_counts['normal']}), Thiếu xương ({label_counts['osteopenia']}), Loãng xương ({label_counts['osteoporosis']}). {age_summary}"
+
+    history_id = str(uuid.uuid4())
+    training_history_record = TrainingHistory(
+        id=history_id,
+        run_name=f"EfficientNet-B3 Run {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        trainer_id=current_user.id,
+        status="running",
+        clinical_info=clinical_summary,
+        dataset_size=dataset_size
+    )
+    db.add(training_history_record)
+    db.commit()
+
     background_tasks.add_task(
         TrainingService.run_training_pipeline_task,
         trainer_id=current_user.id,
+        history_id=history_id,
         use_augmentation=use_augmentation
     )
     return {
@@ -300,14 +332,15 @@ def get_training_history(
 
 @router.get("/logs", status_code=status.HTTP_200_OK)
 def get_training_logs(
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Get the active training logs from the database, falling back to models/training.log.
     """
-    # 1. Fetch the latest run
-    latest_run = db.query(TrainingHistory).order_by(TrainingHistory.created_at.desc()).first()
+    # 1. Fetch the active running run first (to avoid being shadowed by future-timestamped completed runs)
+    latest_run = db.query(TrainingHistory).filter(TrainingHistory.status == "running").first()
+    if not latest_run:
+        latest_run = db.query(TrainingHistory).order_by(TrainingHistory.created_at.desc()).first()
     
     is_active = False
     if latest_run and latest_run.status == "running":

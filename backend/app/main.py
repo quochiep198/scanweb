@@ -1,3 +1,6 @@
+import os
+os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+
 from fastapi import FastAPI, Depends
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
