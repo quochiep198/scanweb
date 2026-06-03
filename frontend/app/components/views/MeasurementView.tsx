@@ -5,8 +5,11 @@ import { getApiUrl } from "@/app/lib/api";
 import styles from "../../measurement/measurement.module.css";
 import PrintableReport from "./PrintableReport";
 import ClassificationGauge from "./ClassificationGauge";
+import { messages } from "@/app/messages";
 
 export default function MeasurementPage() {
+  const m = messages.measurement;
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [age, setAge] = useState<string>("");
@@ -93,7 +96,7 @@ export default function MeasurementPage() {
 
   const handleAnalyze = async () => {
     if (!selectedFile) {
-      setErrorMsg("Vui lòng chọn hoặc kéo thả ảnh X-ray/DICOM cần phân tích.");
+      setErrorMsg(m.errors.selectFile);
       return;
     }
 
@@ -101,19 +104,19 @@ export default function MeasurementPage() {
     const trimmedBmi = bmi.trim();
 
     if (!trimmedAge || !trimmedBmi) {
-      setErrorMsg("Vui lòng nhập đầy đủ thông tin phân tích (Tuổi và BMI).");
+      setErrorMsg(m.errors.fillInfo);
       return;
     }
 
     const ageNum = parseInt(trimmedAge, 10);
     if (isNaN(ageNum) || ageNum <= 0) {
-      setErrorMsg("Tuổi phải là số nguyên dương hợp lệ.");
+      setErrorMsg(m.errors.invalidAge);
       return;
     }
 
     const bmiNum = parseFloat(trimmedBmi);
     if (isNaN(bmiNum) || bmiNum <= 0) {
-      setErrorMsg("Chỉ số BMI phải là số thực dương hợp lệ.");
+      setErrorMsg(m.errors.invalidBmi);
       return;
     }
 
@@ -140,11 +143,11 @@ export default function MeasurementPage() {
       try {
         resData = responseText ? JSON.parse(responseText) : null;
       } catch (e) {
-        throw new Error(`Phản hồi từ server không phải là định dạng JSON hợp lệ (Mã HTTP: ${response.status}).`);
+        throw new Error(m.errors.invalidJson(response.status));
       }
 
       if (!response.ok) {
-        throw new Error((resData && resData.detail) || resData?.message || `Phân tích kết quả thất bại (Mã HTTP: ${response.status})`);
+        throw new Error((resData && resData.detail) || resData?.message || m.errors.analyzeFailed(response.status));
       }
 
       if (resData && resData.success && resData.data) {
@@ -157,11 +160,11 @@ export default function MeasurementPage() {
         setReviewSuccessMsg(null);
         setReviewErrorMsg(null);
       } else {
-        throw new Error("Dữ liệu trả về từ server không đúng định dạng.");
+        throw new Error(m.errors.invalidDataFormat);
       }
     } catch (err: any) {
       console.error("Analysis API error:", err);
-      setErrorMsg(err.message || "Không thể kết nối đến server để phân tích kết quả.");
+      setErrorMsg(err.message || m.errors.connectFailed);
     } finally {
       setIsAnalyzing(false);
     }
@@ -173,7 +176,7 @@ export default function MeasurementPage() {
 
   const handleSaveReview = async () => {
     if (!resultData || !resultData.measurement_id) {
-      setReviewErrorMsg("Không tìm thấy thông tin bản ghi phân tích để lưu review.");
+      setReviewErrorMsg(m.errors.recordNotFound);
       return;
     }
 
@@ -200,17 +203,17 @@ export default function MeasurementPage() {
 
       const resData = await response.json();
       if (!response.ok) {
-        throw new Error(resData.detail || resData.message || "Xác nhận kết quả thất bại.");
+        throw new Error(resData.detail || resData.message || m.errors.confirmFailed);
       }
 
       if (resData.success) {
-        setReviewSuccessMsg("Xác nhận và lưu kết quả review của bác sĩ thành công!");
+        setReviewSuccessMsg(m.success.saveReviewSuccess);
       } else {
-        throw new Error("Lưu kết quả review không thành công.");
+        throw new Error(m.errors.confirmNoteFailed);
       }
     } catch (err: any) {
       console.error("Save review error:", err);
-      setReviewErrorMsg(err.message || "Không thể kết nối đến server để lưu review.");
+      setReviewErrorMsg(err.message || m.errors.saveReviewConnectFailed);
     } finally {
       setIsSavingReview(false);
     }
@@ -222,11 +225,11 @@ export default function MeasurementPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.pageTitle}>Phân Tích Đo Lường & AI</h1>
+          <h1 className={styles.pageTitle}>{m.view.title}</h1>
           <p className={styles.patientInfo}>
             {selectedFile 
-              ? `Tệp tin: ${selectedFile.name} (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)`
-              : "Vui lòng chọn hoặc kéo thả ảnh X-ray/DICOM y tế để chẩn đoán"
+              ? m.view.fileLabel(selectedFile.name, (selectedFile.size / (1024 * 1024)).toFixed(2))
+              : m.view.filePrompt
             }
           </p>
         </div>
@@ -239,14 +242,14 @@ export default function MeasurementPage() {
             <span className="material-symbols-outlined">
               {isAnalyzing ? "sync" : "analytics"}
             </span>
-            {isAnalyzing ? "Đang Phân Tích..." : "Chạy Phân Tích"}
+            {isAnalyzing ? m.view.btnAnalyzing : m.view.btnAnalyze}
           </button>
           <button className={styles.btnSecondary} onClick={handlePrintPDF} disabled={!resultData}>
             <span className="material-symbols-outlined">print</span>
-            Xuất PDF
+            {m.view.btnExportPdf}
           </button>
         </div>
-      </div>
+      </div>Outputs:
 
       <div className={styles.grid}>
         {/* Left Column: Upload, Inputs & Preview */}
@@ -255,36 +258,36 @@ export default function MeasurementPage() {
           <div className={styles.inputsCard}>
             <div className={styles.inputsGrid}>
               <div className={styles.field}>
-                <label htmlFor="patient-age">Tuổi bệnh nhân *</label>
+                <label htmlFor="patient-age">{m.view.ageLabel}</label>
                 <input
                   id="patient-age"
                   type="number"
-                  placeholder="VD: 65"
+                  placeholder={m.view.agePlaceholder}
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
                   disabled={isAnalyzing}
                 />
               </div>
               <div className={styles.field}>
-                <label htmlFor="patient-sex">Giới tính *</label>
+                <label htmlFor="patient-sex">{m.view.sexLabel}</label>
                 <select
                   id="patient-sex"
                   value={sex}
                   onChange={(e) => setSex(e.target.value)}
                   disabled={isAnalyzing}
                 >
-                  <option value="F">Nữ (Female)</option>
-                  <option value="M">Nam (Male)</option>
-                  <option value="Other">Khác (Other)</option>
+                  <option value="F">{m.view.sexFemale}</option>
+                  <option value="M">{m.view.sexMale}</option>
+                  <option value="Other">{m.view.sexOther}</option>
                 </select>
               </div>
               <div className={styles.field}>
-                <label htmlFor="patient-bmi">Chỉ số BMI *</label>
+                <label htmlFor="patient-bmi">{m.view.bmiLabel}</label>
                 <input
                   id="patient-bmi"
                   type="number"
                   step="0.1"
-                  placeholder="VD: 22.5"
+                  placeholder={m.view.bmiPlaceholder}
                   value={bmi}
                   onChange={(e) => setBmi(e.target.value)}
                   disabled={isAnalyzing}
@@ -329,7 +332,7 @@ export default function MeasurementPage() {
                   <span className="material-symbols-outlined" style={{ fontSize: "64px", marginBottom: "16px", color: "#155dca" }}>
                     medical_services
                   </span>
-                  <h4>Tệp dữ liệu DICOM y khoa</h4>
+                  <h4>{m.view.dicomFileTitle}</h4>
                   <p style={{ fontSize: "0.85rem", marginTop: "4px", color: "#64748b" }}>
                     {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
                   </p>
@@ -342,8 +345,8 @@ export default function MeasurementPage() {
                 <div className={styles.uploadIconWrapper}>
                   <span className="material-symbols-outlined">cloud_upload</span>
                 </div>
-                <h3 className={styles.uploadTitle}>Click hoặc Kéo thả file quét ở đây</h3>
-                <p className={styles.uploadDesc}>Hỗ trợ ảnh DICOM (.dcm), JPEG, PNG (Tối đa 50MB)</p>
+                <h3 className={styles.uploadTitle}>{m.view.uploadTitle}</h3>
+                <p className={styles.uploadDesc}>{m.view.uploadDesc}</p>
               </div>
             )}
 
@@ -366,7 +369,7 @@ export default function MeasurementPage() {
                       className={styles.controlBtn} 
                       onClick={handleRemoveFile}
                       style={{ backgroundColor: "rgba(186, 26, 26, 0.2)", borderColor: "rgba(186, 26, 26, 0.4)" }}
-                      title="Xóa tệp tin hiện tại"
+                      title={m.view.deleteTitle}
                     >
                       <span className="material-symbols-outlined" style={{ color: "#f87171" }}>close</span>
                     </button>
@@ -395,7 +398,7 @@ export default function MeasurementPage() {
                 <div className={styles.overlayTop}>
                   <div className={styles.aiActiveBadge}>
                     <span className={styles.pulseDot}></span>
-                    {isAnalyzing ? "AI PROCESSING..." : "AI ANALYSIS ACTIVE"}
+                    {isAnalyzing ? m.view.aiProcessing : m.view.aiActive}
                   </div>
                 </div>
               </div>
@@ -408,7 +411,7 @@ export default function MeasurementPage() {
           <div className={styles.diagnosticCard}>
             <h2 className={styles.cardTitle}>
               <span className="material-symbols-outlined">analytics</span>
-              Chỉ số Kết quả AI
+              {m.view.aiResultsTitle}
             </h2>
 
             {/* Primary Values */}
@@ -417,14 +420,14 @@ export default function MeasurementPage() {
                 <div className={styles.scoreLabel}>T-Score</div>
                 <div className={styles.scoreValue} style={{ color: "#94a3b8" }}>N/A</div>
                 <div className={styles.scoreStatus} style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                  Phân loại AI thay thế
+                  Alternative AI classification
                 </div>
               </div>
               <div className={styles.scoreBox}>
                 <div className={styles.scoreLabel}>Z-Score</div>
                 <div className={styles.scoreValue} style={{ color: "#94a3b8" }}>N/A</div>
                 <div className={styles.scoreStatus} style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                  Phân loại AI thay thế
+                  Alternative AI classification
                 </div>
               </div>
             </div> */}
@@ -440,16 +443,12 @@ export default function MeasurementPage() {
                 <span className={styles.bmdUnit}>g/cm²</span>
               </div>
               <div className={styles.bmdDeviation} style={{ color: "#64748b" }}>
-                Chỉ số BMD giả lập (N/A)
-              </div>
-            </div> */}
-
             {/* Classification Gauge */}
             <ClassificationGauge resultData={resultData} />
 
             {/* Trend Analysis */}
             <div className={styles.trendSection}>
-              <div className={styles.trendLabel}>Độ tin cậy dự đoán (Confidence)</div>
+              <div className={styles.trendLabel}>{m.view.confidenceLabel}</div>
               <div className={styles.trendContent}>
                 <div
                   className={styles.trendIconWrapper}
@@ -468,8 +467,8 @@ export default function MeasurementPage() {
                   <div className={styles.trendValue}>{confidenceText}</div>
                   <div className={styles.trendDesc}>
                     {resultData 
-                      ? `Độ chính xác tương đối dựa trên model ${resultData.model_name}.`
-                      : "Độ tin cậy được ước lượng bởi mô hình phân tích học sâu."
+                      ? m.view.confidenceDescActive(resultData.model_name)
+                      : m.view.confidenceDescDefault
                     }
                   </div>
                 </div>
@@ -481,7 +480,7 @@ export default function MeasurementPage() {
           <div className={styles.insightsCard}>
             <h3 className={styles.insightsTitle}>
               <span className="material-symbols-outlined">psychology</span>
-              AI Clinical Notes
+              {m.view.aiInsightsTitle}
             </h3>
             <ul className={styles.insightsList}>
               {resultData ? (
@@ -490,15 +489,15 @@ export default function MeasurementPage() {
                     <>
                       <li>
                         <span className="material-symbols-outlined" style={{ color: "#ba1a1a" }}>cancel</span>
-                        Mức độ loãng xương được phát hiện cao. Có nguy cơ gãy xương đáng kể.
+                        {m.view.insights.osteoporosis[0]}
                       </li>
                       <li>
                         <span className="material-symbols-outlined" style={{ color: "#ba1a1a" }}>error</span>
-                        Khuyến nghị theo dõi chuyên sâu với bác sĩ cơ xương khớp để lên phác đồ điều trị.
+                        {m.view.insights.osteoporosis[1]}
                       </li>
                       <li>
                         <span className="material-symbols-outlined" style={{ color: "#ba1a1a" }}>info</span>
-                        Cần thực hiện các bài tập cải thiện và bổ sung dinh dưỡng theo chỉ định y khoa.
+                        {m.view.insights.osteoporosis[2]}
                       </li>
                     </>
                   )}
@@ -506,15 +505,15 @@ export default function MeasurementPage() {
                     <>
                       <li>
                         <span className="material-symbols-outlined" style={{ color: "#d97706" }}>warning</span>
-                        Mật độ xương bắt đầu suy giảm nhẹ (Thiếu xương).
+                        {m.view.insights.osteopenia[0]}
                       </li>
                       <li>
                         <span className="material-symbols-outlined" style={{ color: "#d97706" }}>info</span>
-                        Khuyến nghị bổ sung Canxi, Vitamin D và duy trì lối sống vận động lành mạnh.
+                        {m.view.insights.osteopenia[1]}
                       </li>
                       <li>
                         <span className="material-symbols-outlined" style={{ color: "#d97706" }}>schedule</span>
-                        Đề xuất đo lại mật độ xương định kỳ sau 6-12 tháng để theo dõi tiến triển.
+                        {m.view.insights.osteopenia[2]}
                       </li>
                     </>
                   )}
@@ -522,11 +521,11 @@ export default function MeasurementPage() {
                     <>
                       <li>
                         <span className="material-symbols-outlined" style={{ color: "#10b981" }}>check_circle</span>
-                        Mật độ xương nằm trong giới hạn khỏe mạnh bình thường.
+                        {m.view.insights.normal[0]}
                       </li>
                       <li>
                         <span className="material-symbols-outlined" style={{ color: "#10b981" }}>info</span>
-                        Hãy tiếp tục duy trì thói quen ăn uống lành mạnh và tập thể thao thường xuyên.
+                        {m.view.insights.normal[1]}
                       </li>
                     </>
                   )}
@@ -535,11 +534,11 @@ export default function MeasurementPage() {
                 <>
                   <li>
                     <span className="material-symbols-outlined">check_circle</span>
-                    Chưa có kết quả phân tích AI.
+                    {m.view.insights.empty[0]}
                   </li>
                   <li>
                     <span className="material-symbols-outlined">check_circle</span>
-                    Vui lòng cung cấp đầy đủ thông tin lâm sàng (Tuổi, Giới tính, BMI) và tệp tin ảnh quét rồi nhấn "Chạy Phân Tích".
+                    {m.view.insights.empty[1]}
                   </li>
                 </>
               )}
@@ -550,13 +549,13 @@ export default function MeasurementPage() {
             <div className={styles.reviewCard} style={{ marginTop: "16px" }}>
               <h3 className={styles.reviewTitle}>
                 <span className="material-symbols-outlined">rate_review</span>
-                Xác nhận & Review Kết quả (Dành cho Bác sĩ)
+                {m.view.reviewTitle}
               </h3>
               
               <div className={styles.reviewForm}>
-                {/* Trạng thái xác nhận */}
+                {/* Review status */}
                 <div className={styles.field}>
-                  <label>Trạng thái Review *</label>
+                  <label>{m.view.reviewStatusLabel}</label>
                   <div className={styles.reviewStatusRow}>
                     <label className={styles.radioLabel}>
                       <input
@@ -566,7 +565,7 @@ export default function MeasurementPage() {
                         checked={reviewStatus === "confirmed_correct"}
                         onChange={() => setReviewStatus("confirmed_correct")}
                       />
-                      Đồng ý kết quả AI
+                      {m.view.reviewAgreeAi}
                     </label>
                     <label className={styles.radioLabel}>
                       <input
@@ -576,47 +575,47 @@ export default function MeasurementPage() {
                         checked={reviewStatus === "corrected_by_doctor"}
                         onChange={() => setReviewStatus("corrected_by_doctor")}
                       />
-                      Sửa nhãn chẩn đoán
+                      {m.view.reviewCorrectLabel}
                     </label>
                   </div>
                 </div>
 
-                {/* Nhãn sửa (nếu chọn corrected_by_doctor) */}
+                {/* Corrected label (if corrected_by_doctor selected) */}
                 {reviewStatus === "corrected_by_doctor" && (
                   <div className={styles.field}>
-                    <label htmlFor="doctor-label">Nhãn chính xác của bác sĩ *</label>
+                    <label htmlFor="doctor-label">{m.view.doctorLabelTitle}</label>
                     <select
                       id="doctor-label"
                       value={doctorConfirmedLabel}
                       onChange={(e) => setDoctorConfirmedLabel(e.target.value)}
                     >
-                      <option value="normal">Bình thường (Normal)</option>
-                      <option value="osteopenia">Thiếu xương (Osteopenia)</option>
-                      <option value="osteoporosis">Loãng xương (Osteoporosis)</option>
+                      <option value="normal">{m.view.doctorLabelNormal}</option>
+                      <option value="osteopenia">{m.view.doctorLabelOsteopenia}</option>
+                      <option value="osteoporosis">{m.view.doctorLabelOsteoporosis}</option>
                     </select>
                   </div>
                 )}
 
-                {/* Loại lỗi (nếu chọn corrected_by_doctor) */}
+                {/* Error type (if corrected_by_doctor selected) */}
                 {reviewStatus === "corrected_by_doctor" && (
                   <div className={styles.field}>
-                    <label htmlFor="error-type">Phân loại lỗi dự đoán *</label>
+                    <label htmlFor="error-type">{m.view.errorTypeLabel}</label>
                     <select
                       id="error-type"
                       value={errorType}
                       onChange={(e) => setErrorType(e.target.value)}
                     >
-                      <option value="none">Không có lỗi (None)</option>
-                      <option value="under_prediction">AI dự đoán thấp hơn thực tế (Under-prediction)</option>
-                      <option value="over_prediction">AI dự đoán cao hơn thực tế (Over-prediction)</option>
-                      <option value="poor_image_quality">Chất lượng ảnh kém ảnh hưởng kết quả</option>
-                      <option value="wrong_input">Thông tin metadata đầu vào sai lệch</option>
-                      <option value="other">Lỗi khác (Other)</option>
+                      <option value="none">{m.view.errorTypeNone}</option>
+                      <option value="under_prediction">{m.view.errorTypeUnderPrediction}</option>
+                      <option value="over_prediction">{m.view.errorTypeOverPrediction}</option>
+                      <option value="poor_image_quality">{m.view.errorTypePoorImage}</option>
+                      <option value="wrong_input">{m.view.errorTypeWrongInput}</option>
+                      <option value="other">{m.view.errorTypeOther}</option>
                     </select>
                   </div>
                 )}
 
-                {/* Đồng ý training lại */}
+                {/* Agree to retain for retraining */}
                 {reviewStatus === "corrected_by_doctor" && (
                   <label className={styles.checkboxField}>
                     <input
@@ -624,22 +623,22 @@ export default function MeasurementPage() {
                       checked={approvedForNextTraining}
                       onChange={(e) => setApprovedForNextTraining(e.target.checked)}
                     />
-                    Đồng ý lưu ảnh này để huấn luyện lại (Retraining)
+                    {m.view.approvedRetrainingLabel}
                   </label>
                 )}
 
-                {/* Ghi chú */}
+                {/* Clinical notes */}
                 <div className={styles.textareaField}>
-                  <label htmlFor="review-note">Ghi chú của bác sĩ</label>
+                  <label htmlFor="review-note">{m.view.reviewNoteLabel}</label>
                   <textarea
                     id="review-note"
-                    placeholder="Nhập ghi chú lâm sàng hoặc lý do thay đổi nhãn..."
+                    placeholder={m.view.reviewNotePlaceholder}
                     value={reviewNote}
                     onChange={(e) => setReviewNote(e.target.value)}
                   />
                 </div>
 
-                {/* Báo lỗi / thành công */}
+                {/* Error / Success messages */}
                 {reviewErrorMsg && (
                   <div className={styles.errorBox}>
                     <span className="material-symbols-outlined">error</span>
@@ -654,7 +653,7 @@ export default function MeasurementPage() {
                   </div>
                 )}
 
-                {/* Nút lưu */}
+                {/* Save button */}
                 <div className={styles.reviewActions}>
                   <button
                     className={styles.btnPrimary}
@@ -664,7 +663,7 @@ export default function MeasurementPage() {
                     <span className="material-symbols-outlined">
                       {isSavingReview ? "sync" : "save"}
                     </span>
-                    {isSavingReview ? "Đang Lưu..." : "Lưu Xác Nhận"}
+                    {isSavingReview ? m.view.btnSaving : m.view.btnSave}
                   </button>
                 </div>
               </div>

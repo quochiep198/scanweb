@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { getApiUrl } from "@/app/lib/api";
 import styles from "../../dashboard/dashboard.module.css";
+import { messages } from "@/app/messages";
 
 export default function DashboardPage() {
+  const m = messages.dashboard;
   const { user, isAuthenticated } = useAuth();
   const [stats, setStats] = useState({
     uploadTodayCount: 0,
@@ -41,21 +43,21 @@ export default function DashboardPage() {
   const cards = [
     {
       icon: "dataset",
-      title: "Mẫu upload hôm nay",
+      title: m.uploadTodayTitle,
       value: `${stats.uploadTodayCount}`,
-      detail: "Số lượng ảnh X-ray đã được upload lên hệ thống trong ngày hôm nay.",
+      detail: m.uploadTodayDesc,
     },
     {
       icon: "monitoring",
-      title: "Mẫu đã training hôm nay",
+      title: m.trainedTodayTitle,
       value: `${stats.trainedTodayCount}`,
-      detail: "Số lượng mẫu đã hoàn thành huấn luyện cho AI trong ngày hôm nay.",
+      detail: m.trainedTodayDesc,
     },
     {
       icon: "dataset",
-      title: "Mẫu đã upload",
+      title: m.totalUploadTitle,
       value: `${stats.uploadCount}`,
-      detail: "Tổng số lượng mẫu đã được upload lên hệ thống.",
+      detail: m.totalUploadDesc,
     }
   ];
 

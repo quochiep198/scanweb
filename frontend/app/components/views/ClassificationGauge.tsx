@@ -1,10 +1,13 @@
 import styles from "../../measurement/measurement.module.css";
+import { messages } from "@/app/messages";
 
 interface ClassificationGaugeProps {
   resultData: any;
 }
 
 export default function ClassificationGauge({ resultData }: ClassificationGaugeProps) {
+  const m = messages.classificationGauge;
+
   // Determine gauge position
   let gaugeLeft = "50%";
   if (resultData) {
@@ -23,7 +26,7 @@ export default function ClassificationGauge({ resultData }: ClassificationGaugeP
   return (
     <div className={styles.classificationSection}>
       <div className={styles.classificationHeader}>
-        <span className={styles.classificationTitle}>Phân loại loãng xương</span>
+        <span className={styles.classificationTitle}>{m.title}</span>
         <span
           className={styles.classificationBadge}
           style={{
@@ -52,9 +55,9 @@ export default function ClassificationGauge({ resultData }: ClassificationGaugeP
       </div>
 
       <div className={styles.gaugeLabels}>
-        <span style={{ color: "#ba1a1a" }}>Loãng xương</span>
-        <span style={{ color: "#d97706" }}>Thiếu xương</span>
-        <span style={{ color: "#10b981" }}>Bình thường</span>
+        <span style={{ color: "#ba1a1a" }}>{m.osteoporosis}</span>
+        <span style={{ color: "#d97706" }}>{m.osteopenia}</span>
+        <span style={{ color: "#10b981" }}>{m.normal}</span>
       </div>
     </div>
   );

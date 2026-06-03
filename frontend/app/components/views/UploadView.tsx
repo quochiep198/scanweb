@@ -5,21 +5,22 @@ import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { getApiUrl } from "@/app/lib/api";
 import styles from "../../upload/upload.module.css";
+import { messages } from "@/app/messages";
 
 type UploadStatus = "queued" | "uploading" | "success" | "error";
 type ScanRegion = string;
 type DiagnosisLabel = string;
 
 const DEFAULT_SCAN_ZONES = [
-  { name: "Cột sống thắt lưng", value: "lumbar_spine" },
-  { name: "Xương đùi", value: "femoral_neck" },
-  { name: "Toàn thân", value: "other" },
+  { name: messages.upload.defaultScanZones.lumbarSpine, value: "lumbar_spine" },
+  { name: messages.upload.defaultScanZones.femoralNeck, value: "femoral_neck" },
+  { name: messages.upload.defaultScanZones.other, value: "other" },
 ];
 
 const DEFAULT_DIAGNOSTIC_LABELS = [
-  { name: "Bình thường", value: "normal" },
-  { name: "Thiếu xương", value: "osteopenia" },
-  { name: "Lở xương", value: "osteoporosis" },
+  { name: messages.upload.defaultDiagnosticLabels.normal, value: "normal" },
+  { name: messages.upload.defaultDiagnosticLabels.osteopenia, value: "osteopenia" },
+  { name: messages.upload.defaultDiagnosticLabels.osteoporosis, value: "osteoporosis" },
 ];
 
 type UploadItem = {
@@ -106,19 +107,20 @@ function createUploadItem(file: File): UploadItem {
 }
 
 function getStatusText(item: UploadItem) {
+  const m = messages.upload;
   if (item.status === "success") {
-    return "Hoàn tất tải lên";
+    return m.status.success;
   }
 
   if (item.status === "error") {
-    return item.errorMessage || "Lỗi xử lý";
+    return item.errorMessage || m.status.errorDefault;
   }
 
   if (item.status === "uploading") {
-    return `Đang tải lên (${item.progress}%)`;
+    return m.status.uploading(item.progress);
   }
 
-  return "Cho xử lý";
+  return m.status.queued;
 }
 
 const uploadWithProgress = (
@@ -163,6 +165,7 @@ const uploadWithProgress = (
 };
 
 export default function UploadPage() {
+  const m = messages.upload;
   const { isAuthenticated } = useAuth();
   const [scanZones, setScanZones] = useState<{ name: string; value: string }[]>(DEFAULT_SCAN_ZONES);
   const [diagnosticLabels, setDiagnosticLabels] = useState<{ name: string; value: string }[]>(DEFAULT_DIAGNOSTIC_LABELS);
@@ -189,7 +192,7 @@ export default function UploadPage() {
     message: string;
   } | null>(null);
 
-  const [logs, setLogs] = useState("Hệ thống đang rảnh. Chưa bắt đầu huấn luyện.");
+  const [logs, setLogs] = useState(messages.upload.status.idleLogs);
   const [isTraining, setIsTraining] = useState(false);
   const terminalRef = useRef<HTMLDivElement | null>(null);
 
@@ -423,7 +426,7 @@ export default function UploadPage() {
       setResultPopup({
         isOpen: true,
         status: "error",
-        message: "Không có dữ liệu mới để upload",
+        message: m.messages.noNewData,
       });
       return;
     }
@@ -434,7 +437,7 @@ export default function UploadPage() {
     for (const item of queuedItems) {
       if (item.file.size > MAX_FILE_SIZE) {
         updateItem(item.id, "status", "error");
-        updateItem(item.id, "errorMessage", "Tệp vượt quá giới hạn 50MB");
+        updateItem(item.id, "errorMessage", m.messages.fileTooLarge);
         updateItem(item.id, "progress", 0);
         hasError = true;
         continue;
@@ -476,7 +479,7 @@ export default function UploadPage() {
       } catch (error: any) {
         console.error("Upload error for item", item.id, error);
         updateItem(item.id, "status", "error");
-        updateItem(item.id, "errorMessage", error.detail || error.message || "Đăng ký thất bại");
+        updateItem(item.id, "errorMessage", error.detail || error.message || m.messages.uploadFailed);
         updateItem(item.id, "progress", 0);
         hasError = true;
       }
@@ -486,13 +489,13 @@ export default function UploadPage() {
       setResultPopup({
         isOpen: true,
         status: "error",
-        message: "Đăng ký thất bại",
+        message: m.messages.uploadFailed,
       });
     } else {
       setResultPopup({
         isOpen: true,
         status: "success",
-        message: "Đã đăng ký dữ liệu thành công",
+        message: m.messages.uploadSuccess,
       });
     }
   };
@@ -502,7 +505,7 @@ export default function UploadPage() {
       setResultPopup({
         isOpen: true,
         status: "error",
-        message: "Bạn cần đăng nhập để thực hiện huấn luyện.",
+        message: m.messages.loginRequired,
       });
       return;
     }
@@ -515,7 +518,7 @@ export default function UploadPage() {
       });
 
       if (!response.ok) {
-        let errMsg = "Không thể kết nối đến server để bắt đầu huấn luyện.";
+        let errMsg = m.messages.connectFailed;
         try {
           const errData = await response.json();
           errMsg = errData.detail || errMsg;
@@ -527,7 +530,7 @@ export default function UploadPage() {
       setResultPopup({
         isOpen: true,
         status: "success",
-        message: resData.message || "Bắt đầu huấn luyện mô hình EfficientNet-B3 thành công trong nền!",
+        message: resData.message || m.messages.trainSuccess,
       });
       console.log("Training started:", resData);
       setIsTraining(true);
@@ -536,7 +539,7 @@ export default function UploadPage() {
       setResultPopup({
         isOpen: true,
         status: "error",
-        message: error.message || "Không thể kết nối đến server để bắt đầu huấn luyện.",
+        message: error.message || m.messages.connectFailed,
       });
     }
   };
@@ -550,10 +553,9 @@ export default function UploadPage() {
     <div className={styles.page}>
           <header className={styles.header}>
             <div className={styles.titleBlock}>
-              <h1 className={styles.title}>Quản lý tải lên & Huấn luyện AI</h1>
+              <h1 className={styles.title}>{m.view.title}</h1>
               <p className={styles.description}>
-                Cung cấp dữ liệu lâm sàng chất lượng cao để cải thiện độ chính xác của mô hình
-                OsteoScan.
+                {m.view.description}
               </p>
             </div>
 
@@ -564,11 +566,11 @@ export default function UploadPage() {
                 onClick={() => setIsHistoryOpen(true)}
               >
                 <span className="material-symbols-outlined">history</span>
-                Lịch sử huấn luyện
+                {m.view.btnHistory}
               </button>
               <button type="button" className={styles.primaryButton} onClick={handleStartProcessing}>
                 <span className="material-symbols-outlined">model_training</span>
-                Bắt đầu xử lý
+                {m.view.btnStart}
               </button>
             </div>
           </header>
@@ -587,14 +589,13 @@ export default function UploadPage() {
                   </span>
                 </div>
                 <h2 className={styles.uploadHeading}>
-                  Kéo thả tệp tin vào đây hoặc{" "}
+                  {m.view.dragPrompt}{" "}
                   <button type="button" onClick={handleOpenPicker}>
-                    Chọn từ máy tính
+                    {m.view.btnBrowse}
                   </button>
                 </h2>
                 <p className={styles.uploadCaption}>
-                  Hỗ trợ định dạng DICOM (.dcm), PNG, JPG. ích thước tối đa mỗi tệp: 50MB. Đảm bảo
-                  dữ liệu đã được ẩn danh theo quy định HIPAA/GDPR.
+                  {m.view.uploadCaption}
                 </p>
                 <input
                   ref={inputRef}
@@ -608,15 +609,15 @@ export default function UploadPage() {
 
               <section className={styles.queueCard}>
                 <div className={styles.queueHeader}>
-                  <h3 className={styles.queueTitle}>Hàng đợi tải lên ({items.length} tệp)</h3>
+                  <h3 className={styles.queueTitle}>{m.view.queueTitle(items.length)}</h3>
                   <button type="button" className={styles.clearButton} onClick={handleClearAll}>
-                    Xóa tất cả
+                    {m.view.btnClearAll}
                   </button>
                 </div>
 
                 {items.length === 0 ? (
                   <div className={styles.queueEmpty}>
-                    Chưa có tệp nào trong hàng đợi. Chọn tệp để xem giao diện upload.
+                    {m.view.queueEmpty}
                   </div>
                 ) : (
                   <div className={styles.queueList}>
@@ -668,7 +669,7 @@ export default function UploadPage() {
 
                           {/* <div className={styles.metadataGrid}>
                             <div className={styles.field}>
-                              <label htmlFor={`${item.id}-patient`}>ID bệnh nhân</label>
+                              <label htmlFor={`${item.id}-patient`}>{m.view.labelPatientId}</label>
                               <input
                                 id={`${item.id}-patient`}
                                 type="text"
@@ -681,7 +682,7 @@ export default function UploadPage() {
                             </div>
 
                             <div className={styles.field}>
-                              <label htmlFor={`${item.id}-region`}>Vùng quét</label>
+                              <label htmlFor={`${item.id}-region`}>{m.view.labelScanZone}</label>
                               <select
                                 id={`${item.id}-region`}
                                 value={item.bodyPart}
@@ -698,7 +699,7 @@ export default function UploadPage() {
                             </div>
 
                             <div className={styles.field}>
-                              <label htmlFor={`${item.id}-diagnosis`}>Nhãn chẩn đoán</label>
+                              <label htmlFor={`${item.id}-diagnosis`}>{m.view.labelDiagnosis}</label>
                               <select
                                 id={`${item.id}-diagnosis`}
                                 value={item.label}
@@ -725,8 +726,8 @@ export default function UploadPage() {
                                 {expandedItems[item.id] ? "expand_less" : "expand_more"}
                               </span>
                               {expandedItems[item.id]
-                                ? "Thu gọn thông số lâm sàng"
-                                : "Cấu hình chi tiết dữ liệu lâm sàng"}
+                                ? m.view.btnCollapseClinical
+                                : m.view.btnExpandClinical}
                             </button>
                           </div>
 
@@ -737,31 +738,31 @@ export default function UploadPage() {
                                 <legend className={styles.groupLegend}>Patients</legend>
                                 <div className={styles.fieldsGrid}>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-anon-code`}>Mã ẩn danh</label>
+                                    <label htmlFor={`${item.id}-anon-code`}>{m.view.labelAnonCode}</label>
                                     <input
                                       id={`${item.id}-anon-code`}
                                       type="text"
                                       value={item.anonymousCode}
-                                      placeholder="Mã ẩn danh"
+                                      placeholder={m.view.placeholderAnonCode}
                                       onChange={(event) =>
                                         updateItem(item.id, "anonymousCode", event.target.value)
                                       }
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-age`}>Tuổi (age)</label>
+                                    <label htmlFor={`${item.id}-age`}>{m.view.labelAge}</label>
                                     <input
                                       id={`${item.id}-age`}
                                       type="text"
                                       value={item.age}
-                                      placeholder="VD: 55"
+                                      placeholder={m.view.placeholderAge}
                                       onChange={(event) =>
                                         updateItem(item.id, "age", event.target.value)
                                       }
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-sex`}>Giới tính (sex)</label>
+                                    <label htmlFor={`${item.id}-sex`}>{m.view.labelSex}</label>
                                     <select
                                       id={`${item.id}-sex`}
                                       value={item.sex}
@@ -769,42 +770,42 @@ export default function UploadPage() {
                                         updateItem(item.id, "sex", event.target.value)
                                       }
                                     >
-                                      <option value="M">M (Nam)</option>
-                                      <option value="F">F (Nữ)</option>
-                                      <option value="Other">Khác (Other)</option>
+                                      <option value="M">{m.view.sexMale}</option>
+                                      <option value="F">{m.view.sexFemale}</option>
+                                      <option value="Other">{m.view.sexOther}</option>
                                     </select>
                                   </div>
                                   <div className={styles.field}>
-                                     <label htmlFor={`${item.id}-height`}>Chiều cao (height_cm)</label>
+                                     <label htmlFor={`${item.id}-height`}>{m.view.labelHeight}</label>
                                      <input
                                        id={`${item.id}-height`}
                                        type="text"
                                        value={item.heightCm}
-                                       placeholder="VD: 165.5"
+                                       placeholder={m.view.placeholderHeight}
                                        onChange={(event) =>
                                          updateItem(item.id, "heightCm", event.target.value)
                                        }
                                      />
                                    </div>
                                    <div className={styles.field}>
-                                     <label htmlFor={`${item.id}-weight`}>Cân nặng (weight_kg)</label>
+                                     <label htmlFor={`${item.id}-weight`}>{m.view.labelWeight}</label>
                                      <input
                                        id={`${item.id}-weight`}
                                        type="text"
                                        value={item.weightKg}
-                                       placeholder="VD: 58.2"
+                                       placeholder={m.view.placeholderWeight}
                                        onChange={(event) =>
                                          updateItem(item.id, "weightKg", event.target.value)
                                        }
                                      />
                                    </div>
                                    <div className={styles.field}>
-                                     <label htmlFor={`${item.id}-bmi`}>Chỉ số BMI (bmi) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}></span></label>
+                                     <label htmlFor={`${item.id}-bmi`}>{m.view.labelBmi}</label>
                                      <input
                                        id={`${item.id}-bmi`}
                                        type="text"
                                        value={item.bmi}
-                                       placeholder="Tự động tính"
+                                       placeholder={m.view.placeholderBmi}
                                        disabled
                                      />
                                    </div>
@@ -816,7 +817,7 @@ export default function UploadPage() {
                                 <legend className={styles.groupLegend}>Xray_images</legend>
                                 <div className={styles.fieldsGrid}>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-xray-date`}>Ngày chụp (xray_date) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-xray-date`}>{m.view.labelXrayDate}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <input
                                       id={`${item.id}-xray-date`}
                                       type="date"
@@ -828,7 +829,7 @@ export default function UploadPage() {
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-view-type`}>Tư thế (view_type) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-view-type`}>{m.view.labelViewType}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <select
                                       id={`${item.id}-view-type`}
                                       value={item.viewType}
@@ -837,14 +838,14 @@ export default function UploadPage() {
                                       }
                                       disabled
                                     >
-                                      <option value="AP">AP (Trước - Sau)</option>
-                                      <option value="Lateral">Lateral (Nghiêng)</option>
-                                      <option value="PA">PA (Sau - Trước)</option>
-                                      <option value="Other">Tư thế khác</option>
+                                      <option value="AP">{m.view.viewTypeAP}</option>
+                                      <option value="Lateral">{m.view.viewTypeLateral}</option>
+                                      <option value="PA">{m.view.viewTypePA}</option>
+                                      <option value="Other">{m.view.viewTypeOther}</option>
                                     </select>
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-body-part`}>Vùng quét (body_part) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-body-part`}>{m.view.labelScanZone} (body_part) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <select
                                       id={`${item.id}-body-part`}
                                       value={item.bodyPart}
@@ -861,12 +862,12 @@ export default function UploadPage() {
                                     </select>
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-vendor`}>Hãng máy (scanner_vendor) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-vendor`}>{m.view.labelScannerVendor}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <input
                                       id={`${item.id}-vendor`}
                                       type="text"
                                       value={item.scannerVendor}
-                                      placeholder="VD: GE Healthcare"
+                                      placeholder={m.view.placeholderScannerVendor}
                                       onChange={(event) =>
                                         updateItem(item.id, "scannerVendor", event.target.value)
                                       }
@@ -874,12 +875,12 @@ export default function UploadPage() {
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-spacing`}>Khoảng cách pixel (pixel_spacing) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-spacing`}>{m.view.labelPixelSpacing}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <input
                                       id={`${item.id}-spacing`}
                                       type="text"
                                       value={item.pixelSpacing}
-                                      placeholder="VD: 0.142"
+                                      placeholder={m.view.placeholderPixelSpacing}
                                       onChange={(event) =>
                                         updateItem(item.id, "pixelSpacing", event.target.value)
                                       }
@@ -887,7 +888,7 @@ export default function UploadPage() {
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-quality`}>Chất lượng (image_quality) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-quality`}>{m.view.labelImageQuality}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <select
                                       id={`${item.id}-quality`}
                                       value={item.imageQuality}
@@ -896,10 +897,10 @@ export default function UploadPage() {
                                       }
                                       disabled
                                     >
-                                      <option value="excellent">Excellent (Xuất sắc)</option>
-                                      <option value="good">Good (Tốt)</option>
-                                      <option value="acceptable">Acceptable (Chấp nhận được)</option>
-                                      <option value="poor">Poor (Kém)</option>
+                                      <option value="excellent">{m.view.qualityExcellent}</option>
+                                      <option value="good">{m.view.qualityGood}</option>
+                                      <option value="acceptable">{m.view.qualityAcceptable}</option>
+                                      <option value="poor">{m.view.qualityPoor}</option>
                                     </select>
                                   </div>
                                 </div>
@@ -910,7 +911,7 @@ export default function UploadPage() {
                                 <legend className={styles.groupLegend}>Osteoporosis_labels</legend>
                                 <div className={styles.fieldsGrid}>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-diagnosis-label`}>Phân loại nhãn (label)</label>
+                                    <label htmlFor={`${item.id}-diagnosis-label`}>{m.view.labelDiagnosis} (label)</label>
                                     <select
                                       id={`${item.id}-diagnosis-label`}
                                       value={item.label}
@@ -926,12 +927,12 @@ export default function UploadPage() {
                                     </select>
                                   </div>
                                   {/* <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-tscore`}>Chỉ số T-score (t_score) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-tscore`}>{m.view.labelTScore}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <input
                                       id={`${item.id}-tscore`}
                                       type="text"
                                       value={item.tScore}
-                                      placeholder="VD: -2.6"
+                                      placeholder={m.view.placeholderTScore}
                                       onChange={(event) =>
                                         updateItem(item.id, "tScore", event.target.value)
                                       }
@@ -939,12 +940,12 @@ export default function UploadPage() {
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-bmd`}>Mật độ xương (bmd) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-bmd`}>{m.view.labelBmd}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <input
                                       id={`${item.id}-bmd`}
                                       type="text"
                                       value={item.bmd}
-                                      placeholder="VD: 0.785"
+                                      placeholder={m.view.placeholderBmd}
                                       onChange={(event) =>
                                         updateItem(item.id, "bmd", event.target.value)
                                       }
@@ -952,7 +953,7 @@ export default function UploadPage() {
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-dxa-site`}>Vị trí DXA (dxa_site) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-dxa-site`}>{m.view.labelDxaSite}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <select
                                       id={`${item.id}-dxa-site`}
                                       value={item.dxaSite}
@@ -961,15 +962,15 @@ export default function UploadPage() {
                                       }
                                       disabled
                                     >
-                                      <option value="lumbar_spine">Cột sống thắt lưng</option>
-                                      <option value="femoral_neck">Cổ xương đùi</option>
-                                      <option value="total_hip">Khớp háng toàn phần</option>
-                                      <option value="forearm">Cẳng tay</option>
-                                      <option value="other">Vị trí khác</option>
+                                      <option value="lumbar_spine">{m.view.dxaSiteLumbar}</option>
+                                      <option value="femoral_neck">{m.view.dxaSiteNeck}</option>
+                                      <option value="total_hip">{m.view.dxaSiteHip}</option>
+                                      <option value="forearm">{m.view.dxaSiteForearm}</option>
+                                      <option value="other">{m.view.dxaSiteOther}</option>
                                     </select>
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-dxa-date`}>Ngày đo DXA (dxa_date) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-dxa-date`}>{m.view.labelDxaDate}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <input
                                       id={`${item.id}-dxa-date`}
                                       type="date"
@@ -981,7 +982,7 @@ export default function UploadPage() {
                                     />
                                   </div>
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-source`}>Nguồn nhãn (label_source) <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Không dùng)</span></label>
+                                    <label htmlFor={`${item.id}-source`}>{m.view.labelLabelSource}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <select
                                       id={`${item.id}-source`}
                                       value={item.labelSource}
@@ -990,13 +991,13 @@ export default function UploadPage() {
                                       }
                                       disabled
                                     >
-                                      <option value="DXA">DXA (Thiết bị DXA)</option>
-                                      <option value="doctor">Doctor (Bác sĩ chẩn đoán)</option>
-                                      <option value="rule_based">Rule-based (Thuật toán tự động)</option>
+                                      <option value="DXA">{m.view.sourceDxa}</option>
+                                      <option value="doctor">{m.view.sourceDoctor}</option>
+                                      <option value="rule_based">{m.view.sourceRuleBased}</option>
                                     </select>
                                   </div> */}
                                   <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-split`}>Phân chia tập dữ liệu (dataset_split)</label>
+                                    <label htmlFor={`${item.id}-split`}>{m.view.labelSplit}</label>
                                     <select
                                       id={`${item.id}-split`}
                                       value={item.datasetSplit}
@@ -1004,9 +1005,9 @@ export default function UploadPage() {
                                         updateItem(item.id, "datasetSplit", event.target.value)
                                       }
                                     >
-                                      <option value="train">Train (Huấn luyện)</option>
-                                      <option value="validation">Validation (Kiểm định)</option>
-                                      <option value="test">Test (Kiểm thử)</option>
+                                      <option value="train">{m.view.splitTrain}</option>
+                                      <option value="validation">{m.view.splitVal}</option>
+                                      <option value="test">{m.view.splitTest}</option>
                                     </select>
                                   </div>
                                 </div>
@@ -1023,65 +1024,64 @@ export default function UploadPage() {
                   <span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>
                     add_circle
                   </span>{" "}
-                  Thêm tệp khác
+                  {m.view.btnHistoryAdd}
                 </button>
               </section>
             </div>
 
             <aside className={styles.sidebarColumn}>
               <section className={styles.sidebarCard}>
-                <h3 className={styles.sidebarTitle}>Tổng quan Dataset</h3>
+                <h3 className={styles.sidebarTitle}>{m.view.sidebarTitle}</h3>
 
                 <div className={styles.overviewList}>
                   <div className={styles.overviewRow}>
-                    <span>Tổng số tệp</span>
+                    <span>{m.view.totalFiles}</span>
                     <span className={styles.overviewValue}>{items.length}</span>
                   </div>
                   <div className={styles.overviewRow}>
-                    <span>Đã định danh</span>
+                    <span>{m.view.labeledFiles}</span>
                     <span className={styles.overviewValue}>
                       {items.length - unlabeledCount} / {items.length}
                     </span>
                   </div>
                   <div className={styles.overviewRow}>
-                    <span>Chưa gắn nhãn</span>
+                    <span>{m.view.unlabeledFiles}</span>
                     <span className={styles.overviewValue}>{unlabeledCount}</span>
                   </div>
                   <div className={styles.overviewRow}>
-                    <span>Dung lượng tổng</span>
+                    <span>{m.view.totalSize}</span>
                     <span className={styles.overviewValue}>{formatFileSize(totalSize)}</span>
                   </div>
                 </div>
 
                 <div className={styles.progressHeader}>
-                  <span>Độ sẵn sàng dataset</span>
+                  <span>{m.view.readinessTitle}</span>
                   <span>{readiness}%</span>
                 </div>
                 <div className={styles.progressTrack}>
                   <div className={styles.progressFill} style={{ width: `${readiness}%` }} />
                 </div>
                 <p className={styles.progressHint}>
-                  Cần gắn nhãn cho tất cả các tệp trước khi bắt đầu huấn luyện. Tiến độ hiện tại chỉ
-                  phản ánh trạng thái UI.
+                  {m.view.readinessHint}
                 </p>
 
                 <button type="button" className={styles.trainButton} onClick={handleTrainNow}>
                   <span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>
                     play_circle
                   </span>{" "}
-                  Huấn luyện ngay
+                  {m.view.btnTrainNow}
                 </button>
                 <p className={styles.eta}>
-                  Thời gian xử lý dự kiến: <strong>~15 phút</strong>
+                  {m.view.etaText}<strong>{m.view.etaTime}</strong>
                 </p>
               </section>
 
               <section className={styles.logCard}>
                 <div className={styles.logHeader}>
-                  <h3 className={styles.logTitle}>Màn hình log huấn luyện</h3>
+                  <h3 className={styles.logTitle}>{m.view.terminalTitle}</h3>
                   <div className={styles.logStatus}>
                     <span className={`${styles.statusDot} ${isTraining ? styles.statusDotActive : ""}`} />
-                    <span>{isTraining ? "Đang chạy" : "Rảnh"}</span>
+                    <span>{isTraining ? m.status.running : m.status.idle}</span>
                   </div>
                 </div>
                 <div ref={terminalRef} className={styles.logTerminal}>
@@ -1090,17 +1090,17 @@ export default function UploadPage() {
               </section>
 
               {/* <section className={styles.configCard}>
-                <p className={styles.configLabel}>Cấu hình mô hình</p>
+                <p className={styles.configLabel}>Model configuration</p>
 
                 <div className={styles.configField}>
-                  <label htmlFor="model-select">Mô hình cơ sở <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Cố định)</span></label>
+                  <label htmlFor="model-select">Base model <span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>(Fixed)</span></label>
                   <select
                     id="model-select"
                     value={selectedModel}
                     onChange={(event) => setSelectedModel(event.target.value)}
                     disabled
                   >
-                    <option value="EfficientNet-B3">EfficientNet-B3 (Phân loại loãng xương)</option>
+                    <option value="EfficientNet-B3">EfficientNet-B3 (Osteoporosis classification)</option>
                   </select>
                 </div>
 
@@ -1111,7 +1111,7 @@ export default function UploadPage() {
                     onChange={(event) => setAugmentation(event.target.checked)}
                     disabled
                   />
-                  <span>Sử dụng Data Augmentation <span style={{fontSize: "0.7rem", color: "#94a3b8"}}>(Cố định - Không dùng)</span></span>
+                  <span>Use Data Augmentation <span style={{fontSize: "0.7rem", color: "#94a3b8"}}>(Fixed - Not used)</span></span>
                 </label>
 
                 <label className={styles.checkRow} style={{ opacity: 0.6, cursor: "not-allowed" }}>
@@ -1121,7 +1121,7 @@ export default function UploadPage() {
                     onChange={(event) => setCrossValidation(event.target.checked)}
                     disabled
                   />
-                  <span>Tự động hóa Cross-validation <span style={{fontSize: "0.7rem", color: "#94a3b8"}}>(Cố định - Bật)</span></span>
+                  <span>Automated Cross-validation <span style={{fontSize: "0.7rem", color: "#94a3b8"}}>(Fixed - Enabled)</span></span>
                 </label>
               </section> */}
             </aside>
@@ -1132,7 +1132,7 @@ export default function UploadPage() {
               <span className="material-symbols-outlined" style={{ color: "#61d895" }}>
                 check_circle
               </span>
-              <span>Đã thêm tệp vào hàng đợi thành công.</span>
+              <span>{m.view.toastSuccess}</span>
             </div>
           ) : null}
 
@@ -1149,7 +1149,7 @@ export default function UploadPage() {
                   </span>
                 </div>
                 <h3 className={styles.popupTitle}>
-                  {resultPopup.status === "success" ? "Thành công" : "Thất bại"}
+                  {resultPopup.status === "success" ? m.view.popupSuccessTitle : m.view.popupErrorTitle}
                 </h3>
                 <p className={styles.popupMessage}>{resultPopup.message}</p>
                 <button
@@ -1157,7 +1157,7 @@ export default function UploadPage() {
                   className={styles.popupButton}
                   onClick={() => setResultPopup(null)}
                 >
-                  Đóng
+                  {m.view.popupBtnClose}
                 </button>
               </div>
             </div>
@@ -1167,7 +1167,7 @@ export default function UploadPage() {
             <div className={styles.modalOverlay}>
               <div className={styles.modalContainer}>
                 <header className={styles.modalHeader}>
-                  <h3 className={styles.modalTitle}>Lịch sử huấn luyện</h3>
+                  <h3 className={styles.modalTitle}>{m.view.historyTitle}</h3>
                   <button
                     type="button"
                     className={styles.closeButton}
@@ -1184,7 +1184,7 @@ export default function UploadPage() {
                       <input
                         type="text"
                         className={styles.searchInput}
-                        placeholder="Tìm theo người huấn luyện..."
+                        placeholder={m.view.placeholderSearchTrainer}
                         value={historySearchTrainer}
                         onChange={(e) => setHistorySearchTrainer(e.target.value)}
                       />
@@ -1204,26 +1204,26 @@ export default function UploadPage() {
                           setHistorySearchDate("");
                         }}
                       >
-                        Xóa bộ lọc
+                        {m.view.btnHistoryClearFilters}
                       </button>
                     )}
                   </div>
 
                   {isHistoryLoading ? (
-                    <div className={styles.emptyState}>Đang tải dữ liệu...</div>
+                    <div className={styles.emptyState}>{m.view.historyLoading}</div>
                   ) : historyItems.length === 0 ? (
-                    <div className={styles.emptyState}>Không tìm thấy lịch sử huấn luyện nào.</div>
+                    <div className={styles.emptyState}>{m.view.historyEmpty}</div>
                   ) : (
                     <>
                       <div className={styles.historyTableWrapper}>
                         <table className={styles.historyTable}>
                           <thead>
                             <tr>
-                              <th>Ngày tạo</th>
-                              <th>Người huấn luyện</th>
-                              <th>Thông tin lâm sàng</th>
-                              <th>Kết quả</th>
-                              <th>Chỉ số (Accuracy / Loss)</th>
+                              <th>{m.view.thCreatedDate}</th>
+                              <th>{m.view.thTrainer}</th>
+                              <th>{m.view.thClinicalInfo}</th>
+                              <th>{m.view.thResult}</th>
+                              <th>{m.view.thMetrics}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1245,20 +1245,20 @@ export default function UploadPage() {
                                     }`}
                                   >
                                     {item.status === "success"
-                                      ? "Thành công"
+                                      ? m.view.historyStatusSuccess
                                       : item.status === "failed"
-                                      ? "Thất bại"
-                                      : "Đang chạy"}
+                                      ? m.view.historyStatusFailed
+                                      : m.view.historyStatusRunning}
                                   </span>
                                 </td>
                                 <td>
                                   {item.status === "success" ? (
                                     <span>
-                                      Acc: {item.accuracy !== null ? `${(item.accuracy * 100).toFixed(1)}%` : "N/A"} / Loss: {item.loss !== null ? item.loss.toFixed(4) : "N/A"}
+                                      {m.view.historyMetricLabel(item.accuracy !== null ? `${(item.accuracy * 100).toFixed(1)}%` : "N/A", item.loss !== null ? item.loss.toFixed(4) : "N/A")}
                                     </span>
                                   ) : item.status === "failed" ? (
                                     <span className={styles.errorText} title={item.error_message}>
-                                      Lỗi: {item.error_message}
+                                      {m.view.historyErrorLabel(item.error_message)}
                                     </span>
                                   ) : (
                                     <span>-</span>
@@ -1272,9 +1272,11 @@ export default function UploadPage() {
 
                       <div className={styles.pagination}>
                         <span>
-                          Hiển thị {Math.min((historyPage - 1) * historyLimit + 1, historyTotal)} -{" "}
-                          {Math.min(historyPage * historyLimit, historyTotal)} trong tổng số{" "}
-                          {historyTotal} kết quả
+                          {m.view.paginationLabel(
+                            Math.min((historyPage - 1) * historyLimit + 1, historyTotal),
+                            Math.min(historyPage * historyLimit, historyTotal),
+                            historyTotal
+                          )}
                         </span>
                         <div className={styles.paginationButtons}>
                           <button
@@ -1283,7 +1285,7 @@ export default function UploadPage() {
                             disabled={historyPage === 1}
                             onClick={() => fetchHistory(historyPage - 1, historySearchTrainer, historySearchDate)}
                           >
-                            Trước
+                            {m.view.btnPrev}
                           </button>
                           <button
                             type="button"
@@ -1291,7 +1293,7 @@ export default function UploadPage() {
                             disabled={historyPage * historyLimit >= historyTotal}
                             onClick={() => fetchHistory(historyPage + 1, historySearchTrainer, historySearchDate)}
                           >
-                            Sau
+                            {m.view.btnNext}
                           </button>
                         </div>
                       </div>
