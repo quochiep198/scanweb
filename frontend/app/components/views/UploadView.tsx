@@ -657,9 +657,18 @@ export default function UploadPage() {
     setIsProcessing(true);
     let hasError = false;
     const apiUrl = getApiUrl();
+    const concurrency = 4;
+    let nextIndex = 0;
 
-    try {
-      for (const item of queuedItems) {
+    const worker = async () => {
+      while (true) {
+        const currentIdx = nextIndex++;
+        if (currentIdx >= queuedItems.length) {
+          break;
+        }
+
+        const item = queuedItems[currentIdx];
+
         if (item.file.size > MAX_FILE_SIZE) {
           updateItem(item.id, "status", "error");
           updateItem(item.id, "errorMessage", m.messages.fileTooLarge);
@@ -733,6 +742,14 @@ export default function UploadPage() {
           hasError = true;
         }
       }
+    };
+
+    try {
+      const workers = Array.from(
+        { length: Math.min(concurrency, queuedItems.length) },
+        worker
+      );
+      await Promise.all(workers);
 
       if (hasError) {
         setResultPopup({
