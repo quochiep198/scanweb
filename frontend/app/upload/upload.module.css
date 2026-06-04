@@ -1042,3 +1042,49 @@
   to { transform: scale(1); opacity: 1; }
 }
 
+
+.csvButton,
+.autofillButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.csvButton {
+  border: 1px solid #cfd7e6;
+  background: #fff;
+  color: #334159;
+}
+
+.csvButton:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.autofillButton {
+  border: 1px solid #145fce;
+  background: linear-gradient(180deg, #145fce, #0f43a9);
+  color: #fff;
+  box-shadow: 0 4px 6px rgba(15, 67, 169, 0.1);
+}
+
+.autofillButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px rgba(15, 67, 169, 0.15);
+}
+
+.autofillButton:disabled,
+.csvButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}

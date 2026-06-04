@@ -184,6 +184,17 @@ export default function UploadPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [items, setItems] = useState<UploadItem[]>([]);
+  const [csvData, setCsvData] = useState<Array<{
+    patientId: string;
+    heightMeter: string;
+    weightKg: string;
+    bmi: string;
+    diagnosis: string;
+    age: string;
+    gender: string;
+  }> | null>(null);
+  const [csvFileName, setCsvFileName] = useState<string>("");
+  const csvInputRef = useRef<HTMLInputElement | null>(null);
   const [augmentation, setAugmentation] = useState(false);
   const [crossValidation, setCrossValidation] = useState(true);
   const [selectedModel, setSelectedModel] = useState("EfficientNet-B3");
@@ -426,6 +437,190 @@ export default function UploadPage() {
     );
   };
 
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const parseCSV = (text: string) => {
+    const cleanText = text.replace(/^\uFEFF/, "");
+    const lines = cleanText.split(/\r?\n/);
+    if (lines.length < 2) return [];
+
+    const headers = parseCSVLine(lines[0]);
+    
+    const cleanToken = (t: string) => {
+      return (t || "").replace(/^["\s\uFEFF]+|["\s\uFEFF]+$/g, '').trim();
+    };
+
+    const findIndex = (names: string[]) => {
+      return headers.findIndex(h => {
+        const cleanH = cleanToken(h).toLowerCase().replace(/\s+/g, ' ');
+        return names.some(name => cleanH === name.trim().toLowerCase().replace(/\s+/g, ' '));
+      });
+    };
+
+    const idxPatientId = findIndex(["patient id", "patientid", "id"]);
+    const idxHeight = findIndex(["height (meter)", "height(meter)", "height  (meter)", "height meter", "height"]);
+    const idxWeight = findIndex(["weight (kg)", "weight(kg)", "weight (kg) ", "weight kg", "weight"]);
+    const idxBmi = findIndex(["bmi", "bmi:"]);
+    const idxDiagnosis = findIndex(["diagnosis", "diagnostic", "nhãn chẩn đoán", "nhan chan doan"]);
+    const idxAge = findIndex(["age", "tuổi", "tuoi"]);
+    const idxGender = findIndex(["gender", "sex", "giới tính", "gioi tinh"]);
+
+    if (idxPatientId === -1) {
+      alert("Không tìm thấy cột 'Patient Id' trong file CSV.");
+      return [];
+    }
+
+    const parsedRows: Array<{
+      patientId: string;
+      heightMeter: string;
+      weightKg: string;
+      bmi: string;
+      diagnosis: string;
+      age: string;
+      gender: string;
+    }> = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const cols = parseCSVLine(line);
+      if (cols.length <= idxPatientId) continue;
+
+      parsedRows.push({
+        patientId: cleanToken(cols[idxPatientId]),
+        heightMeter: idxHeight !== -1 ? cleanToken(cols[idxHeight]) : "",
+        weightKg: idxWeight !== -1 ? cleanToken(cols[idxWeight]) : "",
+        bmi: idxBmi !== -1 ? cleanToken(cols[idxBmi]) : "",
+        diagnosis: idxDiagnosis !== -1 ? cleanToken(cols[idxDiagnosis]) : "",
+        age: idxAge !== -1 ? cleanToken(cols[idxAge]) : "",
+        gender: idxGender !== -1 ? cleanToken(cols[idxGender]) : "",
+      });
+    }
+
+    return parsedRows;
+  };
+
+  const handleOpenCsvPicker = () => {
+    csvInputRef.current?.click();
+  };
+
+  const handleCsvChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setCsvFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const parsed = parseCSV(text);
+      if (parsed.length > 0) {
+        setCsvData(parsed);
+      } else {
+        setCsvData(null);
+        setCsvFileName("");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  };
+
+  const handleAutoFill = () => {
+    if (!csvData || csvData.length === 0) return;
+
+    const mapDiagnosis = (val: string): string => {
+      const v = (val || "").trim().toLowerCase();
+      if (v.includes("normal") || v.includes("bình thường") || v.includes("binh thuong")) return "normal";
+      if (v.includes("osteopenia") || v.includes("thiếu xương") || v.includes("thieu xuong")) return "osteopenia";
+      if (v.includes("osteoporosis") || v.includes("loãng xương") || v.includes("loang xuong") || v.includes("lở xương") || v.includes("lo xuong")) return "osteoporosis";
+      return "normal";
+    };
+
+    const mapSex = (val: string): string => {
+      const v = (val || "").trim().toLowerCase();
+      if (v.startsWith("m") || v === "nam") return "M";
+      if (v.startsWith("f") || v.startsWith("n") || v === "nữ" || v === "nu") return "F";
+      return "Other";
+    };
+
+    setItems((current) =>
+      current.map((item) => {
+        const prefix = item.file.name.split(/[._-]/)[0] || "";
+        const row = csvData.find(r => r.patientId.trim().toLowerCase() === prefix.trim().toLowerCase());
+
+        if (row) {
+          const heightMeter = parseFloat(row.heightMeter);
+          const weightKg = parseFloat(row.weightKg);
+          let heightCmStr = "";
+          let weightKgStr = "";
+          let bmiStr = "";
+
+          if (!isNaN(heightMeter) && heightMeter > 0) {
+            heightCmStr = (heightMeter * 100).toFixed(1);
+          }
+          if (!isNaN(weightKg) && weightKg > 0) {
+            weightKgStr = weightKg.toString();
+          }
+
+          if (heightMeter > 0 && weightKg > 0) {
+            bmiStr = (weightKg / Math.pow(heightMeter, 2)).toFixed(1);
+          } else if (row.bmi) {
+            const parsedBmi = parseFloat(row.bmi);
+            if (!isNaN(parsedBmi) && parsedBmi > 0) {
+              bmiStr = parsedBmi.toFixed(1);
+            }
+          }
+
+          return {
+            ...item,
+            heightCm: heightCmStr,
+            weightKg: weightKgStr,
+            bmi: bmiStr,
+            label: mapDiagnosis(row.diagnosis),
+            age: row.age,
+            sex: mapSex(row.gender),
+            datasetSplit: "train"
+          };
+        } else {
+          return {
+            ...item,
+            heightCm: "",
+            weightKg: "",
+            bmi: "",
+            label: "normal",
+            age: "",
+            sex: "M",
+            datasetSplit: "train"
+          };
+        }
+      })
+    );
+
+    setResultPopup({
+      isOpen: true,
+      status: "success",
+      message: "Tự động điền dữ liệu lâm sàng từ file CSV thành công!",
+    });
+  };
+
   const handleStartProcessing = async () => {
     const queuedItems = items.filter((item) => item.status === "queued" || item.status === "error");
     if (queuedItems.length === 0) {
@@ -626,19 +821,49 @@ export default function UploadPage() {
                   onChange={handleInputChange}
                 />
               </section>
-
               <section className={styles.queueCard}>
                 <div className={styles.queueHeader}>
                   <h3 className={styles.queueTitle}>{m.view.queueTitle(items.length)}</h3>
-                  <button
-                    type="button"
-                    className={styles.clearButton}
-                    onClick={handleClearAll}
-                    disabled={isProcessing}
-                    style={isProcessing ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
-                  >
-                    {m.view.btnClearAll}
-                  </button>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <input
+                      ref={csvInputRef}
+                      type="file"
+                      accept=".csv"
+                      style={{ display: "none" }}
+                      onChange={handleCsvChange}
+                    />
+                    <button
+                      type="button"
+                      className={styles.csvButton}
+                      onClick={handleOpenCsvPicker}
+                      disabled={isProcessing}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle", marginRight: "4px" }}>
+                        upload_file
+                      </span>
+                      {csvFileName ? `CSV: ${csvFileName}` : "Tải lên file CSV"}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.autofillButton}
+                      onClick={handleAutoFill}
+                      disabled={isProcessing || !csvData || items.length === 0}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle", marginRight: "4px" }}>
+                        bolt
+                      </span>
+                      Tự động điền (AutoFill)
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.clearButton}
+                      onClick={handleClearAll}
+                      disabled={isProcessing}
+                      style={isProcessing ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
+                    >
+                      {m.view.btnClearAll}
+                    </button>
+                  </div>
                 </div>
 
                 {isProcessing && (

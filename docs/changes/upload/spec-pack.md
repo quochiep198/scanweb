@@ -21,6 +21,11 @@ Người dùng Admin mới có quyền truy cập trang này để upload data h
 - Yếu cầu giao diện phải phân ra các navigate bar, top bar riêng để dùng chung cho nhiều menu sau này
 - Tạo menu có tên là Upload ở navigate bar
 - Tọa folder có thên là  upload ở FE,BE và thực thi code mới vào đó
+- Mong muốn có chức năng upload dữ liệu bằng file csv để có thể upload số lượng lớn mẫu để phục vụ mục đích trainning
+        a)Cấu trúc file csv như trong file upload/patient details.xlsx
+        b)Yêu cầu có 1 nút để upload file csv, 1 nút với chức năng AutoFill
+        c)Sau khi upload nhiều hình ảnh, nhấn nút AutoFill hệ thống sẽ tự động merge data từ file csv và gán lại các thuộc tính cho từng ảnh thông qua tên file ảnh = Patient Id trong file csv, sau đó sẽ lấy thông tin tên bệnh nhân, tuổi, giới tính, bmi , chiều cao, cân năng và gán lại thuốc tính cho từng ảnh, nếu tên file ảnh không tìm thấy trong file csv thì bỏ trống hết các thông tin ở trên
+        d)Trường hợp ko upload file csv thì hệ thống vẫn hoạt động như luồng cũ
 <!-- - Dữ liệu ảnh sẽ được lưu ở cloudflare R2
 - Ỏ db hiện tại chỉ lưu đường dẫn để truy cập lên R2 -->
 
