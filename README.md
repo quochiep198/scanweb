@@ -122,3 +122,5 @@ scanweb/
 - [Architecture Overview](./docs/rules/architecture.md)
 - [Backend Guidelines](./docs/rules/backend.md)
 - [Frontend Guidelines](./docs/rules/frontend.md)
+
+## Test
