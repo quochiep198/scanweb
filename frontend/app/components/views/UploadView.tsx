@@ -148,11 +148,14 @@ const uploadWithProgress = (
           resolve(xhr.responseText);
         }
       } else {
+        let errObj: any;
         try {
-          reject(JSON.parse(xhr.responseText));
+          errObj = JSON.parse(xhr.responseText);
         } catch (e) {
-          reject(new Error(`Upload failed with status ${xhr.status}`));
+          errObj = { message: `Upload failed with status ${xhr.status}` };
         }
+        errObj.status = xhr.status;
+        reject(errObj);
       }
     };
     
@@ -162,6 +165,31 @@ const uploadWithProgress = (
     
     xhr.send(formData);
   });
+};
+
+const tryRefreshSession = async (): Promise<boolean> => {
+  try {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/v1/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+    return response.ok;
+  } catch (e) {
+    return false;
+  }
+};
+
+const fetchWithAuth = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  options.credentials = "include";
+  let response = await fetch(url, options);
+  if (response.status === 401) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) {
+      response = await fetch(url, options);
+    }
+  }
+  return response;
 };
 
 export default function UploadPage() {
@@ -235,9 +263,7 @@ export default function UploadPage() {
       if (date.trim()) {
         url += `&search_date=${encodeURIComponent(date.trim())}`;
       }
-      const response = await fetch(url, {
-        credentials: "include",
-      });
+      const response = await fetchWithAuth(url);
       if (response.ok) {
         const data = await response.json();
         setHistoryItems(data.data);
@@ -270,9 +296,7 @@ export default function UploadPage() {
     if (!isAuthenticated) return;
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/v1/training/logs`, {
-        credentials: "include",
-      });
+      const response = await fetchWithAuth(`${apiUrl}/v1/training/logs`);
       if (response.ok) {
         const data = await response.json();
         setLogs(data.logs);
@@ -306,9 +330,7 @@ export default function UploadPage() {
     const fetchOptions = async () => {
       try {
         const apiUrl = getApiUrl();
-        const response = await fetch(`${apiUrl}/v1/upload/options`, {
-          credentials: "include",
-        });
+        const response = await fetchWithAuth(`${apiUrl}/v1/upload/options`);
         if (response.ok) {
           const data = await response.json();
           if (data.scan_zones && data.scan_zones.length > 0) {
@@ -673,9 +695,33 @@ export default function UploadPage() {
           formData.append("label_source", item.labelSource);
           formData.append("dataset_split", item.datasetSplit);
 
-          await uploadWithProgress(`${apiUrl}/v1/upload`, formData, (progress) => {
-            updateItem(item.id, "progress", progress);
-          });
+          let uploadErr: any = null;
+          try {
+            await uploadWithProgress(`${apiUrl}/v1/upload`, formData, (progress) => {
+              updateItem(item.id, "progress", progress);
+            });
+          } catch (err: any) {
+            if (err.status === 401) {
+              const refreshed = await tryRefreshSession();
+              if (refreshed) {
+                try {
+                  await uploadWithProgress(`${apiUrl}/v1/upload`, formData, (progress) => {
+                    updateItem(item.id, "progress", progress);
+                  });
+                } catch (retryErr: any) {
+                  uploadErr = retryErr;
+                }
+              } else {
+                uploadErr = err;
+              }
+            } else {
+              uploadErr = err;
+            }
+          }
+
+          if (uploadErr) {
+            throw uploadErr;
+          }
 
           updateItem(item.id, "status", "success");
           updateItem(item.id, "progress", 100);
@@ -718,9 +764,8 @@ export default function UploadPage() {
 
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/v1/training/train?use_augmentation=${augmentation}`, {
+      const response = await fetchWithAuth(`${apiUrl}/v1/training/train?use_augmentation=${augmentation}`, {
         method: "POST",
-        credentials: "include",
       });
 
       if (!response.ok) {
