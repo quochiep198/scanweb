@@ -220,6 +220,7 @@ export default function UploadPage() {
     diagnosis: string;
     age: string;
     gender: string;
+    tScore: string;
   }> | null>(null);
   const [csvFileName, setCsvFileName] = useState<string>("");
   const csvInputRef = useRef<HTMLInputElement | null>(null);
@@ -240,6 +241,7 @@ export default function UploadPage() {
   const [logs, setLogs] = useState(messages.upload.status.idleLogs);
   const [isTraining, setIsTraining] = useState(false);
   const terminalRef = useRef<HTMLDivElement | null>(null);
+  const prevIsTrainingRef = useRef(false);
 
   // Training History States
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -323,6 +325,48 @@ export default function UploadPage() {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
   }, [logs]);
+
+  useEffect(() => {
+    if (prevIsTrainingRef.current && !isTraining) {
+      const logsLower = logs.toLowerCase();
+      const isSuccess = logsLower.includes("completed successfully") || 
+                        logsLower.includes("huấn luyện hoàn thành") || 
+                        logsLower.includes("success") || 
+                        logsLower.includes("completed");
+      const isZeroRecords = logsLower.includes("zero records available") || 
+                            logsLower.includes("no records");
+      const isCriticalError = logsLower.includes("critical error") || 
+                              logsLower.includes("failed") || 
+                              logsLower.includes("error");
+
+      if (isSuccess) {
+        setResultPopup({
+          isOpen: true,
+          status: "success",
+          message: "Quá trình huấn luyện mô hình đã hoàn thành thành công!",
+        });
+      } else if (isZeroRecords) {
+        setResultPopup({
+          isOpen: true,
+          status: "error",
+          message: "Không có dữ liệu mới để huấn luyện mô hình.",
+        });
+      } else if (isCriticalError) {
+        setResultPopup({
+          isOpen: true,
+          status: "error",
+          message: "Quá trình huấn luyện mô hình đã thất bại. Vui lòng kiểm tra nhật ký lỗi!",
+        });
+      } else {
+        setResultPopup({
+          isOpen: true,
+          status: "success",
+          message: "Quá trình huấn luyện mô hình đã hoàn thành.",
+        });
+      }
+    }
+    prevIsTrainingRef.current = isTraining;
+  }, [isTraining, logs]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -503,6 +547,7 @@ export default function UploadPage() {
     const idxDiagnosis = findIndex(["diagnosis", "diagnostic", "nhãn chẩn đoán", "nhan chan doan"]);
     const idxAge = findIndex(["age", "tuổi", "tuoi"]);
     const idxGender = findIndex(["gender", "sex", "giới tính", "gioi tinh"]);
+    const idxTscore = findIndex(["t-score", "tscore", "t score", "t_score", "t score value", "t-score value"]);
 
     if (idxPatientId === -1) {
       alert("Không tìm thấy cột 'Patient Id' trong file CSV.");
@@ -517,6 +562,7 @@ export default function UploadPage() {
       diagnosis: string;
       age: string;
       gender: string;
+      tScore: string;
     }> = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -534,6 +580,7 @@ export default function UploadPage() {
         diagnosis: idxDiagnosis !== -1 ? cleanToken(cols[idxDiagnosis]) : "",
         age: idxAge !== -1 ? cleanToken(cols[idxAge]) : "",
         gender: idxGender !== -1 ? cleanToken(cols[idxGender]) : "",
+        tScore: idxTscore !== -1 ? cleanToken(cols[idxTscore]) : "",
       });
     }
 
@@ -619,6 +666,7 @@ export default function UploadPage() {
             label: mapDiagnosis(row.diagnosis),
             age: row.age,
             sex: mapSex(row.gender),
+            tScore: row.tScore || "",
             datasetSplit: "train"
           };
         } else {
@@ -630,6 +678,7 @@ export default function UploadPage() {
             label: "normal",
             age: "",
             sex: "M",
+            tScore: "",
             datasetSplit: "train"
           };
         }
@@ -1257,8 +1306,8 @@ export default function UploadPage() {
                                       ))}
                                     </select>
                                   </div>
-                                  {/* <div className={styles.field}>
-                                    <label htmlFor={`${item.id}-tscore`}>{m.view.labelTScore}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
+                                  <div className={styles.field}>
+                                    <label htmlFor={`${item.id}-tscore`}>{m.view.labelTScore}</label>
                                     <input
                                       id={`${item.id}-tscore`}
                                       type="text"
@@ -1267,9 +1316,9 @@ export default function UploadPage() {
                                       onChange={(event) =>
                                         updateItem(item.id, "tScore", event.target.value)
                                       }
-                                      disabled
                                     />
                                   </div>
+                                  {/* <div className={styles.field}>
                                   <div className={styles.field}>
                                     <label htmlFor={`${item.id}-bmd`}>{m.view.labelBmd}<span style={{fontSize: "0.7rem", color: "#94a3b8", fontWeight: "normal"}}>{m.view.labelXrayDateNote}</span></label>
                                     <input

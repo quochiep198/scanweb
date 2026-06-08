@@ -34,8 +34,14 @@ class OsteoporosisDataset(Dataset):
         image_path = record["image_path"]
         
         try:
-            # 1. Download bytes from R2
-            image_bytes = R2Service.download_file(image_path)
+            # 1. Read from local cache if available, fallback to download
+            safe_filename = image_path.replace("/", "_")
+            local_path = os.path.join("tmp", "training_images", safe_filename)
+            if os.path.exists(local_path):
+                with open(local_path, "rb") as f:
+                    image_bytes = f.read()
+            else:
+                image_bytes = R2Service.download_file(image_path)
             
             # 2. Extract filename
             filename = image_path.split("/")[-1]
@@ -98,6 +104,37 @@ class OsteoporosisDataset(Dataset):
 
 class TrainingService:
     is_training_active = False
+
+    @staticmethod
+    def pre_download_images(metadata: list, max_workers: int = 10):
+        """
+        Pre-downloads all images in the metadata list to a local cache directory.
+        Checks if the file already exists locally to avoid redundant downloads.
+        """
+        import os
+        from concurrent.futures import ThreadPoolExecutor
+        from app.services.r2_service import R2Service
+
+        os.makedirs(os.path.join("tmp", "training_images"), exist_ok=True)
+
+        def download_single(record):
+            image_path = record["image_path"]
+            safe_filename = image_path.replace("/", "_")
+            local_path = os.path.join("tmp", "training_images", safe_filename)
+
+            if os.path.exists(local_path):
+                return
+
+            try:
+                image_bytes = R2Service.download_file(image_path)
+                with open(local_path, "wb") as f:
+                    f.write(image_bytes)
+            except Exception as e:
+                logger.error(f"Failed to pre-download {image_path}: {e}")
+
+        # Download concurrently
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            executor.map(download_single, metadata)
 
     @staticmethod
     def write_log(message: str, db: Session = None, run_id: str = None, mode: str = "a"):
@@ -249,6 +286,11 @@ class TrainingService:
             TrainingService.write_log("Querying clinical metadata from SQL database...")
             TrainingService.write_log(f"Found {dataset_size} untrained records with dataset_split='train' in database.")
 
+            # Pre-download training images concurrently
+            TrainingService.write_log("Pre-downloading training images to local cache...")
+            TrainingService.pre_download_images(metadata)
+            TrainingService.write_log("Pre-download completed.")
+
             
             # Set hyperparameters
             epochs = 5
@@ -345,7 +387,9 @@ class TrainingService:
                 
                 has_val = len(val_metadata) > 0
                 if has_val:
-                    TrainingService.write_log(f"Found {len(val_metadata)} validation records. Building validation DataLoader.")
+                    TrainingService.write_log(f"Found {len(val_metadata)} validation records. Pre-downloading validation images...")
+                    TrainingService.pre_download_images(val_metadata)
+                    TrainingService.write_log("Validation pre-download completed. Building validation DataLoader.")
                     val_dataset = OsteoporosisDataset(val_metadata, use_augmentation=False)
                     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
                 else:
