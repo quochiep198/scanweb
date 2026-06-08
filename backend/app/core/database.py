@@ -19,6 +19,24 @@ Base = declarative_base()
 def check_and_update_schema():
     try:
         inspector = inspect(engine)
+        if 'users' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('users')]
+            users_new_columns = {
+                'is_verified': 'BOOLEAN NOT NULL DEFAULT FALSE' if engine.dialect.name != 'sqlite' else 'BOOLEAN NOT NULL DEFAULT 0',
+                'is_active': 'BOOLEAN NOT NULL DEFAULT TRUE' if engine.dialect.name != 'sqlite' else 'BOOLEAN NOT NULL DEFAULT 1',
+                'is_locked': 'BOOLEAN NOT NULL DEFAULT FALSE' if engine.dialect.name != 'sqlite' else 'BOOLEAN NOT NULL DEFAULT 0',
+                'locked_until': 'TIMESTAMP WITH TIME ZONE NULL' if engine.dialect.name != 'sqlite' else 'DATETIME NULL',
+                'failed_login_attempts': 'INTEGER NOT NULL DEFAULT 0',
+                'created_at': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP' if engine.dialect.name != 'sqlite' else 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                'updated_at': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP' if engine.dialect.name != 'sqlite' else 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP'
+            }
+            for col_name, col_type in users_new_columns.items():
+                if col_name not in columns:
+                    logger.info(f"Adding '{col_name}' column to 'users' table...")
+                    with engine.begin() as conn:
+                        conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+                    logger.info(f"'{col_name}' column added successfully.")
+
         if 'xray_images' in inspector.get_table_names():
             columns = [col['name'] for col in inspector.get_columns('xray_images')]
             if 'is_trained' not in columns:
