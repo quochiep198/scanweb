@@ -216,7 +216,7 @@ class TrainingService:
         )
 
     @staticmethod
-    def run_training_pipeline(db: Session, trainer_id: str, history_id: str = None, use_augmentation: bool = True):
+    def run_training_pipeline(db: Session, trainer_id: str, history_id: str = None, use_augmentation: bool = True, force_full: bool = False):
         import os
         import time
         import json
@@ -237,10 +237,67 @@ class TrainingService:
             # Ensure models directory exists
             os.makedirs("models", exist_ok=True)
             
-            # 1. Fetch metadata
-            metadata = TrainingService.get_training_metadata(db)
-            dataset_size = len(metadata)
-            logger.info(f"Starting training pipeline with {dataset_size} records")
+            # 1. Fetch metadata and detect training mode
+            untrained_metadata = TrainingService.get_training_metadata(db, only_untrained=True)
+            num_untrained = len(untrained_metadata)
+            
+            is_incremental = False
+            replay_subset = []
+            
+            if not force_full and num_untrained > 0 and num_untrained <= 30:
+                is_incremental = True
+                
+                # Fetch trained records for experience replay
+                trained_query = (
+                    db.query(
+                        XRayImage.image_path,
+                        OsteoporosisLabel.label,
+                        OsteoporosisLabel.t_score,
+                        OsteoporosisLabel.bmd,
+                        Patient.age,
+                        Patient.sex,
+                        Patient.bmi,
+                        XRayImage.dataset_split
+                    )
+                    .join(OsteoporosisLabel, XRayImage.image_id == OsteoporosisLabel.image_id)
+                    .join(Patient, XRayImage.patient_id == Patient.patient_id)
+                    .filter(XRayImage.dataset_split == "train")
+                    .filter(XRayImage.is_trained == True)
+                )
+                trained_results = trained_query.all()
+                
+                trained_metadata = [
+                    {
+                        "image_path": row.image_path,
+                        "label": row.label,
+                        "t_score": float(row.t_score) if row.t_score is not None else None,
+                        "bmd": float(row.bmd) if row.bmd is not None else None,
+                        "age": row.age,
+                        "sex": row.sex,
+                        "bmi": float(row.bmi) if row.bmi is not None else None,
+                        "dataset_split": row.dataset_split
+                    }
+                    for row in trained_results
+                ]
+                
+                import random
+                replay_normal = [r for r in trained_metadata if str(r["label"]).lower().strip() == "normal"]
+                replay_osteopenia = [r for r in trained_metadata if str(r["label"]).lower().strip() == "osteopenia"]
+                replay_osteoporosis = [r for r in trained_metadata if str(r["label"]).lower().strip() == "osteoporosis"]
+                
+                sampled_normal = random.sample(replay_normal, min(len(replay_normal), 10))
+                sampled_osteopenia = random.sample(replay_osteopenia, min(len(replay_osteopenia), 10))
+                sampled_osteoporosis = random.sample(replay_osteoporosis, min(len(replay_osteoporosis), 10))
+                
+                replay_subset = sampled_normal + sampled_osteopenia + sampled_osteoporosis
+                metadata = untrained_metadata + replay_subset
+                dataset_size = len(metadata)
+            else:
+                # Full retraining: fetch all records (trained and untrained)
+                metadata = TrainingService.get_training_metadata(db)
+                dataset_size = len(metadata)
+
+            logger.info(f"Starting training pipeline with {dataset_size} records. Incremental mode: {is_incremental}")
 
             # Compile clinical summary
             label_counts = {"normal": 0, "osteopenia": 0, "osteoporosis": 0}
@@ -280,23 +337,27 @@ class TrainingService:
                 old_write_log(message, db, history_id, mode)
             TrainingService.write_log = temp_write_log
 
+            # Set hyperparameters
+            epochs = 2 if is_incremental else 5
+            batch_size = 8
+            lr = 1e-5 if is_incremental else 1e-4
+
             # Write initial logs (now they will go to DB as well)
             TrainingService.write_log("Starting training pipeline for Osteoporosis detection...", "w")
-            TrainingService.write_log(f"Configuring parameters: model=EfficientNet-B3, epochs=5, batch_size=8, learning_rate=1e-4, augmentation={use_augmentation}")
-            TrainingService.write_log("Querying clinical metadata from SQL database...")
-            TrainingService.write_log(f"Found {dataset_size} untrained records with dataset_split='train' in database.")
+            mode_str = "Incremental (Warm Start + Experience Replay)" if is_incremental else "Full Retraining"
+            TrainingService.write_log(f"Training Mode selected: {mode_str}")
+            TrainingService.write_log(f"Configuring parameters: model=EfficientNet-B3, epochs={epochs}, batch_size={batch_size}, learning_rate={lr}, augmentation={use_augmentation}")
+            
+            if is_incremental:
+                TrainingService.write_log(f"Querying clinical metadata: Found {num_untrained} new untrained records. Mixed with {len(replay_subset)} historical records for experience replay.")
+            else:
+                TrainingService.write_log(f"Querying clinical metadata: Found {dataset_size} total records for full retraining.")
 
             # Pre-download training images concurrently
             TrainingService.write_log("Pre-downloading training images to local cache...")
             TrainingService.pre_download_images(metadata)
             TrainingService.write_log("Pre-download completed.")
 
-            
-            # Set hyperparameters
-            epochs = 5
-            batch_size = 8
-            lr = 1e-4
-            
             TrainingService.write_log("Connecting to local MLflow tracking server...")
             mlflow.set_tracking_uri("file:./mlruns")
             mlflow.set_experiment("Osteoporosis_EfficientNetB3")
@@ -324,6 +385,22 @@ class TrainingService:
                 
                 TrainingService.write_log("Initializing OsteoporosisEfficientNetB3 model backbone...")
                 model = OsteoporosisEfficientNetB3(num_classes=3, pretrained=True)
+                
+                # Check target hardware
+                TrainingService.write_log("Checking target hardware (CUDA GPU or CPU)...")
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                TrainingService.write_log(f"Device initialized: {device}")
+                
+                # Load existing weights for Warm Start if they exist
+                if os.path.exists("models/best_model.pt"):
+                    try:
+                        TrainingService.write_log("Loading existing model weights for Warm Start...")
+                        model.load_state_dict(torch.load("models/best_model.pt", map_location=device))
+                        TrainingService.write_log("Successfully loaded model weights for Warm Start.")
+                    except Exception as load_err:
+                        TrainingService.write_log(f"WARNING: Failed to load existing weights ({load_err}). Proceeding with ImageNet weights.")
+                
+                model.to(device)
                 criterion = nn.CrossEntropyLoss()
                 optimizer = optim.Adam(model.parameters(), lr=lr)
                 
@@ -339,24 +416,15 @@ class TrainingService:
                         "model_url": None
                     }
                     
-                # Real training loop
-                TrainingService.write_log("Checking target hardware (CUDA GPU or CPU)...")
-                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                model.to(device)
-                TrainingService.write_log(f"Device initialized: {device}")
-                
-                # Save initial model state to guarantee best_model.pt exists
-                torch.save(model.state_dict(), "models/best_model.pt")
+                # Save initial candidate model state to guarantee candidate_model.pt exists
+                torch.save(model.state_dict(), "models/candidate_model.pt")
                 from app.core.config import settings
-                torch.save(model.state_dict(), f"models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt")
-                TrainingService.write_log(f"Initialized models/best_model.pt and models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt checkpoints.")
+                torch.save(model.state_dict(), f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+                TrainingService.write_log(f"Initialized models/candidate_model.pt and models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt checkpoints.")
                 
                 TrainingService.write_log("Initializing PyTorch DataLoader...")
-                dataloader = TrainingService.get_training_dataloader(
-                    db=db,
-                    batch_size=batch_size,
-                    use_augmentation=use_augmentation
-                )
+                dataset = OsteoporosisDataset(metadata, use_augmentation=use_augmentation)
+                dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
                 TrainingService.write_log("DataLoader initialized successfully.")
                 
                 # Fetch validation loader if any validation records exist
@@ -486,15 +554,15 @@ class TrainingService:
                         
                         TrainingService.write_log(f"Epoch {epoch}/{epochs} result: train_loss={epoch_loss:.4f}, validation_loss={epoch_val_loss:.4f}, accuracy={epoch_val_acc:.4f}, f1_score={epoch_f1:.4f}, auc={epoch_auc:.4f}")
                         
-                        # Save best model based on validation loss
+                        # Save candidate model based on validation loss
                         if epoch_val_loss < best_loss:
                             best_loss = epoch_val_loss
-                            TrainingService.write_log(f"Validation loss decreased ({best_loss:.4f}). Saving model state dictionary...")
-                            torch.save(model.state_dict(), "models/best_model.pt")
+                            TrainingService.write_log(f"Validation loss decreased ({best_loss:.4f}). Saving candidate model...")
+                            torch.save(model.state_dict(), "models/candidate_model.pt")
                             from app.core.config import settings
-                            torch.save(model.state_dict(), f"models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+                            torch.save(model.state_dict(), f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt")
                     else:
-                        # Save best model based on training loss if no validation split is present
+                        # Save candidate model based on training loss if no validation split is present
                         epoch_val_loss = epoch_loss
                         epoch_val_acc = epoch_acc
                         epoch_f1 = epoch_acc
@@ -514,14 +582,48 @@ class TrainingService:
                         
                         if epoch_loss < best_loss:
                             best_loss = epoch_loss
-                            TrainingService.write_log(f"Train loss decreased ({best_loss:.4f}). Saving model state dictionary...")
-                            torch.save(model.state_dict(), "models/best_model.pt")
+                            TrainingService.write_log(f"Train loss decreased ({best_loss:.4f}). Saving candidate model...")
+                            torch.save(model.state_dict(), "models/candidate_model.pt")
                             from app.core.config import settings
-                            torch.save(model.state_dict(), f"models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+                            torch.save(model.state_dict(), f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt")
                             
-                # Log best model artifact
-                mlflow.log_artifact("models/best_model.pt")
-                TrainingService.write_log("Logged models/best_model.pt to MLflow.")
+                # Log candidate model artifact to MLflow for auditing
+                if os.path.exists("models/candidate_model.pt"):
+                    mlflow.log_artifact("models/candidate_model.pt")
+                
+                # Run the Validation Gate
+                candidate_acc = history["accuracy"][-1] if history["accuracy"] else 0.0
+                
+                # Fetch accuracy of previous successful run
+                try:
+                    from app.models.training_history import TrainingHistory
+                    previous_best = db.query(TrainingHistory).filter(
+                        TrainingHistory.status == "success",
+                        TrainingHistory.id != history_id
+                    ).order_by(TrainingHistory.completed_at.desc()).first()
+                    previous_acc = previous_best.accuracy if (previous_best and previous_best.accuracy is not None) else 0.0
+                except Exception as db_err:
+                    logger.error(f"Failed to query previous history: {db_err}")
+                    previous_acc = 0.0
+                
+                if candidate_acc >= previous_acc or previous_acc == 0.0:
+                    TrainingService.write_log(f"Validation Gate PASSED: Candidate Accuracy ({candidate_acc:.4f}) >= Previous Accuracy ({previous_acc:.4f}). Updating production weights.")
+                    
+                    import shutil
+                    from app.core.config import settings
+                    if os.path.exists("models/candidate_model.pt"):
+                        shutil.copyfile("models/candidate_model.pt", "models/best_model.pt")
+                    if os.path.exists(f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt"):
+                        shutil.copyfile(f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt", f"models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+                    
+                    # Log the updated best model to MLflow
+                    if os.path.exists("models/best_model.pt"):
+                        mlflow.log_artifact("models/best_model.pt")
+                        TrainingService.write_log("Logged models/best_model.pt to MLflow.")
+                else:
+                    msg = f"Validation Gate FAILED: Candidate Accuracy ({candidate_acc:.4f}) < Previous Accuracy ({previous_acc:.4f}). Model rejected to protect production stability."
+                    TrainingService.write_log(msg)
+                    raise ValueError(msg)
                 
                 # Create and log training_config, metrics, and plots artifacts as required by 3.3.7
                 TrainingService.write_log("Saving and logging pipeline artifacts...")
@@ -665,11 +767,11 @@ class TrainingService:
                 TrainingService.write_log = old_write_log
 
     @staticmethod
-    def run_training_pipeline_task(trainer_id: str, history_id: str = None, use_augmentation: bool = True):
+    def run_training_pipeline_task(trainer_id: str, history_id: str = None, use_augmentation: bool = True, force_full: bool = False):
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
-            return TrainingService.run_training_pipeline(db, trainer_id, history_id, use_augmentation)
+            return TrainingService.run_training_pipeline(db, trainer_id, history_id, use_augmentation, force_full)
         except Exception as e:
             logger.error(f"Training background task failed: {e}")
             raise e

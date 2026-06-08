@@ -287,7 +287,7 @@ export const messages = {
       btnStart: "Bắt đầu xử lý",
       dragPrompt: "Kéo thả tệp tin vào đây hoặc",
       btnBrowse: "Chọn từ máy tính",
-      uploadCaption: "Hỗ trợ định dạng DICOM (.dcm), PNG, JPG. ích thước tối đa mỗi tệp: 50MB. Đảm bảo dữ liệu đã được ẩn danh theo quy định HIPAA/GDPR.",
+      uploadCaption: "Hỗ trợ định dạng DICOM (.dcm), PNG, JPG hoặc chụp ảnh trực tiếp từ camera. Kích thước tối đa mỗi tệp: 50MB. Đảm bảo dữ liệu đã được ẩn danh theo quy định HIPAA/GDPR.",
       queueTitle: (count: number) => `Hàng đợi tải lên (${count} tệp)`,
       btnClearAll: "Xóa tất cả",
       queueEmpty: "Chưa có tệp nào trong hàng đợi. Chọn tệp để xem giao diện upload.",

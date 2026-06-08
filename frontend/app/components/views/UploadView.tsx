@@ -58,7 +58,7 @@ type UploadItem = {
 };
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
-const acceptedTypes = ".dcm,.png,.jpg,.jpeg";
+const acceptedTypes = ".dcm,.png,.jpg,.jpeg,image/*";
 
 function formatFileSize(size: number) {
   if (size >= 1024 * 1024) {
