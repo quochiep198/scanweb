@@ -123,6 +123,7 @@ class TrainingService:
         Queries metadata for training according to section 3.3.1 of spec-pack.md.
         Joins xray_images, osteoporosis_labels, and patients.
         Filters by dataset_split = 'train' and optionally is_trained = False.
+        Push down filters to SQL for efficiency. Returns list of dicts with all required fields for training.
         """
         query = (
             db.query(
