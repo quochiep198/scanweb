@@ -118,13 +118,13 @@ class TrainingService:
                 logger.error(f"Failed to write log to DB: {e}")
 
     @staticmethod
-    def get_training_metadata(db: Session):
+    def get_training_metadata(db: Session, only_untrained: bool = False):
         """
         Queries metadata for training according to section 3.3.1 of spec-pack.md.
         Joins xray_images, osteoporosis_labels, and patients.
-        Filters by dataset_split = 'train' and is_trained = False.
+        Filters by dataset_split = 'train' and optionally is_trained = False.
         """
-        results = (
+        query = (
             db.query(
                 XRayImage.image_path,
                 OsteoporosisLabel.label,
@@ -138,9 +138,11 @@ class TrainingService:
             .join(OsteoporosisLabel, XRayImage.image_id == OsteoporosisLabel.image_id)
             .join(Patient, XRayImage.patient_id == Patient.patient_id)
             .filter(XRayImage.dataset_split == "train")
-            .filter(XRayImage.is_trained.isnot(True))
-            .all()
         )
+        if only_untrained:
+            query = query.filter(XRayImage.is_trained.isnot(True))
+            
+        results = query.all()
         
         # Format results as a list of dicts for clean API output
         return [
@@ -158,13 +160,13 @@ class TrainingService:
         ]
 
     @staticmethod
-    def get_training_dataloader(db: Session, batch_size: int = 8, use_augmentation: bool = True) -> DataLoader:
+    def get_training_dataloader(db: Session, batch_size: int = 8, use_augmentation: bool = True, only_untrained: bool = False) -> DataLoader:
         """
         Creates and returns a DataLoader for training.
         Configures the OsteoporosisDataset with train metadata.
         Uses num_workers=0 on Windows.
         """
-        metadata = TrainingService.get_training_metadata(db)
+        metadata = TrainingService.get_training_metadata(db, only_untrained=only_untrained)
         dataset = OsteoporosisDataset(metadata, use_augmentation=use_augmentation)
         
         return DataLoader(
