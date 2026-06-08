@@ -7,6 +7,31 @@ import PrintableReport from "./PrintableReport";
 import ClassificationGauge from "./ClassificationGauge";
 import { messages } from "@/app/messages";
 
+const tryRefreshSession = async (): Promise<boolean> => {
+  try {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/v1/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+    return response.ok;
+  } catch (e) {
+    return false;
+  }
+};
+
+const fetchWithAuth = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  options.credentials = "include";
+  let response = await fetch(url, options);
+  if (response.status === 401) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) {
+      response = await fetch(url, options);
+    }
+  }
+  return response;
+};
+
 export default function MeasurementPage() {
   const m = messages.measurement;
 
@@ -132,7 +157,7 @@ export default function MeasurementPage() {
     formData.append("bmi", trimmedBmi);
 
     try {
-      const response = await fetch(`${apiUrl}/v1/measure/predict`, {
+      const response = await fetchWithAuth(`${apiUrl}/v1/measure/predict`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -186,7 +211,7 @@ export default function MeasurementPage() {
 
     const apiUrl = getApiUrl();
     try {
-      const response = await fetch(`${apiUrl}/v1/measure/confirm/${resultData.measurement_id}`, {
+      const response = await fetchWithAuth(`${apiUrl}/v1/measure/confirm/${resultData.measurement_id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
