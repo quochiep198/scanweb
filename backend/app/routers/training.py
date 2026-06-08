@@ -195,6 +195,7 @@ def test_dataloader(
 def train_model(
     background_tasks: BackgroundTasks,
     use_augmentation: bool = True,
+    force_full: bool = False,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -251,7 +252,8 @@ def train_model(
         TrainingService.run_training_pipeline_task,
         trainer_id=current_user.id,
         history_id=history_id,
-        use_augmentation=use_augmentation
+        use_augmentation=use_augmentation,
+        force_full=force_full
     )
     return {
         "status": "success",
