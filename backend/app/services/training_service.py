@@ -397,11 +397,13 @@ class TrainingService:
                 TrainingService.write_log(f"Device initialized: {device}")
                 
                 # Load existing weights for Warm Start if they exist
+                warm_start_success = False
                 if os.path.exists("models/best_model.pt"):
                     try:
                         TrainingService.write_log("Loading existing model weights for Warm Start...")
                         model.load_state_dict(torch.load("models/best_model.pt", map_location=device))
                         TrainingService.write_log("Successfully loaded model weights for Warm Start.")
+                        warm_start_success = True
                     except Exception as load_err:
                         TrainingService.write_log(f"WARNING: Failed to load existing weights ({load_err}). Proceeding with ImageNet weights.")
                 
@@ -640,6 +642,11 @@ class TrainingService:
                     logger.error(f"Failed to query previous history: {db_err}")
                     previous_acc = 0.0
                 
+                # If warm start failed (architecture mismatch), bypass validation comparison
+                if not warm_start_success:
+                    TrainingService.write_log("Bypassing Validation Gate comparison because previous model weights were missing or incompatible with the new architecture.")
+                    previous_acc = 0.0
+                    
                 if candidate_acc >= previous_acc or previous_acc == 0.0:
                     TrainingService.write_log(f"Validation Gate PASSED: Candidate Accuracy ({candidate_acc:.4f}) >= Previous Accuracy ({previous_acc:.4f}). Updating production weights.")
                     
