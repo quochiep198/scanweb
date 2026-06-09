@@ -83,8 +83,8 @@ def check_and_update_schema():
                         if engine.dialect.name == 'sqlite':
                             if 'DEFAULT FALSE' in col_type:
                                 sql_type = col_type.replace('DEFAULT FALSE', 'DEFAULT 0')
-                    conn.execute(text(f"ALTER TABLE measurement_results ADD COLUMN {col_name} {sql_type}"))
-                    logger.info(f"'{col_name}' column added successfully.")
+                        conn.execute(text(f"ALTER TABLE measurement_results ADD COLUMN {col_name} {sql_type}"))
+                        logger.info(f"'{col_name}' column added successfully.")
 
         # Check and create training_logs table
         if 'training_logs' not in inspector.get_table_names():
