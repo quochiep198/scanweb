@@ -72,7 +72,8 @@ def check_and_update_schema():
                 'reviewed_by': 'VARCHAR(36) NULL',
                 'reviewed_at': 'TIMESTAMP NULL' if engine.dialect.name != 'sqlite' else 'DATETIME NULL',
                 'model_version': 'VARCHAR(100) NULL',
-                'dataset_version': 'VARCHAR(100) NULL'
+                'dataset_version': 'VARCHAR(100) NULL',
+                'predicted_t_score': 'DECIMAL(4, 2) NULL'
             }
             for col_name, col_type in new_columns.items():
                 if col_name not in columns:

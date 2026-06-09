@@ -440,22 +440,48 @@ export default function MeasurementPage() {
             </h2>
 
             {/* Primary Values */}
-            {/* <div className={styles.scoresGrid}>
-              <div className={styles.scoreBox}>
-                <div className={styles.scoreLabel}>T-Score</div>
-                <div className={styles.scoreValue} style={{ color: "#94a3b8" }}>N/A</div>
-                <div className={styles.scoreStatus} style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                  Alternative AI classification
+            {resultData && (
+              <div className={styles.scoresGrid}>
+                <div className={styles.scoreBox}>
+                  <div className={styles.scoreLabel}>T-Score Dự Đoán</div>
+                  <div 
+                    className={resultData.predicted_t_score <= -2.5 ? styles.scoreValueRed : styles.scoreValue} 
+                    style={{ color: resultData.predicted_t_score <= -2.5 ? "#ba1a1a" : "#155dca" }}
+                  >
+                    {resultData.predicted_t_score !== undefined && resultData.predicted_t_score !== null 
+                      ? resultData.predicted_t_score.toFixed(2) 
+                      : "N/A"}
+                  </div>
+                  <div className={resultData.predicted_t_score <= -2.5 ? styles.scoreStatusRed : styles.scoreStatus}>
+                    {resultData.predicted_t_score <= -2.5 
+                      ? "Loãng xương (Nguy cơ cao)" 
+                      : resultData.predicted_t_score <= -1.0 
+                        ? "Thiếu xương (Nguy cơ vừa)" 
+                        : "Bình thường (Nguy cơ thấp)"}
+                  </div>
+                </div>
+                <div className={styles.scoreBox}>
+                  <div className={styles.scoreLabel}>Nhãn AI Dự Đoán</div>
+                  <div 
+                    className={resultData.predicted_label === "osteoporosis" ? styles.scoreValueRed : styles.scoreValue} 
+                    style={{ 
+                      color: resultData.predicted_label === "osteoporosis" 
+                        ? "#ba1a1a" 
+                        : (resultData.predicted_label === "osteopenia" ? "#eab308" : "#22c55e") 
+                    }}
+                  >
+                    {resultData.predicted_label === "osteoporosis" 
+                      ? "Loãng xương" 
+                      : resultData.predicted_label === "osteopenia" 
+                        ? "Thiếu xương" 
+                        : "Bình thường"}
+                  </div>
+                  <div className={styles.scoreStatus}>
+                    Độ tin cậy: {Math.round(resultData.confidence * 100)}%
+                  </div>
                 </div>
               </div>
-              <div className={styles.scoreBox}>
-                <div className={styles.scoreLabel}>Z-Score</div>
-                <div className={styles.scoreValue} style={{ color: "#94a3b8" }}>N/A</div>
-                <div className={styles.scoreStatus} style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                  Alternative AI classification
-                </div>
-              </div>
-            </div> */}
+            )}
 
             {/* BMD Card */}
             {/* <div className={styles.bmdCard}>

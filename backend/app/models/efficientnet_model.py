@@ -31,15 +31,20 @@ class OsteoporosisEfficientNetB3(nn.Module):
             nn.LayerNorm(16)
         )
         
-        # Combined classifier: inputs image features (1536) + metadata features (16)
-        self.classifier = nn.Sequential(
+        # Shared feature processing block
+        self.shared_fc = nn.Sequential(
             nn.Linear(in_features + 16, 256),
             nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(256, num_classes)
+            nn.Dropout(0.3)
         )
         
-    def forward(self, x: torch.Tensor, meta: torch.Tensor) -> torch.Tensor:
+        # Classification head: outputs class logits (num_classes)
+        self.classifier_head = nn.Linear(256, num_classes)
+        
+        # Regression head: outputs predicted T-score (1)
+        self.regression_head = nn.Linear(256, 1)
+        
+    def forward(self, x: torch.Tensor, meta: torch.Tensor):
         # If image is grayscale (1 channel), repeat to 3 channels for EfficientNet-B3
         if x.shape[1] == 1:
             x = x.repeat(1, 3, 1, 1)
@@ -53,6 +58,11 @@ class OsteoporosisEfficientNetB3(nn.Module):
         # Concatenate image features and metadata features
         combined_feats = torch.cat([img_feats, meta_feats], dim=1) # shape: (batch_size, 1552)
         
-        # Classify
-        logits = self.classifier(combined_feats)
-        return logits
+        # Process shared features
+        shared_feats = self.shared_fc(combined_feats) # shape: (batch_size, 256)
+        
+        # Branch predictions
+        logits = self.classifier_head(shared_feats) # shape: (batch_size, 3)
+        t_score_pred = self.regression_head(shared_feats).squeeze(-1) # shape: (batch_size,)
+        
+        return logits, t_score_pred

@@ -17,6 +17,7 @@ class MeasurementResult(Base):
 
     predicted_label = Column(Enum('normal', 'osteopenia', 'osteoporosis', name='label_types'), nullable=False)
     confidence = Column(Numeric(6, 5), nullable=True)
+    predicted_t_score = Column(Numeric(4, 2), nullable=True)
 
     normal_probability = Column(Numeric(6, 5), nullable=True)
     osteopenia_probability = Column(Numeric(6, 5), nullable=True)

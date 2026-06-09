@@ -165,8 +165,9 @@ class MeasureService:
 
             # 4. Run PyTorch inference
             with torch.no_grad():
-                logits = model(image_tensor, metadata_tensor)
+                logits, t_score_pred = model(image_tensor, metadata_tensor)
                 probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
+                predicted_t_score_val = float(t_score_pred.cpu().numpy()[0])
                 
             # Class mapping: 0 -> normal, 1 -> osteopenia, 2 -> osteoporosis
             labels = ["normal", "osteopenia", "osteoporosis"]
@@ -214,6 +215,7 @@ class MeasureService:
                 bmi=bmi,
                 predicted_label=predicted_label,
                 confidence=confidence,
+                predicted_t_score=predicted_t_score_val,
                 normal_probability=normal_prob,
                 osteopenia_probability=osteopenia_prob,
                 osteoporosis_probability=osteoporosis_prob,
@@ -230,6 +232,7 @@ class MeasureService:
                 "predicted_label": predicted_label,
                 "predicted_label_display": predicted_label_display,
                 "confidence": confidence,
+                "predicted_t_score": predicted_t_score_val,
                 "probabilities": {
                     "normal": normal_prob,
                     "osteopenia": osteopenia_prob,

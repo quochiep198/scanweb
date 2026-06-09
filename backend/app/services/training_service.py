@@ -78,10 +78,15 @@ class OsteoporosisDataset(Dataset):
             label_val = label_map.get(label_str, 0)
             label_tensor = torch.tensor(label_val, dtype=torch.long)
             
+            # 8. Extract T-score (using NaN for missing values to mask in loss)
+            t_score_val = float(record["t_score"]) if record.get("t_score") is not None else float('nan')
+            t_score_tensor = torch.tensor(t_score_val, dtype=torch.float32)
+            
             return {
                 "image": image_tensor,
                 "metadata": metadata_tensor,
-                "label": label_tensor
+                "label": label_tensor,
+                "t_score": t_score_tensor
             }
         except Exception as e:
             logger.error(f"Error loading dataset item at index {idx} (path: {image_path}): {e}")
@@ -402,6 +407,7 @@ class TrainingService:
                 
                 model.to(device)
                 criterion = nn.CrossEntropyLoss()
+                criterion_reg = nn.MSELoss(reduction='none') # For T-score regression masking
                 optimizer = optim.Adam(model.parameters(), lr=lr)
                 
                 best_loss = float('inf')
@@ -433,6 +439,7 @@ class TrainingService:
                     db.query(
                         XRayImage.image_path,
                         OsteoporosisLabel.label,
+                        OsteoporosisLabel.t_score,
                         Patient.age,
                         Patient.sex,
                         Patient.bmi
@@ -446,6 +453,7 @@ class TrainingService:
                     {
                         "image_path": row.image_path,
                         "label": row.label,
+                        "t_score": float(row.t_score) if row.t_score is not None else None,
                         "age": row.age,
                         "sex": row.sex,
                         "bmi": float(row.bmi) if row.bmi is not None else None,
@@ -478,20 +486,34 @@ class TrainingService:
                         images = batch["image"].to(device)
                         meta = batch["metadata"].to(device)
                         labels = batch["label"].to(device)
+                        t_scores_target = batch["t_score"].to(device)
                         
                         optimizer.zero_grad()
-                        outputs = model(images, meta)
-                        loss = criterion(outputs, labels)
+                        class_logits, t_score_preds = model(images, meta)
+                        
+                        loss_class = criterion(class_logits, labels)
+                        
+                        # Masked MSE loss for T-score regression
+                        mask = ~torch.isnan(t_scores_target)
+                        if mask.sum() > 0:
+                            loss_reg_all = criterion_reg(t_score_preds, t_scores_target)
+                            loss_reg = loss_reg_all[mask].mean()
+                        else:
+                            loss_reg = torch.tensor(0.0, device=device)
+                            
+                        # Combined loss: classification + 0.2 * masked regression
+                        loss = loss_class + 0.2 * loss_reg
+                        
                         loss.backward()
                         optimizer.step()
                         
                         running_loss += loss.item() * images.size(0)
-                        _, preds = torch.max(outputs, 1)
+                        _, preds = torch.max(class_logits, 1)
                         correct += torch.sum(preds == labels.data).item()
                         total += labels.size(0)
                         
                         if batch_idx % 2 == 0 or batch_idx == len(dataloader):
-                            TrainingService.write_log(f"Epoch {epoch}/{epochs} | Batch {batch_idx}/{len(dataloader)} | Loss: {loss.item():.4f}")
+                            TrainingService.write_log(f"Epoch {epoch}/{epochs} | Batch {batch_idx}/{len(dataloader)} | Loss: {loss.item():.4f} (Class: {loss_class.item():.4f}, Reg: {loss_reg.item():.4f})")
                         
                     epoch_loss = running_loss / total
                     epoch_acc = correct / total
@@ -518,12 +540,24 @@ class TrainingService:
                                 images = batch["image"].to(device)
                                 meta = batch["metadata"].to(device)
                                 labels = batch["label"].to(device)
-                                outputs = model(images, meta)
-                                loss = criterion(outputs, labels)
+                                t_scores_target = batch["t_score"].to(device)
+                                
+                                class_logits, t_score_preds = model(images, meta)
+                                loss_class = criterion(class_logits, labels)
+                                
+                                # Masked MSE loss for T-score regression
+                                mask = ~torch.isnan(t_scores_target)
+                                if mask.sum() > 0:
+                                    loss_reg_all = criterion_reg(t_score_preds, t_scores_target)
+                                    loss_reg = loss_reg_all[mask].mean()
+                                else:
+                                    loss_reg = torch.tensor(0.0, device=device)
+                                    
+                                loss = loss_class + 0.2 * loss_reg
                                 val_loss += loss.item() * images.size(0)
                                 
-                                probs = torch.softmax(outputs, dim=1)
-                                _, preds = torch.max(outputs, 1)
+                                probs = torch.softmax(class_logits, dim=1)
+                                _, preds = torch.max(class_logits, 1)
                                 
                                 val_correct += torch.sum(preds == labels.data).item()
                                 val_total += labels.size(0)
