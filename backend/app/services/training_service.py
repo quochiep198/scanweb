@@ -343,7 +343,7 @@ class TrainingService:
             TrainingService.write_log = temp_write_log
 
             # Set hyperparameters
-            epochs = 2 if is_incremental else 5
+            epochs = 2 if is_incremental else 30
             batch_size = 8
             lr = 1e-5 if is_incremental else 1e-4
 
