@@ -441,46 +441,72 @@ export default function MeasurementPage() {
 
             {/* Primary Values */}
             {resultData && (
-              <div className={styles.scoresGrid}>
-                <div className={styles.scoreBox}>
-                  <div className={styles.scoreLabel}>T-Score Dự Đoán</div>
-                  <div 
-                    className={resultData.predicted_t_score <= -2.5 ? styles.scoreValueRed : styles.scoreValue} 
-                    style={{ color: resultData.predicted_t_score <= -2.5 ? "#ba1a1a" : "#155dca" }}
-                  >
-                    {resultData.predicted_t_score !== undefined && resultData.predicted_t_score !== null 
-                      ? resultData.predicted_t_score.toFixed(2) 
-                      : "N/A"}
+              <>
+                <div className={styles.scoresGrid}>
+                  <div className={styles.scoreBox}>
+                    <div className={styles.scoreLabel}>T-Score Dự Đoán</div>
+                    <div 
+                      className={resultData.predicted_t_score <= -2.5 ? styles.scoreValueRed : styles.scoreValue} 
+                      style={{ color: resultData.predicted_t_score <= -2.5 ? "#ba1a1a" : "#155dca" }}
+                    >
+                      {resultData.predicted_t_score !== undefined && resultData.predicted_t_score !== null 
+                        ? resultData.predicted_t_score.toFixed(2) 
+                        : "N/A"}
+                    </div>
+                    <div className={resultData.predicted_t_score <= -2.5 ? styles.scoreStatusRed : styles.scoreStatus}>
+                      {resultData.predicted_t_score <= -2.5 
+                        ? "Loãng xương (Nguy cơ cao)" 
+                        : resultData.predicted_t_score <= -1.0 
+                          ? "Thiếu xương (Nguy cơ vừa)" 
+                          : "Bình thường (Nguy cơ thấp)"}
+                    </div>
                   </div>
-                  <div className={resultData.predicted_t_score <= -2.5 ? styles.scoreStatusRed : styles.scoreStatus}>
-                    {resultData.predicted_t_score <= -2.5 
-                      ? "Loãng xương (Nguy cơ cao)" 
-                      : resultData.predicted_t_score <= -1.0 
-                        ? "Thiếu xương (Nguy cơ vừa)" 
-                        : "Bình thường (Nguy cơ thấp)"}
+                  <div className={styles.scoreBox}>
+                    <div className={styles.scoreLabel}>Nhãn AI Dự Đoán</div>
+                    <div 
+                      className={resultData.predicted_label === "osteoporosis" ? styles.scoreValueRed : styles.scoreValue} 
+                      style={{ 
+                        color: resultData.predicted_label === "osteoporosis" 
+                          ? "#ba1a1a" 
+                          : (resultData.predicted_label === "osteopenia" ? "#eab308" : "#22c55e") 
+                      }}
+                    >
+                      {resultData.predicted_label === "osteoporosis" 
+                        ? "Loãng xương" 
+                        : resultData.predicted_label === "osteopenia" 
+                          ? "Thiếu xương" 
+                          : "Bình thường"}
+                    </div>
+                    <div className={styles.scoreStatus}>
+                      Độ tin cậy: {Math.round(resultData.confidence * 100)}%
+                    </div>
                   </div>
                 </div>
-                <div className={styles.scoreBox}>
-                  <div className={styles.scoreLabel}>Nhãn AI Dự Đoán</div>
-                  <div 
-                    className={resultData.predicted_label === "osteoporosis" ? styles.scoreValueRed : styles.scoreValue} 
-                    style={{ 
-                      color: resultData.predicted_label === "osteoporosis" 
-                        ? "#ba1a1a" 
-                        : (resultData.predicted_label === "osteopenia" ? "#eab308" : "#22c55e") 
-                    }}
-                  >
-                    {resultData.predicted_label === "osteoporosis" 
-                      ? "Loãng xương" 
-                      : resultData.predicted_label === "osteopenia" 
-                        ? "Thiếu xương" 
-                        : "Bình thường"}
+                {resultData.predicted_t_score !== undefined && resultData.predicted_t_score !== null &&
+                 resultData.predicted_t_score > -2.5 && resultData.predicted_t_score <= -2.0 && (
+                  <div style={{
+                    marginTop: "16px",
+                    padding: "12px 16px",
+                    backgroundColor: "#fffbeb",
+                    border: "1px solid #fef3c7",
+                    borderRadius: "8px",
+                    color: "#b45309",
+                    fontSize: "13px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "10px",
+                    lineHeight: "1.5"
+                  }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#d97706", flexShrink: 0, marginTop: "2px" }}>
+                      warning
+                    </span>
+                    <div>
+                      <strong style={{ display: "block", marginBottom: "4px" }}>Cảnh báo vùng ranh giới:</strong>
+                      Chỉ số T-score dự đoán ({resultData.predicted_t_score.toFixed(2)}) nằm rất sát ngưỡng chẩn đoán Loãng xương (-2.5). Khuyến nghị bác sĩ đối chiếu kỹ lâm sàng hoặc đo lại bằng phương pháp DXA để tránh bỏ sót bệnh.
+                    </div>
                   </div>
-                  <div className={styles.scoreStatus}>
-                    Độ tin cậy: {Math.round(resultData.confidence * 100)}%
-                  </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
 
             {/* BMD Card */}

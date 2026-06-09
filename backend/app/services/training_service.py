@@ -343,7 +343,7 @@ class TrainingService:
             TrainingService.write_log = temp_write_log
 
             # Set hyperparameters
-            epochs = 2 if is_incremental else 30
+            epochs = 5 if is_incremental else 30
             batch_size = 8
             lr = 1e-5 if is_incremental else 1e-4
 
@@ -503,8 +503,8 @@ class TrainingService:
                         else:
                             loss_reg = torch.tensor(0.0, device=device)
                             
-                        # Combined loss: classification + 0.2 * masked regression
-                        loss = loss_class + 0.2 * loss_reg
+                        # Combined loss: classification + 0.5 * masked regression
+                        loss = loss_class + 0.5 * loss_reg
                         
                         loss.backward()
                         optimizer.step()
@@ -555,7 +555,7 @@ class TrainingService:
                                 else:
                                     loss_reg = torch.tensor(0.0, device=device)
                                     
-                                loss = loss_class + 0.2 * loss_reg
+                                loss = loss_class + 0.5 * loss_reg
                                 val_loss += loss.item() * images.size(0)
                                 
                                 probs = torch.softmax(class_logits, dim=1)
