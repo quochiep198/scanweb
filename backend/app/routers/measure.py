@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -7,6 +7,7 @@ import logging
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
 from app.services.measure_service import MeasureService
+from app.models.measurement_result import MeasurementResult
 
 logger = logging.getLogger(__name__)
 
@@ -182,4 +183,41 @@ def confirm_measurement_result(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Xác nhận kết quả thất bại"
+        )
+
+@router.get("/{measurement_id}/heatmap", status_code=status.HTTP_200_OK)
+def get_measurement_heatmap(
+    measurement_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Downloads the heatmap PNG bytes from Cloudflare R2 and serves it directly as an image response.
+    """
+    db_result = db.query(MeasurementResult).filter(
+        MeasurementResult.measurement_id == measurement_id,
+        MeasurementResult.user_id == current_user.id
+    ).first()
+    
+    if not db_result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy kết quả phân tích"
+        )
+        
+    if not db_result.image_heatmap_r2_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bản ghi này chưa có ảnh bản đồ nhiệt"
+        )
+        
+    try:
+        from app.services.r2_service import R2Service
+        image_bytes = R2Service.download_file(db_result.image_heatmap_r2_key)
+        return Response(content=image_bytes, media_type="image/png")
+    except Exception as e:
+        logger.error(f"Error downloading heatmap from R2 for ID {measurement_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Không thể tải ảnh bản đồ nhiệt từ R2"
         )

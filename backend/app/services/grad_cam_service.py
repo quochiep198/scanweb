@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import matplotlib
+import cv2
 from PIL import Image
 import io
 import logging
@@ -12,7 +12,7 @@ class GradCamService:
     @staticmethod
     def generate_heatmap(model: nn.Module, image_tensor: torch.Tensor, metadata_tensor: torch.Tensor) -> bytes:
         """
-        Generates a Grad-CAM heatmap overlaid on the input image.
+        Generates a Grad-CAM heatmap overlaid on the input image using OpenCV.
         Uses PyTorch hooks on the last convolutional layer of the EfficientNet backbone.
         """
         try:
@@ -96,26 +96,24 @@ class GradCamService:
                 img_np = np.zeros_like(img_np)
             img_np = img_np.astype(np.uint8)
             
-            orig_pil = Image.fromarray(img_np).convert('RGB')
+            # Convert grayscale original image to RGB
+            orig_rgb = cv2.cvtColor(img_np, cv2.COLOR_GRAY2RGB)
             
             # 4. Resize Grad-CAM map to image dimensions (300, 300)
             grad_cam_map_uint8 = (grad_cam_map * 255).astype(np.uint8)
-            heatmap_small_pil = Image.fromarray(grad_cam_map_uint8)
-            heatmap_resized_pil = heatmap_small_pil.resize((300, 300), Image.Resampling.BILINEAR)
-            heatmap_resized_np = np.array(heatmap_resized_pil)
+            heatmap_resized = cv2.resize(grad_cam_map_uint8, (300, 300), interpolation=cv2.INTER_LINEAR)
             
-            # 5. Apply colormap
-            cmap = matplotlib.colormaps['jet']
-            heatmap_colors = cmap(heatmap_resized_np / 255.0)
-            heatmap_colors = (heatmap_colors[:, :, :3] * 255).astype(np.uint8)
+            # 5. Apply JET colormap using OpenCV
+            heatmap_color = cv2.applyColorMap(heatmap_resized, cv2.COLORMAP_JET)
+            heatmap_rgb = cv2.cvtColor(heatmap_color, cv2.COLOR_BGR2RGB)
             
-            # 6. Blend original image and heatmap
-            heatmap_pil = Image.fromarray(heatmap_colors)
-            blended_pil = Image.blend(orig_pil, heatmap_pil, alpha=0.5)
+            # 6. Blend original image and heatmap (alpha=0.5)
+            blended = cv2.addWeighted(orig_rgb, 0.5, heatmap_rgb, 0.5, 0)
             
             # Save to bytes
+            pil_img = Image.fromarray(blended)
             output_bytes = io.BytesIO()
-            blended_pil.save(output_bytes, format='PNG')
+            pil_img.save(output_bytes, format='PNG')
             return output_bytes.getvalue()
             
         except Exception as e:

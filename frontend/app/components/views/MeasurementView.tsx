@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, ChangeEvent, DragEvent } from "react";
+import { useState, useRef, ChangeEvent, DragEvent, useEffect } from "react";
 import { getApiUrl } from "@/app/lib/api";
 import styles from "../../measurement/measurement.module.css";
 import PrintableReport from "./PrintableReport";
@@ -56,6 +56,35 @@ export default function MeasurementPage() {
   const [reviewSuccessMsg, setReviewSuccessMsg] = useState<string | null>(null);
   const [reviewErrorMsg, setReviewErrorMsg] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
+  const [heatmapBlobUrl, setHeatmapBlobUrl] = useState<string>("");
+
+  // Fetch heatmap blob from backend securely when enabled
+  useEffect(() => {
+    let active = true;
+    if (showHeatmap && resultData && resultData.measurement_id) {
+      if (!heatmapBlobUrl) {
+        const fetchHeatmap = async () => {
+          try {
+            const apiUrl = getApiUrl();
+            const response = await fetchWithAuth(`${apiUrl}/v1/measure/${resultData.measurement_id}/heatmap`);
+            if (response.ok && active) {
+              const blob = await response.blob();
+              const objectUrl = URL.createObjectURL(blob);
+              setHeatmapBlobUrl(objectUrl);
+            } else if (active) {
+              console.error("Failed to fetch heatmap:", response.status);
+            }
+          } catch (err) {
+            console.error("Error fetching heatmap:", err);
+          }
+        };
+        fetchHeatmap();
+      }
+    }
+    return () => {
+      active = false;
+    };
+  }, [showHeatmap, resultData, heatmapBlobUrl]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -97,6 +126,10 @@ export default function MeasurementPage() {
     setErrorMsg(null);
     setResultData(null);
     setShowHeatmap(false);
+    if (heatmapBlobUrl) {
+      URL.revokeObjectURL(heatmapBlobUrl);
+      setHeatmapBlobUrl("");
+    }
     setReviewSuccessMsg(null);
     setReviewErrorMsg(null);
     
@@ -114,6 +147,10 @@ export default function MeasurementPage() {
     }
     setResultData(null);
     setShowHeatmap(false);
+    if (heatmapBlobUrl) {
+      URL.revokeObjectURL(heatmapBlobUrl);
+      setHeatmapBlobUrl("");
+    }
     setErrorMsg(null);
     setReviewSuccessMsg(null);
     setReviewErrorMsg(null);
@@ -152,6 +189,10 @@ export default function MeasurementPage() {
     setErrorMsg(null);
     setResultData(null);
     setShowHeatmap(false);
+    if (heatmapBlobUrl) {
+      URL.revokeObjectURL(heatmapBlobUrl);
+      setHeatmapBlobUrl("");
+    }
 
     const apiUrl = getApiUrl();
     const formData = new FormData();
@@ -355,8 +396,8 @@ export default function MeasurementPage() {
             onDrop={handleDrop}
           >
             {selectedFile ? (
-              showHeatmap && resultData && resultData.heatmap_url ? (
-                <img src={resultData.heatmap_url} alt="AI Grad-CAM Heatmap" className={styles.scanImage} />
+              showHeatmap && resultData && heatmapBlobUrl ? (
+                <img src={heatmapBlobUrl} alt="AI Grad-CAM Heatmap" className={styles.scanImage} />
               ) : (
                 // Check if file is dicom. Dicom files are rendered as placeholder image because browser cannot directly display raw dicom data
                 selectedFile.name.toLowerCase().endsWith(".dcm") ? (
