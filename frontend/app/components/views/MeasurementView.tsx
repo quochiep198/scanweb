@@ -55,6 +55,7 @@ export default function MeasurementPage() {
   const [isSavingReview, setIsSavingReview] = useState<boolean>(false);
   const [reviewSuccessMsg, setReviewSuccessMsg] = useState<string | null>(null);
   const [reviewErrorMsg, setReviewErrorMsg] = useState<string | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +96,7 @@ export default function MeasurementPage() {
     setSelectedFile(file);
     setErrorMsg(null);
     setResultData(null);
+    setShowHeatmap(false);
     setReviewSuccessMsg(null);
     setReviewErrorMsg(null);
     
@@ -111,6 +113,7 @@ export default function MeasurementPage() {
       setPreviewUrl("");
     }
     setResultData(null);
+    setShowHeatmap(false);
     setErrorMsg(null);
     setReviewSuccessMsg(null);
     setReviewErrorMsg(null);
@@ -148,6 +151,7 @@ export default function MeasurementPage() {
     setIsAnalyzing(true);
     setErrorMsg(null);
     setResultData(null);
+    setShowHeatmap(false);
 
     const apiUrl = getApiUrl();
     const formData = new FormData();
@@ -351,19 +355,23 @@ export default function MeasurementPage() {
             onDrop={handleDrop}
           >
             {selectedFile ? (
-              // Check if file is dicom. Dicom files are rendered as placeholder image because browser cannot directly display raw dicom data
-              selectedFile.name.toLowerCase().endsWith(".dcm") ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af", padding: "20px" }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: "64px", marginBottom: "16px", color: "#155dca" }}>
-                    medical_services
-                  </span>
-                  <h4>{m.view.dicomFileTitle}</h4>
-                  <p style={{ fontSize: "0.85rem", marginTop: "4px", color: "#64748b" }}>
-                    {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
-                  </p>
-                </div>
+              showHeatmap && resultData && resultData.heatmap_url ? (
+                <img src={resultData.heatmap_url} alt="AI Grad-CAM Heatmap" className={styles.scanImage} />
               ) : (
-                <img src={previewUrl} alt="X-Ray Scan Preview" className={styles.scanImage} />
+                // Check if file is dicom. Dicom files are rendered as placeholder image because browser cannot directly display raw dicom data
+                selectedFile.name.toLowerCase().endsWith(".dcm") ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af", padding: "20px" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: "64px", marginBottom: "16px", color: "#155dca" }}>
+                      medical_services
+                    </span>
+                    <h4>{m.view.dicomFileTitle}</h4>
+                    <p style={{ fontSize: "0.85rem", marginTop: "4px", color: "#64748b" }}>
+                      {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+                    </p>
+                  </div>
+                ) : (
+                  <img src={previewUrl} alt="X-Ray Scan Preview" className={styles.scanImage} />
+                )
               )
             ) : (
               <div className={styles.uploadAreaInner} onClick={handleOpenPicker}>
@@ -380,6 +388,21 @@ export default function MeasurementPage() {
               <div className={styles.aiOverlays} style={{ pointerEvents: "none" }}>
                 <div className={styles.overlayTop} style={{ justifyContent: "flex-end", width: "100%" }}>
                   <div className={styles.overlayControls} style={{ pointerEvents: "auto" }}>
+                    {resultData && resultData.heatmap_url && (
+                      <button 
+                        className={`${styles.controlBtn} ${showHeatmap ? styles.controlBtnActive : ""}`}
+                        onClick={() => setShowHeatmap(!showHeatmap)}
+                        style={{
+                          backgroundColor: showHeatmap ? "rgba(21, 93, 202, 0.2)" : "rgba(255, 255, 255, 0.15)",
+                          borderColor: showHeatmap ? "#155dca" : "rgba(255, 255, 255, 0.3)",
+                        }}
+                        title={showHeatmap ? "Ẩn bản đồ nhiệt XAI" : "Hiển thị bản đồ nhiệt XAI"}
+                      >
+                        <span className="material-symbols-outlined" style={{ color: showHeatmap ? "#155dca" : "#e2e8f0" }}>
+                          {showHeatmap ? "visibility_off" : "visibility"}
+                        </span>
+                      </button>
+                    )}
                     {resultData && (
                       <>
                         <button className={styles.controlBtn}>

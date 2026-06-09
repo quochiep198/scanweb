@@ -73,7 +73,8 @@ def check_and_update_schema():
                 'reviewed_at': 'TIMESTAMP NULL' if engine.dialect.name != 'sqlite' else 'DATETIME NULL',
                 'model_version': 'VARCHAR(100) NULL',
                 'dataset_version': 'VARCHAR(100) NULL',
-                'predicted_t_score': 'DECIMAL(4, 2) NULL'
+                'predicted_t_score': 'DECIMAL(4, 2) NULL',
+                'image_heatmap_r2_key': 'VARCHAR(500) NULL'
             }
             for col_name, col_type in new_columns.items():
                 if col_name not in columns:

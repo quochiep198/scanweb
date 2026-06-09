@@ -204,6 +204,18 @@ class MeasureService:
             temp_key = f"temp_measurements/{now.year}/{now.month:02d}/{now.day:02d}/{uuid_str}_{filename}"
             image_r2_key = R2Service.upload_file(file_content, filename, content_type, custom_key=temp_key)
 
+            # Generate Grad-CAM heatmap
+            image_heatmap_r2_key = None
+            try:
+                from app.services.grad_cam_service import GradCamService
+                heatmap_bytes = GradCamService.generate_heatmap(model, image_tensor, metadata_tensor)
+                if heatmap_bytes:
+                    heatmap_filename = f"heatmap_{uuid_str}.png"
+                    heatmap_temp_key = f"temp_measurements/{now.year}/{now.month:02d}/{now.day:02d}/{uuid_str}_heatmap.png"
+                    image_heatmap_r2_key = R2Service.upload_file(heatmap_bytes, heatmap_filename, "image/png", custom_key=heatmap_temp_key)
+            except Exception as cam_err:
+                logger.error(f"Failed to generate or upload Grad-CAM heatmap: {cam_err}")
+
             # 5. Save history to database
             db_result = MeasurementResult(
                 user_id=user_id,
@@ -216,6 +228,7 @@ class MeasureService:
                 predicted_label=predicted_label,
                 confidence=confidence,
                 predicted_t_score=predicted_t_score_val,
+                image_heatmap_r2_key=image_heatmap_r2_key,
                 normal_probability=normal_prob,
                 osteopenia_probability=osteopenia_prob,
                 osteoporosis_probability=osteoporosis_prob,
@@ -233,6 +246,7 @@ class MeasureService:
                 "predicted_label_display": predicted_label_display,
                 "confidence": confidence,
                 "predicted_t_score": predicted_t_score_val,
+                "heatmap_url": db_result.image_heatmap_r2_key,
                 "probabilities": {
                     "normal": normal_prob,
                     "osteopenia": osteopenia_prob,
