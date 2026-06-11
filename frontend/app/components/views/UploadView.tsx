@@ -221,6 +221,7 @@ export default function UploadPage() {
     age: string;
     gender: string;
     tScore: string;
+    datasetSplit: string;
   }> | null>(null);
   const [csvFileName, setCsvFileName] = useState<string>("");
   const csvInputRef = useRef<HTMLInputElement | null>(null);
@@ -548,6 +549,7 @@ export default function UploadPage() {
     const idxAge = findIndex(["age", "tuổi", "tuoi"]);
     const idxGender = findIndex(["gender", "sex", "giới tính", "gioi tinh"]);
     const idxTscore = findIndex(["t-score", "tscore", "t score", "t_score", "t score value", "t-score value"]);
+    const idxDatasetSplit = findIndex(["dataset split", "dataset_split", "dataset-split", "split", "tập dữ liệu", "tap du lieu"]);
 
     if (idxPatientId === -1) {
       alert("Không tìm thấy cột 'Patient Id' trong file CSV.");
@@ -563,6 +565,7 @@ export default function UploadPage() {
       age: string;
       gender: string;
       tScore: string;
+      datasetSplit: string;
     }> = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -581,6 +584,7 @@ export default function UploadPage() {
         age: idxAge !== -1 ? cleanToken(cols[idxAge]) : "",
         gender: idxGender !== -1 ? cleanToken(cols[idxGender]) : "",
         tScore: idxTscore !== -1 ? cleanToken(cols[idxTscore]) : "",
+        datasetSplit: idxDatasetSplit !== -1 ? cleanToken(cols[idxDatasetSplit]) : "",
       });
     }
 
@@ -630,6 +634,13 @@ export default function UploadPage() {
       return "Other";
     };
 
+    const mapDatasetSplit = (val: string): "train" | "validation" | "test" => {
+      const v = (val || "").trim().toLowerCase();
+      if (v.includes("validation") || v === "val" || v === "valid") return "validation";
+      if (v.includes("test")) return "test";
+      return "train";
+    };
+
     setItems((current) =>
       current.map((item) => {
         const prefix = item.file.name.split(/[._-]/)[0] || "";
@@ -667,7 +678,7 @@ export default function UploadPage() {
             age: row.age,
             sex: mapSex(row.gender),
             tScore: row.tScore || "",
-            datasetSplit: "train"
+            datasetSplit: row.datasetSplit ? mapDatasetSplit(row.datasetSplit) : "train"
           };
         } else {
           return {
