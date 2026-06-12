@@ -221,3 +221,46 @@ def get_measurement_heatmap(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Không thể tải ảnh bản đồ nhiệt từ R2"
         )
+
+@router.get("/{measurement_id}/image", status_code=status.HTTP_200_OK)
+def get_measurement_image(
+    measurement_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Downloads the original scan image bytes from Cloudflare R2 and serves it directly.
+    """
+    db_result = db.query(MeasurementResult).filter(
+        MeasurementResult.measurement_id == measurement_id,
+        MeasurementResult.user_id == current_user.id
+    ).first()
+    
+    if not db_result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy kết quả phân tích"
+        )
+        
+    if not db_result.image_r2_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bản ghi này chưa có ảnh gốc"
+        )
+        
+    try:
+        from app.services.r2_service import R2Service
+        image_bytes = R2Service.download_file(db_result.image_r2_key)
+        
+        media_type = "image/png"
+        if db_result.image_filename:
+            fn = db_result.image_filename.lower()
+            if fn.endswith(".jpg") or fn.endswith(".jpeg"):
+                media_type = "image/jpeg"
+        return Response(content=image_bytes, media_type=media_type)
+    except Exception as e:
+        logger.error(f"Error downloading original image from R2 for ID {measurement_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Không thể tải ảnh gốc từ R2"
+        )

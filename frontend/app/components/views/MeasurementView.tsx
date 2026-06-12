@@ -32,7 +32,13 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}): Promise<Re
   return response;
 };
 
-export default function MeasurementPage() {
+type MeasurementViewProps = {
+  initialResultData?: any;
+  onClearInitial?: () => void;
+};
+
+export default function MeasurementPage(props: MeasurementViewProps) {
+  const { initialResultData, onClearInitial } = props;
   const m = messages.measurement;
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -57,6 +63,7 @@ export default function MeasurementPage() {
   const [reviewErrorMsg, setReviewErrorMsg] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
   const [heatmapBlobUrl, setHeatmapBlobUrl] = useState<string>("");
+  const [originalBlobUrl, setOriginalBlobUrl] = useState<string>("");
 
   // Fetch heatmap blob from backend securely when enabled
   useEffect(() => {
@@ -85,6 +92,61 @@ export default function MeasurementPage() {
       active = false;
     };
   }, [showHeatmap, resultData, heatmapBlobUrl]);
+
+  // Fetch original image blob from backend when viewing historical result
+  useEffect(() => {
+    let active = true;
+    if (resultData && resultData.measurement_id && !selectedFile) {
+      if (!originalBlobUrl) {
+        const fetchOriginalImage = async () => {
+          try {
+            const apiUrl = getApiUrl();
+            const response = await fetchWithAuth(`${apiUrl}/v1/measure/${resultData.measurement_id}/image`);
+            if (response.ok && active) {
+              const blob = await response.blob();
+              const objectUrl = URL.createObjectURL(blob);
+              setOriginalBlobUrl(objectUrl);
+            } else if (active) {
+              console.error("Failed to fetch original image:", response.status);
+            }
+          } catch (err) {
+            console.error("Error fetching original image:", err);
+          }
+        };
+        fetchOriginalImage();
+      }
+    }
+    return () => {
+      active = false;
+    };
+  }, [resultData, selectedFile, originalBlobUrl]);
+
+  // Sync initialResultData from props
+  useEffect(() => {
+    if (initialResultData) {
+      // Clear any previous blobs
+      if (heatmapBlobUrl) URL.revokeObjectURL(heatmapBlobUrl);
+      if (originalBlobUrl) URL.revokeObjectURL(originalBlobUrl);
+      setHeatmapBlobUrl("");
+      setOriginalBlobUrl("");
+      setSelectedFile(null);
+      
+      setResultData(initialResultData);
+      setAge(initialResultData.age?.toString() || "");
+      setSex(initialResultData.sex || "F");
+      setBmi(initialResultData.bmi?.toString() || "");
+      
+      setReviewStatus(initialResultData.review_status || "confirmed_correct");
+      setDoctorConfirmedLabel(initialResultData.doctor_confirmed_label || initialResultData.predicted_label);
+      setErrorType(initialResultData.error_type || "none");
+      setApprovedForNextTraining(initialResultData.approved_for_next_training || false);
+      setReviewNote(initialResultData.review_note || "");
+      
+      setReviewSuccessMsg(null);
+      setReviewErrorMsg(null);
+      setShowHeatmap(false);
+    }
+  }, [initialResultData]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -151,9 +213,16 @@ export default function MeasurementPage() {
       URL.revokeObjectURL(heatmapBlobUrl);
       setHeatmapBlobUrl("");
     }
+    if (originalBlobUrl) {
+      URL.revokeObjectURL(originalBlobUrl);
+      setOriginalBlobUrl("");
+    }
     setErrorMsg(null);
     setReviewSuccessMsg(null);
     setReviewErrorMsg(null);
+    if (onClearInitial) {
+      onClearInitial();
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -385,7 +454,7 @@ export default function MeasurementPage() {
           {/* Scan Preview & Upload Area (Combined) */}
           <div
             className={`${styles.scanPreview} ${
-              !selectedFile
+              !selectedFile && !resultData
                 ? isDragActive
                   ? styles.scanPreviewActive
                   : styles.scanPreviewEmpty
@@ -414,6 +483,21 @@ export default function MeasurementPage() {
                   <img src={previewUrl} alt="X-Ray Scan Preview" className={styles.scanImage} />
                 )
               )
+            ) : resultData && resultData.measurement_id ? (
+              // Historical view
+              showHeatmap && heatmapBlobUrl ? (
+                <img src={heatmapBlobUrl} alt="AI Grad-CAM Heatmap" className={styles.scanImage} />
+              ) : originalBlobUrl ? (
+                <img src={originalBlobUrl} alt="X-Ray Scan Preview" className={styles.scanImage} />
+              ) : (
+                // Loading indicator for historical image
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af", width: "100%", minHeight: "300px" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "48px", animation: "spin 2s linear infinite", color: "#155dca" }}>
+                    sync
+                  </span>
+                  <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "#64748b" }}>Đang tải ảnh quét từ Cloudflare R2...</p>
+                </div>
+              )
             ) : (
               <div className={styles.uploadAreaInner} onClick={handleOpenPicker}>
                 <div className={styles.uploadIconWrapper}>
@@ -424,12 +508,12 @@ export default function MeasurementPage() {
               </div>
             )}
 
-            {/* Clear button and overlay controls when file is selected */}
-            {selectedFile && (
+            {/* Clear button and overlay controls when file is selected OR when viewing historical results */}
+            {(selectedFile || (resultData && resultData.measurement_id)) && (
               <div className={styles.aiOverlays} style={{ pointerEvents: "none" }}>
                 <div className={styles.overlayTop} style={{ justifyContent: "flex-end", width: "100%" }}>
                   <div className={styles.overlayControls} style={{ pointerEvents: "auto" }}>
-                    {resultData && resultData.heatmap_url && (
+                    {resultData && (resultData.heatmap_url || resultData.image_heatmap_r2_key) && (
                       <button 
                         className={`${styles.controlBtn} ${showHeatmap ? styles.controlBtnActive : ""}`}
                         onClick={() => setShowHeatmap(!showHeatmap)}
@@ -464,25 +548,11 @@ export default function MeasurementPage() {
                     </button>
                   </div>
                 </div>
-
-                {/* AI Bottom Badge/Overlay (only if analyzing or has results) */}
-                {/* {(isAnalyzing || resultData) && (
-                  <div className={styles.overlayBottom}>
-                    <div className={styles.infoBox}>
-                      <div className={styles.infoLabel}>Detected Region</div>
-                      <div className={styles.infoValue}>Lumbar Spine (L1-L4)</div>
-                    </div>
-                    <div className={styles.infoBoxRight}>
-                      <div className={styles.infoLabel}>Processing Confidence</div>
-                      <div className={styles.infoValueGreen}>{confidenceText}</div>
-                    </div>
-                  </div>
-                )} */}
               </div>
             )}
 
-            {/* AI Active Badge (Top left, show only when a file is selected and we are analyzing or have results) */}
-            {selectedFile && (isAnalyzing || resultData) && (
+            {/* AI Active Badge (Top left, show only when a file is selected or we have results) */}
+            {(selectedFile || resultData) && (isAnalyzing || resultData) && (
               <div className={styles.aiOverlays} style={{ pointerEvents: "none" }}>
                 <div className={styles.overlayTop}>
                   <div className={styles.aiActiveBadge}>
