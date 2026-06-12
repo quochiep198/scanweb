@@ -124,7 +124,7 @@ async def startup_event():
             # Sleep to avoid double trigger
             await asyncio.sleep(60)
 
-    asyncio.create_task(nightly_training_scheduler())
+    # asyncio.create_task(nightly_training_scheduler())
 
 @app.get("/", include_in_schema=False)
 def read_root():
