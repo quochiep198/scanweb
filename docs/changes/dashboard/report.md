@@ -17,12 +17,15 @@ Nâng cấp màn hình Dashboard y khoa từ giao diện thống kê đơn giả
 
 ### Đã thay đổi gì
 
-*(Sẽ điền chi tiết sau khi hoàn thành code changes)*
+- **Backend API:** Mở rộng `/v1/dashboard/stats` để truy vấn thống kê chẩn đoán lâm sàng từ bảng `measurement_results` và hỗ trợ phân trang truy vấn qua các tham số `page` và `limit`. Thêm endpoint `GET /v1/measure/{measurement_id}/image` để tải ảnh scan gốc từ Cloudflare R2 phục vụ xem chi tiết ca quét cũ.
+- **Frontend Routing & State:** Chia sẻ trạng thái chẩn đoán (`selectedMeasurement`) trong `AppRouterPage` để cho phép bác sĩ bấm xem chi tiết ca quét từ Dashboard và tải tức thì ca chẩn đoán đó sang tab Phân Tích.
+- **Giao diện Dashboard mới:** Nâng cấp hoàn toàn UI bằng biểu đồ SVG so sánh bệnh lý y khoa, đồng hồ đo radial tỉ lệ đồng thuận AI, Banner chào mừng bác sĩ cá nhân hóa, thẻ thông tin hệ thống hoạt động, và bảng chẩn đoán y khoa gần đây nhất hỗ trợ lật trang tối giản bằng các nút bấm chevron `<` và `>` ở tiêu đề card.
+- **Xem ca quét lịch sử:** Cập nhật `MeasurementView` để tự động tải và hiển thị phim chụp gốc cũng như bản đồ nhiệt AI Grad-CAM từ API backend R2 khi bác sĩ xem lại ca quét cũ.
 
 ### Lý do
 
 - Màn hình Dashboard cũ quá sơ sài, chưa khai thác dữ liệu từ bảng `measurement_results`.
-- Cần cung cấp cho bác sĩ cái nhìn tổng quát về phân bố dữ liệu bệnh lý (Normal, Osteopenia, Osteoporosis) và danh sách các ca quét y khoa gần đây nhất để thao tác chẩn đoán nhanh chóng hơn.
+- Cung cấp cho bác sĩ cái nhìn tổng quát về dữ liệu chẩn đoán lâm sàng và hiệu năng mô hình AI, đồng thời hỗ trợ chuyển tiếp trang danh sách ca quét gần đây tối giản tránh rối mắt.
 
 ---
 
@@ -30,7 +33,7 @@ Nâng cấp màn hình Dashboard y khoa từ giao diện thống kê đơn giả
 
 | #   | Khu vực             | Chi tiết |
 | --- | ------------------- | -------- |
-| 1   | Các tệp đã thay đổi | `backend/app/routers/dashboard.py`<br>`backend/app/routers/measure.py`<br>`frontend/app/messages.ts`<br>`frontend/app/page.tsx`<br>`frontend/app/components/views/DashboardView.tsx`<br>`frontend/app/components/views/MeasurementView.tsx` |
+| 1   | Các tệp đã thay đổi | `backend/app/routers/dashboard.py`<br>`backend/app/routers/measure.py`<br>`frontend/app/messages.ts`<br>`frontend/app/page.tsx`<br>`frontend/app/components/views/DashboardView.tsx`<br>`frontend/app/components/views/MeasurementView.tsx`<br>`frontend/app/globals.css` |
 | 2   | Lược đồ DB          | Không ảnh hưởng (không thay đổi cấu trúc bảng). |
 | 3   | Hợp đồng API        | Sửa đổi cấu trúc phản hồi của endpoint `GET /v1/dashboard/stats` để trả về thêm các trường thống kê chi tiết và ca quét gần đây. Thêm endpoint `GET /v1/measure/{measurement_id}/image`. |
 | 4   | Cấu hình            | Không ảnh hưởng. |
@@ -55,7 +58,7 @@ Nâng cấp màn hình Dashboard y khoa từ giao diện thống kê đơn giả
 
 | #   | Phát hiện | Mức độ nghiêm trọng | Hành động đã thực hiện |
 | --- | --------- | ------------------- | ---------------------- |
-| 1   | Không có  |                     |                        |
+| 1   | Nút bấm lật trang chevron bị lệch tâm/sụt phông do đè CSS global | Thấp (Giao diện) | Tạo class `.pag-btn` trong `globals.css` với các thuộc tính flexbox và cỡ chữ chính xác, gán class cho các nút trong `DashboardView.tsx`. |
 
 ---
 

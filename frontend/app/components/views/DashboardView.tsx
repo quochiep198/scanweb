@@ -15,6 +15,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
   const m = messages.dashboard;
   const { user, isAuthenticated } = useAuth();
   
+  const [page, setPage] = useState(1);
   const [stats, setStats] = useState({
     uploadTodayCount: 0,
     trainedTodayCount: 0,
@@ -26,41 +27,67 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
     },
     agreementRate: 0.0,
     totalReviewed: 0,
-    recentMeasurements: [] as any[]
+    recentMeasurements: [] as any[],
+    totalMeasurements: 0
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isRecentLoading, setIsRecentLoading] = useState(false);
+
+  const fetchStats = async (pageNum: number, isInitial = false) => {
+    if (isInitial) {
+      setIsLoading(true);
+    } else {
+      setIsRecentLoading(true);
+    }
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/v1/dashboard/stats?page=${pageNum}&limit=5`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStats({
+          uploadTodayCount: data.upload_today_count,
+          trainedTodayCount: data.trained_today_count,
+          uploadCount: data.upload_count,
+          distribution: data.distribution || { normal: 0, osteopenia: 0, osteoporosis: 0 },
+          agreementRate: data.agreement_rate || 0.0,
+          totalReviewed: data.total_reviewed || 0,
+          recentMeasurements: data.recent_measurements || [],
+          totalMeasurements: data.total_measurements || 0
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setIsLoading(false);
+      setIsRecentLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const fetchStats = async () => {
-      try {
-        const apiUrl = getApiUrl();
-        const response = await fetch(`${apiUrl}/v1/dashboard/stats`, {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setStats({
-            uploadTodayCount: data.upload_today_count,
-            trainedTodayCount: data.trained_today_count,
-            uploadCount: data.upload_count,
-            distribution: data.distribution || { normal: 0, osteopenia: 0, osteoporosis: 0 },
-            agreementRate: data.agreement_rate || 0.0,
-            totalReviewed: data.total_reviewed || 0,
-            recentMeasurements: data.recent_measurements || []
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStats();
+    if (isAuthenticated) {
+      fetchStats(page, true);
+    }
   }, [isAuthenticated]);
+
+  const handlePrevPage = () => {
+    if (page > 1) {
+      const newPage = page - 1;
+      setPage(newPage);
+      fetchStats(newPage);
+    }
+  };
+
+  const handleNextPage = () => {
+    const totalPages = Math.ceil(stats.totalMeasurements / 5);
+    if (page < totalPages) {
+      const newPage = page + 1;
+      setPage(newPage);
+      fetchStats(newPage);
+    }
+  };
 
   const cards = [
     {
@@ -84,6 +111,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
   ];
 
   const totalCases = stats.distribution.normal + stats.distribution.osteopenia + stats.distribution.osteoporosis;
+  const totalPages = Math.max(1, Math.ceil(stats.totalMeasurements / 5));
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -299,15 +327,67 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
 
       {/* 4. Recent scans table */}
       <article style={{ border: "1px solid #d5deee", borderRadius: "10px", backgroundColor: "rgba(255, 255, 255, 0.92)", padding: "16px 18px", boxShadow: "0 6px 16px rgba(25, 48, 96, 0.05)", marginTop: "8px" }}>
-        <h3 className={styles.sectionTitle} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-          <span className="material-symbols-outlined" style={{ color: "#155dca" }}>history</span>
-          {m.recentScansTitle}
-        </h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h3 className={styles.sectionTitle} style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+            <span className="material-symbols-outlined" style={{ color: "#155dca" }}>history</span>
+            {m.recentScansTitle}
+          </h3>
+
+          {/* Minimal pagination controls */}
+          {stats.totalMeasurements > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px", color: "#5b6475" }}>
+              <span>Trang {page} / {totalPages}</span>
+              <div style={{ display: "flex", gap: "4px" }}>
+                <button
+                  type="button"
+                  className="pag-btn"
+                  onClick={handlePrevPage}
+                  disabled={page === 1 || isRecentLoading}
+                  style={{
+                    borderRadius: "4px",
+                    border: "1px solid #d5deee",
+                    backgroundColor: page === 1 ? "#f8fafc" : "#ffffff",
+                    cursor: page === 1 ? "not-allowed" : "pointer",
+                    color: page === 1 ? "#cbd5e1" : "#155dca",
+                    opacity: page === 1 ? 0.6 : 1,
+                    transition: "all 0.2s"
+                  }}
+                  title="Trang trước"
+                >
+                  <span className="material-symbols-outlined" style={{ fontWeight: "bold" }}>chevron_left</span>
+                </button>
+                <button
+                  type="button"
+                  className="pag-btn"
+                  onClick={handleNextPage}
+                  disabled={page === totalPages || isRecentLoading}
+                  style={{
+                    borderRadius: "4px",
+                    border: "1px solid #d5deee",
+                    backgroundColor: page === totalPages ? "#f8fafc" : "#ffffff",
+                    cursor: page === totalPages ? "not-allowed" : "pointer",
+                    color: page === totalPages ? "#cbd5e1" : "#155dca",
+                    opacity: page === totalPages ? 0.6 : 1,
+                    transition: "all 0.2s"
+                  }}
+                  title="Trang sau"
+                >
+                  <span className="material-symbols-outlined" style={{ fontWeight: "bold" }}>chevron_right</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {isLoading ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px", color: "#9ca3af" }}>
             <span className="material-symbols-outlined" style={{ fontSize: "36px", animation: "spin 2s linear infinite", color: "#155dca", marginBottom: "8px" }}>sync</span>
             <p style={{ fontSize: "0.82rem" }}>Đang tải danh sách ca chẩn đoán gần đây...</p>
+          </div>
+        ) : isRecentLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px", color: "#9ca3af", minHeight: "220px" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "36px", animation: "spin 2s linear infinite", color: "#155dca", marginBottom: "8px" }}>sync</span>
+            <p style={{ fontSize: "0.82rem" }}>Đang lật trang dữ liệu...</p>
           </div>
         ) : stats.recentMeasurements.length > 0 ? (
           <div style={{ overflowX: "auto" }}>

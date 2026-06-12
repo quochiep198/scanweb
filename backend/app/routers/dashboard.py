@@ -11,6 +11,8 @@ router = APIRouter(prefix="/v1/dashboard", tags=["Dashboard"])
 
 @router.get("/stats", status_code=status.HTTP_200_OK)
 def get_dashboard_stats(
+    page: int = 1,
+    limit: int = 5,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -88,13 +90,17 @@ def get_dashboard_stats(
     if total_reviewed > 0:
         agreement_rate = round((agreement_count / total_reviewed) * 100, 1)
 
-    # 6. Recent 5 measurements
+    # 6. Recent measurements with pagination
+    offset = (page - 1) * limit
     recent_measurements_query = (
         db.query(MeasurementResult)
         .order_by(MeasurementResult.created_at.desc())
-        .limit(5)
+        .offset(offset)
+        .limit(limit)
         .all()
     )
+    
+    total_measurements = db.query(MeasurementResult).count()
     
     recent_measurements = []
     for m in recent_measurements_query:
@@ -119,7 +125,8 @@ def get_dashboard_stats(
         "distribution": distribution,
         "agreement_rate": agreement_rate,
         "total_reviewed": total_reviewed,
-        "recent_measurements": recent_measurements
+        "recent_measurements": recent_measurements,
+        "total_measurements": total_measurements
     }
 
 

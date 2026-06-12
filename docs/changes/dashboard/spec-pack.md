@@ -27,12 +27,14 @@ Màn hình Dashboard y khoa của OsteoScan AI hiện tại còn rất sơ sài,
 - **Biểu đồ phân bố bệnh lý lâm sàng:**
   - Biểu đồ thanh ngang tỉ lệ (Normal, Osteopenia, Osteoporosis) bằng SVG/CSS thuần để đảm bảo độ mượt mà và trực quan.
   - Thống kê tỷ lệ bác sĩ đồng nhất với AI (Agreement Rate) từ dữ liệu lâm sàng.
-- **Danh sách 5 ca quét gần nhất (Recent Scans):**
+- **Danh sách ca quét gần nhất (Recent Scans) & Phân trang tối giản (Option A):**
   - Hiển thị bảng chứa 5 ca chẩn đoán mới nhất từ `MeasurementResult`.
   - Các thông tin: Mã bệnh nhân, Tuổi/Giới tính, Chỉ số BMI, Chẩn đoán AI (Độ tin cậy %), Trạng thái Review, Thời gian thực hiện.
   - Hỗ trợ nút thao tác nhanh chuyển bác sĩ đến màn hình xem/review chi tiết ca quét tương ứng.
+  - **Phân trang tối giản (Option A):** Bổ sung 2 nút chuyển trang dạng mũi tên `[<]` và `[>]` ở góc phải tiêu đề card cùng với hiển thị số trang hiện tại (ví dụ: *Trang 1/3*). Dữ liệu được tải động qua API phân trang của backend.
 
 ### Ngoài phạm vi
 - Không lọc danh sách lịch sử theo tài khoản bác sĩ cá nhân (Dashboard hiển thị dữ liệu hoạt động chung của toàn trung tâm y tế).
 - Không cache biểu đồ phía máy khách (tải động 100% qua API khi tải trang).
 - Không sử dụng các thư viện biểu đồ bên thứ ba như Chart.js, Recharts, v.v. để đảm bảo dung lượng bundle tối ưu.
+- Không sử dụng thanh phân trang cồng kềnh dưới chân bảng.
