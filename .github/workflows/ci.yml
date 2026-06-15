@@ -1,0 +1,60 @@
+name: Django/FastAPI CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-log:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Bước 1: Tải mã nguồn từ GitHub xuống máy ảo của GitHub
+      - uses: actions/checkout@v4
+
+      # Bước 2: Thiết lập môi trường Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-args: '3.10'
+
+      # Bước 3: Cài đặt thư viện dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      # Bước 4: Chạy kiểm thử pytest và xuất báo cáo XML
+      - name: Run Tests with pytest
+        run: |
+          cd backend
+          pytest --junitxml=report.xml
+
+      # Bước 5: Đọc file báo cáo report.xml và in thông số ra Log của Github
+      - name: Print Deploy Test Metrics
+        if: always() # Bước này luôn chạy kể cả khi test pass hay fail
+        run: |
+          cd backend
+          python -c "
+          import xml.etree.ElementTree as ET
+          try:
+              tree = ET.parse('report.xml')
+              root = tree.getroot()
+              total = int(root.attrib.get('tests', 0))
+              failures = int(root.attrib.get('failures', 0))
+              errors = int(root.attrib.get('errors', 0))
+              failed = failures + errors
+              passed = total - failed
+              
+              print('\n======================================')
+              print(f'🚀 DEPLOYMENT CI METRICS:')
+              print(f'   - first_ci_passed : {str(failed == 0)}')
+              print(f'   - test_total_count: {total}')
+              print(f'   - test_pass_count : {passed}')
+              print(f'   - test_fail_count : {failed}')
+              print('======================================\n')
+          except Exception as e:
+              print(f'⚠️ Không đọc được báo cáo kiểm thử: {e}')
+          "
