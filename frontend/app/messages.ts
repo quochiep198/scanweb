@@ -38,6 +38,7 @@ export const messages = {
       verifyFailed: "Xác thực thất bại",
       serverUnavailable: "Không thể kết nối đến server",
       authProviderRequired: "useAuth must be used within an AuthProvider",
+      googleLoginFailed: "Đăng nhập bằng Google thất bại",
     },
     login: {
       title: "Đăng nhập hệ thống",

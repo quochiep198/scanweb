@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -108,6 +109,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(currentUser);
   };
 
+  const loginWithGoogle = async (credential: string) => {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/v1/auth/google-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ credential }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || messages.auth.errors.googleLoginFailed);
+    }
+
+    const currentUser = await fetchCurrentUser();
+    if (!currentUser) {
+      throw new Error(messages.auth.errors.googleLoginFailed);
+    }
+
+    setUser(currentUser);
+  };
+
   const register = async (name: string, email: string, password: string) => {
     const apiUrl = getApiUrl();
     const response = await fetch(`${apiUrl}/v1/auth/register`, {
@@ -169,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         login,
+        loginWithGoogle,
         register,
         logout,
         forgotPassword,

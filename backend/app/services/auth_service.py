@@ -70,6 +70,44 @@ class AuthService:
         return user, ""
 
     @staticmethod
+    def authenticate_google_user(db: Session, email: str, name: str) -> tuple[Optional[User], str]:
+        user = AuthService.get_user_by_email(db, email)
+
+        if not user:
+            import secrets
+            random_password = secrets.token_urlsafe(32)
+            user = User(
+                id=str(uuid.uuid4()),
+                email=email.strip().lower(),
+                name=name,
+                password_hash=hash_password(random_password),
+                is_verified=True,
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            return user, ""
+
+        if not user.is_active:
+            return None, "Tai khoan da bi vo hieu hoa"
+
+        if user.is_locked and user.locked_until and user.locked_until > utc_now():
+            remaining = int((user.locked_until - utc_now()).total_seconds() / 60)
+            return None, f"Tai khoan bi khoa. Vui long thu lai sau {remaining} phut"
+
+        if not user.is_verified:
+            user.is_verified = True
+            db.commit()
+
+        user.failed_login_attempts = 0
+        user.is_locked = False
+        user.locked_until = None
+        db.commit()
+        return user, ""
+
+
+    @staticmethod
     def _handle_failed_login(db: Session, user: User):
         user.failed_login_attempts += 1
 

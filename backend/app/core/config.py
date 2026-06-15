@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     # Model & Dataset version control
     ACTIVE_MODEL_VERSION: str = "v1.0.0"
     ACTIVE_DATASET_VERSION: str = "dataset_v1.0"
+    GOOGLE_CLIENT_ID: str = ""
+
 
     AUTH_COOKIE_DOMAIN: str = ""
     AUTH_COOKIE_SECURE: bool = False

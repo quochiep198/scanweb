@@ -15,6 +15,7 @@ from app.schemas.auth import (
     ResetPasswordRequest,
     MessageResponse,
     UserResponse,
+    GoogleLoginRequest,
 )
 from app.services.auth_service import AuthService
 from app.services.email_service import send_otp_email, send_verification_email
@@ -82,9 +83,56 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
     AuthService.create_refresh_token_record(db, user.id, refresh_token)
     set_auth_cookies(response, access_token, refresh_token)
 
-    logger.info("User logged in: %s", request.email)
-
     return MessageResponse(message="Dang nhap thanh cong", user_id=user.id)
+
+
+@router.post("/google-login", response_model=MessageResponse)
+def google_login(request: GoogleLoginRequest, response: Response, db: Session = Depends(get_db)):
+    """Login with Google credential (ID token)."""
+    from google.oauth2 import id_token
+    from google.auth.transport import requests
+    from app.core.config import settings
+
+    try:
+        id_info = id_token.verify_oauth2_token(
+            request.credential,
+            requests.Request(),
+            settings.GOOGLE_CLIENT_ID
+        )
+
+        email = id_info.get("email")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token Google khong chua email",
+            )
+
+        name = id_info.get("name", email.split("@")[0])
+
+    except ValueError as e:
+        logger.warning("Google token verification failed: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token Google khong hop le hoac da het han: {str(e)}",
+        )
+
+    user, error = AuthService.authenticate_google_user(db, email, name)
+
+    if error:
+        logger.warning("Google login failed for %s: %s", email, error)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=error,
+        )
+
+    access_token, refresh_token = AuthService.create_tokens(user)
+    AuthService.create_refresh_token_record(db, user.id, refresh_token)
+    set_auth_cookies(response, access_token, refresh_token)
+
+    logger.info("User logged in via Google: %s", email)
+
+    return MessageResponse(message="Dang nhap Google thanh cong", user_id=user.id)
+
 
 
 @router.post("/refresh", response_model=MessageResponse)

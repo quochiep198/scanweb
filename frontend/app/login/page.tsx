@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 
 import styles from "@/app/auth/auth.module.css";
 import { useAuth } from "@/app/context/AuthContext";
@@ -12,7 +13,7 @@ const pageMessages = messages.auth.login;
 const shared = messages.shared;
 
 export default function LoginPage() {
-  const { login, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -21,6 +22,41 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const initGoogleSignIn = () => {
+    const google = (window as any).google;
+    if (google && google.accounts) {
+      google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+        callback: handleGoogleCredential,
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById("google-signin-btn"),
+        {
+          theme: "outline",
+          size: "large",
+          width: "360",
+          text: "signin_with",
+          shape: "rectangular",
+        }
+      );
+    }
+  };
+
+  const handleGoogleCredential = async (response: any) => {
+    setIsLoading(true);
+    setError("");
+    try {
+      await loginWithGoogle(response.credential);
+      router.replace("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : messages.auth.errors.googleLoginFailed);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
@@ -155,6 +191,18 @@ export default function LoginPage() {
                   <span>{isLoading ? pageMessages.submitting : pageMessages.submit}</span>
                   <span className="material-symbols-outlined">login</span>
                 </button>
+
+                <div className={styles["auth-divider"]}>Hoặc đăng nhập bằng</div>
+
+                <div className={styles["google-btn-container"]}>
+                  <div id="google-signin-btn"></div>
+                </div>
+
+                <Script
+                  src="https://accounts.google.com/gsi/client"
+                  onReady={initGoogleSignIn}
+                  strategy="lazyOnload"
+                />
 
                 <div className={styles["register-prompt"]}>
                   <span>{pageMessages.registerPrompt}</span>
