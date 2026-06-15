@@ -60,6 +60,10 @@ html:has(.dashboard-shell-root) {
   font-size: 0.85rem !important;
 }
 
+.dashboard-shell-root input.search-input-custom {
+  padding-left: 38px !important;
+}
+
 .dashboard-shell-root button {
   min-height: unset !important;
   padding: 6px 14px !important;

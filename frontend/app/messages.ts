@@ -240,6 +240,28 @@ export const messages = {
     statusUncertain: "Chưa xác định",
     btnViewDetail: "Xem chi tiết",
     noRecentScans: "Chưa có ca chẩn đoán nào được thực hiện gần đây.",
+
+    // New upgrades translations
+    trendIncrease: (pct: string) => `+${pct}% so với hôm qua`,
+    trendDecrease: (pct: string) => `-${pct}% so với hôm qua`,
+    trendNoChange: "Không thay đổi",
+    trendNoData: "Không có dữ liệu hôm qua",
+    
+    aiModelDetailsTitle: "Thông số mô hình AI",
+    aiModelVersionLabel: "Phiên bản AI",
+    aiModelAccuracyLabel: "Độ chính xác",
+    aiModelF1ScoreLabel: "F1-Score",
+    aiModelTrainedDateLabel: "Ngày cập nhật",
+    aiModelTrainedDateNever: "Chưa cập nhật",
+    
+    searchPlaceholder: "Tìm kiếm ID hoặc tuổi...",
+    filterStatusAll: "Tất cả trạng thái",
+    filterLabelAll: "Tất cả kết luận AI",
+    
+    hoverPreviewTitle: "Xem nhanh ảnh quét X-ray",
+    hoverPreviewLoading: "Đang tải ảnh quét...",
+    hoverPreviewError: "Lỗi tải ảnh",
+    tooltipChartCount: (count: number, percent: number) => `${count} ca (${percent}%)`,
   },
   printableReport: {
     mainTitle: "PHIẾU CHẨN ĐOÁN MẬT ĐỘ XƯƠNG (AI SÀNG LỌC)",
