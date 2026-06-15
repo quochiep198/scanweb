@@ -42,8 +42,9 @@ jobs:
           pytest --junitxml=report.xml
 
       # Bước 5: Đọc file báo cáo report.xml và in thông số ra Log
+            # Bước 5: Đọc file báo cáo report.xml và in thông số ra Log (Bản cập nhật sửa lỗi 0,0)
       - name: Print Deploy Test Metrics
-        if: always() # Bước này luôn chạy kể cả khi test pass hay fail
+        if: always()
         working-directory: backend
         run: |
           python -c "
@@ -54,22 +55,42 @@ jobs:
           if not os.path.exists(file_path):
               print('\n======================================')
               print('⚠️ KHÔNG ĐỌC ĐƯỢC BÁO CÁO KIỂM THỬ:')
-              print('   Không tìm thấy tệp report.xml trong thư mục backend.')
-              print('   Hãy chắc chắn bước chạy pytest trước đó không bị lỗi crash hệ thống.')
+              print('   Không tìm thấy tệp report.xml.')
               print('======================================\n')
           else:
               try:
                   tree = ET.parse(file_path)
                   root = tree.getroot()
-                  total = int(root.attrib.get('tests', 0))
-                  failures = int(root.attrib.get('failures', 0))
-                  errors = int(root.attrib.get('errors', 0))
+                  
+                  total = 0
+                  failures = 0
+                  errors = 0
+                  
+                  # 1. Nếu thẻ gốc là <testsuites> (có chữ 's')
+                  if root.tag == 'testsuites':
+                      total = int(root.attrib.get('tests') or 0)
+                      failures = int(root.attrib.get('failures') or 0)
+                      errors = int(root.attrib.get('errors') or 0)
+                      
+                      # Nếu thẻ gốc <testsuites> không có thuộc tính số lượng, duyệt tìm thẻ con <testsuite>
+                      if total == 0:
+                          for suite in root.findall('testsuite'):
+                              total += int(suite.attrib.get('tests') or 0)
+                              failures += int(suite.attrib.get('failures') or 0)
+                              errors += int(suite.attrib.get('errors') or 0)
+                              
+                  # 2. Nếu thẻ gốc là <testsuite> (không có chữ 's')
+                  elif root.tag == 'testsuite':
+                      total = int(root.attrib.get('tests') or 0)
+                      failures = int(root.attrib.get('failures') or 0)
+                      errors = int(root.attrib.get('errors') or 0)
+                  
                   failed = failures + errors
                   passed = total - failed
                   
                   print('\n======================================')
                   print('🚀 DEPLOYMENT CI METRICS:')
-                  print(f'   - first_ci_passed : {str(failed == 0)}')
+                  print(f'   - first_ci_passed : {str(failed == 0 and total > 0)}')
                   print(f'   - test_total_count: {total}')
                   print(f'   - test_pass_count : {passed}')
                   print(f'   - test_fail_count : {failed}')
