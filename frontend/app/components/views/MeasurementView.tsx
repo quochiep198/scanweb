@@ -495,7 +495,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                   <span className="material-symbols-outlined" style={{ fontSize: "48px", animation: "spin 2s linear infinite", color: "#155dca" }}>
                     sync
                   </span>
-                  <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "#64748b" }}>Đang tải ảnh quét từ Cloudflare R2...</p>
+                  <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "#64748b" }}>{m.view.loadingR2}</p>
                 </div>
               )
             ) : (
@@ -521,7 +521,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                           backgroundColor: showHeatmap ? "rgba(21, 93, 202, 0.2)" : "rgba(255, 255, 255, 0.15)",
                           borderColor: showHeatmap ? "#155dca" : "rgba(255, 255, 255, 0.3)",
                         }}
-                        title={showHeatmap ? "Ẩn bản đồ nhiệt XAI" : "Hiển thị bản đồ nhiệt XAI"}
+                        title={showHeatmap ? m.view.xaiHeatmapHide : m.view.xaiHeatmapShow}
                       >
                         <span className="material-symbols-outlined" style={{ color: showHeatmap ? "#155dca" : "#e2e8f0" }}>
                           {showHeatmap ? "visibility_off" : "visibility"}
@@ -578,7 +578,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
               <>
                 <div className={styles.scoresGrid}>
                   <div className={styles.scoreBox}>
-                    <div className={styles.scoreLabel}>T-Score Dự Đoán</div>
+                    <div className={styles.scoreLabel}>{m.view.predictedTScoreLabel}</div>
                     <div 
                       className={resultData.predicted_t_score <= -2.5 ? styles.scoreValueRed : styles.scoreValue} 
                       style={{ color: resultData.predicted_t_score <= -2.5 ? "#ba1a1a" : "#155dca" }}
@@ -589,14 +589,14 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                     </div>
                     <div className={resultData.predicted_t_score <= -2.5 ? styles.scoreStatusRed : styles.scoreStatus}>
                       {resultData.predicted_t_score <= -2.5 
-                        ? "Loãng xương (Nguy cơ cao)" 
+                        ? m.view.riskHigh
                         : resultData.predicted_t_score <= -1.0 
-                          ? "Thiếu xương (Nguy cơ vừa)" 
-                          : "Bình thường (Nguy cơ thấp)"}
+                          ? m.view.riskMedium
+                          : m.view.riskLow}
                     </div>
                   </div>
                   <div className={styles.scoreBox}>
-                    <div className={styles.scoreLabel}>Nhãn AI Dự Đoán</div>
+                    <div className={styles.scoreLabel}>{m.view.predictedAiLabel}</div>
                     <div 
                       className={resultData.predicted_label === "osteoporosis" ? styles.scoreValueRed : styles.scoreValue} 
                       style={{ 
@@ -606,13 +606,13 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                       }}
                     >
                       {resultData.predicted_label === "osteoporosis" 
-                        ? "Loãng xương" 
+                        ? m.view.predictedLabelOsteoporosis 
                         : resultData.predicted_label === "osteopenia" 
-                          ? "Thiếu xương" 
-                          : "Bình thường"}
+                          ? m.view.predictedLabelOsteopenia 
+                          : m.view.predictedLabelNormal}
                     </div>
                     <div className={styles.scoreStatus}>
-                      Độ tin cậy: {Math.round(resultData.confidence * 100)}%
+                      {m.view.confidenceValue(Math.round(resultData.confidence * 100))}
                     </div>
                   </div>
                 </div>
@@ -635,8 +635,8 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                       warning
                     </span>
                     <div>
-                      <strong style={{ display: "block", marginBottom: "4px" }}>Cảnh báo vùng ranh giới:</strong>
-                      Chỉ số T-score dự đoán ({resultData.predicted_t_score.toFixed(2)}) nằm rất sát ngưỡng chẩn đoán Loãng xương (-2.5). Khuyến nghị bác sĩ đối chiếu kỹ lâm sàng hoặc đo lại bằng phương pháp DXA để tránh bỏ sót bệnh.
+                      <strong style={{ display: "block", marginBottom: "4px" }}>{m.view.borderWarningTitle}</strong>
+                      {m.view.borderWarningText(Number(resultData.predicted_t_score.toFixed(2)))}
                     </div>
                   </div>
                 )}
@@ -651,7 +651,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
               </div>
               <div className={styles.bmdValueRow}>
                 <span className={styles.bmdValue} style={{ color: "#1e3a8a" }}>N/A</span>
-                <span className={styles.bmdUnit}>g/cm²</span>
+                <span className={styles.bmdUnit}>{m.view.bmdUnit}</span>
               </div>
               <div className={styles.bmdDeviation} style={{ color: "#64748b" }}>
             {/* Classification Gauge */}

@@ -1,4 +1,16 @@
 export const messages = {
+  protectedRoute: {
+    loadingData: "Đang tải dữ liệu...",
+    pleaseWait: "Vui lòng chờ trong giây lát",
+  },
+  dashboardShell: {
+    navDashboard: "Quản lý chung",
+    navUpload: "Tải lên & Huấn luyện",
+    navMeasurement: "Phân Tích",
+    clinicTitleDefault: "Trung tâm Y tế",
+    clinicSubtitleDefault: "Khoa chẩn đoán hình ảnh",
+    logout: "Đăng xuất",
+  },
   brand: {
     name: "OsteoScan AI",
     tagline: "",
@@ -54,6 +66,11 @@ export const messages = {
       hidePassword: "Ẩn mật khẩu",
       registerPrompt: "Chưa có tài khoản? ",
       registerLink: "Liên hệ quản trị viên",
+      orSignInWith: "Hoặc đăng nhập bằng",
+      trustPrivate: "Lưu trữ riêng tư",
+      trustSecure: "Truy cập bảo mật",
+      trustEncrypted: "Mã hóa kết nối",
+      copyright: "Bản quyền 2026",
     },
     register: {
       title: "Đăng ký",
@@ -185,7 +202,22 @@ export const messages = {
       reviewNoteLabel: "Ghi chú của bác sĩ",
       reviewNotePlaceholder: "Nhập ghi chú lâm sàng hoặc lý do thay đổi nhãn...",
       btnSaving: "Đang Lưu...",
-      btnSave: "Lưu Xác Nhận"
+      btnSave: "Lưu Xác Nhận",
+      loadingR2: "Đang tải ảnh quét từ Cloudflare R2...",
+      xaiHeatmapHide: "Ẩn bản đồ nhiệt XAI",
+      xaiHeatmapShow: "Hiển thị bản đồ nhiệt XAI",
+      predictedTScoreLabel: "T-Score Dự Đoán",
+      predictedAiLabel: "Nhãn AI Dự Đoán",
+      confidenceValue: (conf: number) => `Độ tin cậy: ${conf}%`,
+      borderWarningTitle: "Cảnh báo vùng ranh giới:",
+      borderWarningText: (score: number) => `Chỉ số T-score dự đoán (${score}) nằm rất sát ngưỡng chẩn đoán Loãng xương (-2.5). Khuyến nghị bác sĩ đối chiếu kỹ lâm sàng hoặc đo lại bằng phương pháp DXA để tránh bỏ sót bệnh.`,
+      bmdUnit: "g/cm²",
+      riskHigh: "Loãng xương (Nguy cơ cao)",
+      riskMedium: "Thiếu xương (Nguy cơ vừa)",
+      riskLow: "Bình thường (Nguy cơ thấp)",
+      predictedLabelOsteoporosis: "Loãng xương",
+      predictedLabelOsteopenia: "Thiếu xương",
+      predictedLabelNormal: "Bình thường",
     }
   },
   classificationGauge: {
@@ -263,6 +295,20 @@ export const messages = {
     hoverPreviewLoading: "Đang tải ảnh quét...",
     hoverPreviewError: "Lỗi tải ảnh",
     tooltipChartCount: (count: number, percent: number) => `${count} ca (${percent}%)`,
+    chartTotalCases: "Tổng ca",
+    chartNormal: "Bình thường",
+    chartOsteopenia: "Thiếu xương",
+    chartOsteoporosis: "Loãng xương",
+    prevPage: "Trang trước",
+    nextPage: "Trang sau",
+    btnSearch: "Tìm",
+    btnReset: "Đặt lại",
+    loadingRecentScans: "Đang tải danh sách ca chẩn đoán gần đây...",
+    changingPage: "Đang lật trang dữ liệu...",
+    ageUnit: "tuổi",
+    sexMale: "Nam",
+    sexFemale: "Nữ",
+    sexOther: "Khác",
   },
   printableReport: {
     mainTitle: "PHIẾU CHẨN ĐOÁN MẬT ĐỘ XƯƠNG (AI SÀNG LỌC)",
@@ -322,7 +368,7 @@ export const messages = {
     defaultDiagnosticLabels: {
       normal: "Bình thường",
       osteopenia: "Thiếu xương",
-      osteoporosis: "Lở xương",
+      osteoporosis: "Loãng xương",
     },
     status: {
       success: "Hoàn tất tải lên",
@@ -449,7 +495,21 @@ export const messages = {
       paginationLabel: (start: number, end: number, total: number) => `Hiển thị ${start} - ${end} trong tổng số ${total} kết quả`,
       btnPrev: "Trước",
       btnNext: "Sau"
-    }
+    },
+    trainFinishedKeyword: "huấn luyện hoàn thành",
+    trainSuccessMsg: "Quá trình huấn luyện mô hình đã hoàn thành thành công!",
+    trainNoNewDataMsg: "Không có dữ liệu mới để huấn luyện mô hình.",
+    trainFailedMsg: "Quá trình huấn luyện mô hình đã thất bại. Vui lòng kiểm tra nhật ký lỗi!",
+    trainFinishedMsg: "Quá trình huấn luyện mô hình đã hoàn thành.",
+    csvMissingPatientId: "Không tìm thấy cột 'Patient Id' trong file CSV.",
+    csvAutoFillSuccess: "Tự động điền dữ liệu lâm sàng từ file CSV thành công!",
+    csvButtonLabel: (name: string) => `CSV: ${name}`,
+    csvUploadDefault: "Tải lên file CSV",
+    btnAutoFill: "Tự động điền (AutoFill)",
+    csvMappingKeywordDiagnosis: "nhãn chẩn đoán",
+    csvMappingKeywordAge: "tuổi",
+    csvMappingKeywordGender: "giới tính",
+    csvMappingKeywordDatasetSplit: "tập dữ liệu"
   }
 } as const;
 

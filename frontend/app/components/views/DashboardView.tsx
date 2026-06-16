@@ -533,24 +533,24 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
                     {hoveredChartSegment === null ? (
                       <>
                         <div style={{ fontSize: "16px", fontWeight: "bold", color: "#1e293b" }}>{totalCases}</div>
-                        <div style={{ fontSize: "8px", color: "#64748b", textTransform: "uppercase", fontWeight: "bold" }}>Tổng ca</div>
+                        <div style={{ fontSize: "8px", color: "#64748b", textTransform: "uppercase", fontWeight: "bold" }}>{m.chartTotalCases}</div>
                       </>
                     ) : hoveredChartSegment === "normal" ? (
                       <>
                         <div style={{ fontSize: "15px", fontWeight: "bold", color: "#22c55e" }}>{stats.distribution.normal}</div>
-                        <div style={{ fontSize: "8px", color: "#22c55e", fontWeight: "bold" }}>Bình thường</div>
+                        <div style={{ fontSize: "8px", color: "#22c55e", fontWeight: "bold" }}>{m.chartNormal}</div>
                         <div style={{ fontSize: "9px", color: "#64748b" }}>{Math.round(pctNormal)}%</div>
                       </>
                     ) : hoveredChartSegment === "osteopenia" ? (
                       <>
                         <div style={{ fontSize: "15px", fontWeight: "bold", color: "#eab308" }}>{stats.distribution.osteopenia}</div>
-                        <div style={{ fontSize: "8px", color: "#eab308", fontWeight: "bold" }}>Thiếu xương</div>
+                        <div style={{ fontSize: "8px", color: "#eab308", fontWeight: "bold" }}>{m.chartOsteopenia}</div>
                         <div style={{ fontSize: "9px", color: "#64748b" }}>{Math.round(pctOsteopenia)}%</div>
                       </>
                     ) : (
                       <>
                         <div style={{ fontSize: "15px", fontWeight: "bold", color: "#ef4444" }}>{stats.distribution.osteoporosis}</div>
-                        <div style={{ fontSize: "8px", color: "#ef4444", fontWeight: "bold" }}>Loãng xương</div>
+                        <div style={{ fontSize: "8px", color: "#ef4444", fontWeight: "bold" }}>{m.chartOsteoporosis}</div>
                         <div style={{ fontSize: "9px", color: "#64748b" }}>{Math.round(pctOsteoporosis)}%</div>
                       </>
                     )}
@@ -664,7 +664,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
                     opacity: page === 1 ? 0.6 : 1,
                     transition: "all 0.2s"
                   }}
-                  title="Trang trước"
+                  title={m.prevPage}
                 >
                   <span className="material-symbols-outlined" style={{ fontWeight: "bold" }}>chevron_left</span>
                 </button>
@@ -682,7 +682,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
                     opacity: page === totalPages ? 0.6 : 1,
                     transition: "all 0.2s"
                   }}
-                  title="Trang sau"
+                  title={m.nextPage}
                 >
                   <span className="material-symbols-outlined" style={{ fontWeight: "bold" }}>chevron_right</span>
                 </button>
@@ -736,7 +736,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
                 transition: "background-color 0.2s"
               }}
             >
-              Tìm
+              {m.btnSearch}
             </button>
           </form>
 
@@ -805,7 +805,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
                 }}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>filter_alt_off</span>
-                Đặt lại
+                {m.btnReset}
               </button>
             )}
           </div>
@@ -814,12 +814,12 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
         {isLoading ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px", color: "#9ca3af" }}>
             <span className="material-symbols-outlined" style={{ fontSize: "36px", animation: "spin 2s linear infinite", color: "#155dca", marginBottom: "8px" }}>sync</span>
-            <p style={{ fontSize: "0.82rem" }}>Đang tải danh sách ca chẩn đoán gần đây...</p>
+            <p style={{ fontSize: "0.82rem" }}>{m.loadingRecentScans}</p>
           </div>
         ) : isRecentLoading ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px", color: "#9ca3af", minHeight: "220px" }}>
             <span className="material-symbols-outlined" style={{ fontSize: "36px", animation: "spin 2s linear infinite", color: "#155dca", marginBottom: "8px" }}>sync</span>
-            <p style={{ fontSize: "0.82rem" }}>Đang lật trang dữ liệu...</p>
+            <p style={{ fontSize: "0.82rem" }}>{m.changingPage}</p>
           </div>
         ) : stats.recentMeasurements.length > 0 ? (
           <div style={{ overflowX: "auto" }}>
@@ -896,7 +896,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
                         )}
                       </td>
                       <td style={{ padding: "12px 8px" }}>
-                        {meas.age} tuổi ({meas.sex === "M" ? "Nam" : meas.sex === "F" ? "Nữ" : "Khác"})
+                        {meas.age} {m.ageUnit} ({meas.sex === "M" ? m.sexMale : meas.sex === "F" ? m.sexFemale : m.sexOther})
                       </td>
                       <td style={{ padding: "12px 8px" }}>{meas.bmi ? meas.bmi.toFixed(1) : "N/A"}</td>
                       <td style={{ padding: "12px 8px", fontWeight: "600" }}>{meas.predicted_t_score ? meas.predicted_t_score.toFixed(2) : "N/A"}</td>

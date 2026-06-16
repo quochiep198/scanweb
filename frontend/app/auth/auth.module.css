@@ -341,6 +341,7 @@
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px dashed #c3c6d6;
+  flex-wrap: wrap;
 }
 
 .trust-item {
@@ -624,5 +625,34 @@
   width: 100%;
   margin-top: 1rem;
   margin-bottom: 1.5rem;
+}
+
+/* Inline Field Errors */
+.field-error {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: #b3261e;
+  margin-top: 4px;
+  margin-left: 2px;
+  display: block;
+}
+
+.form-input.input-error {
+  border-color: #b3261e;
+}
+
+.form-input.input-error:focus {
+  box-shadow: 0 0 0 2px rgba(179, 38, 30, 0.15);
+}
+
+/* Button Spinner */
+.loading-spinner-btn {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
 }
 

@@ -5,6 +5,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useEffect, ReactNode } from "react";
 
 import styles from "./loading.module.css";
+import { messages } from "@/app/messages";
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -21,8 +22,8 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
       <div className={styles.overlay}>
         <div className={styles.modal}>
           <div className={styles.spinner} />
-          <p className={styles.text}>Đang tải dữ liệu...</p>
-          <p className={styles.subtext}>Vui lòng chờ trong giây lát</p>
+          <p className={styles.text}>{messages.protectedRoute.loadingData}</p>
+          <p className={styles.subtext}>{messages.protectedRoute.pleaseWait}</p>
         </div>
       </div>
     );

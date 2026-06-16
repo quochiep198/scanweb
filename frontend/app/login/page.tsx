@@ -21,18 +21,21 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const initGoogleSignIn = () => {
     const google = (window as any).google;
-    if (google && google.accounts) {
+    const btn = document.getElementById("google-signin-btn");
+    if (google && google.accounts && btn) {
       google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
         callback: handleGoogleCredential,
       });
 
       google.accounts.id.renderButton(
-        document.getElementById("google-signin-btn"),
+        btn,
         {
           theme: "outline",
           size: "large",
@@ -57,6 +60,29 @@ export default function LoginPage() {
     }
   };
 
+  // Restore remembered email on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("remembered_email");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
+  // Google sign in initialization & fallback check
+  useEffect(() => {
+    if ((window as any).google) {
+      initGoogleSignIn();
+    } else {
+      const interval = setInterval(() => {
+        if ((window as any).google) {
+          initGoogleSignIn();
+          clearInterval(interval);
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
@@ -67,22 +93,32 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    setEmailError("");
+    setPasswordError("");
 
+    let hasError = false;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError(messages.auth.errors.invalidEmail);
-      return;
+      setEmailError(messages.auth.errors.invalidEmail);
+      hasError = true;
     }
 
     if (password.length < 8) {
-      setError(messages.auth.errors.invalidPasswordLength);
-      return;
+      setPasswordError(messages.auth.errors.invalidPasswordLength);
+      hasError = true;
     }
+
+    if (hasError) return;
 
     setIsLoading(true);
 
     try {
-      await login(email.trim().toLowerCase(), password);
+      await login(email.trim().toLowerCase(), password, rememberMe);
+      if (rememberMe) {
+        localStorage.setItem("remembered_email", email.trim());
+      } else {
+        localStorage.removeItem("remembered_email");
+      }
       router.replace("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : messages.auth.errors.loginFailed);
@@ -123,16 +159,20 @@ export default function LoginPage() {
 
               <form onSubmit={handleSubmit}>
                 <div className={styles["input-group"]}>
-                  <label>{pageMessages.emailLabel}</label>
+                  <label htmlFor="email-input">{pageMessages.emailLabel}</label>
                   <div className={styles["input-wrapper"]}>
                     <span className={styles["input-icon"]}>
                       <span className="material-symbols-outlined">person</span>
                     </span>
                     <input
+                      id="email-input"
                       type="email"
-                      className={styles["form-input"]}
+                      className={`${styles["form-input"]} ${emailError ? styles["input-error"] : ""}`}
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (emailError) setEmailError("");
+                      }}
                       placeholder="nguyen.van.a@clinic.vn"
                       required
                       autoCapitalize="none"
@@ -141,21 +181,27 @@ export default function LoginPage() {
                       spellCheck="false"
                     />
                   </div>
+                  {emailError && <span className={styles["field-error"]}>{emailError}</span>}
                 </div>
 
                 <div className={styles["input-group"]}>
-                  <label>{pageMessages.passwordLabel}</label>
+                  <label htmlFor="password-input">{pageMessages.passwordLabel}</label>
                   <div className={styles["input-wrapper"]}>
                     <span className={styles["input-icon"]}>
                       <span className="material-symbols-outlined">lock</span>
                     </span>
                     <input
+                      id="password-input"
                       type={showPassword ? "text" : "password"}
-                      className={`${styles["form-input"]} ${styles["password-input"]}`}
+                      className={`${styles["form-input"]} ${styles["password-input"]} ${passwordError ? styles["input-error"] : ""}`}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (passwordError) setPasswordError("");
+                      }}
                       placeholder={pageMessages.passwordPlaceholder}
                       required
+                      autoComplete="current-password"
                     />
                     <button
                       type="button"
@@ -168,6 +214,7 @@ export default function LoginPage() {
                       </span>
                     </button>
                   </div>
+                  {passwordError && <span className={styles["field-error"]}>{passwordError}</span>}
                 </div>
 
                 <div className={styles["options-row"]}>
@@ -189,10 +236,14 @@ export default function LoginPage() {
 
                 <button type="submit" className={styles["btn-primary"]} disabled={isLoading}>
                   <span>{isLoading ? pageMessages.submitting : pageMessages.submit}</span>
-                  <span className="material-symbols-outlined">login</span>
+                  {isLoading ? (
+                    <span className={styles["loading-spinner-btn"]}></span>
+                  ) : (
+                    <span className="material-symbols-outlined">login</span>
+                  )}
                 </button>
 
-                <div className={styles["auth-divider"]}>Hoặc đăng nhập bằng</div>
+                <div className={styles["auth-divider"]}>{pageMessages.orSignInWith}</div>
 
                 <div className={styles["google-btn-container"]}>
                   <div id="google-signin-btn"></div>
@@ -215,15 +266,15 @@ export default function LoginPage() {
               <div className={styles["trust-bar"]}>
                 <div className={styles["trust-item"]}>
                   <span className="material-symbols-outlined">verified_user</span>
-                  <span>Lưu trữ riêng tư</span>
+                  <span>{pageMessages.trustPrivate}</span>
                 </div>
                 <div className={styles["trust-item"]}>
                   <span className="material-symbols-outlined">shield</span>
-                  <span>Truy cập bảo mật</span>
+                  <span>{pageMessages.trustSecure}</span>
                 </div>
                 <div className={styles["trust-item"]}>
                   <span className="material-symbols-outlined">lock_person</span>
-                  <span>Mã hóa kết nối</span>
+                  <span>{pageMessages.trustEncrypted}</span>
                 </div>
               </div>
             </div>
@@ -243,16 +294,6 @@ export default function LoginPage() {
                   <p>{shared.featureSpeedDescription}</p>
                 </div>
               </div>
-
-              {/* <div className={`${styles["feature-card"]} ${styles["default"]}`}>
-                <div className={`${styles["feature-icon"]} ${styles["default"]}`}>
-                  <span className="material-symbols-outlined">analytics</span>
-                </div>
-                <div className={`${styles["feature-text"]} ${styles["default"]}`}>
-                  <h4>{shared.featureReportTitle}</h4>
-                  <p>{shared.featureReportDescription}</p>
-                </div>
-              </div> */}
             </div>
           </div>
         </div>
@@ -260,7 +301,7 @@ export default function LoginPage() {
 
       <footer className={styles["login-footer"]}>
         <div className={styles["footer-copyright"]}>
-          Ban quyen 2024 <strong>{messages.brand.name}</strong>. All rights reserved.
+          {pageMessages.copyright} <strong>{messages.brand.name}</strong>. All rights reserved.
         </div>
         <div className={styles["footer-links"]}>
           <a href="#">

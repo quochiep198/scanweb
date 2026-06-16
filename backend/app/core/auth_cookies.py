@@ -6,14 +6,15 @@ ACCESS_COOKIE_NAME = "access_token"
 REFRESH_COOKIE_NAME = "refresh_token"
 
 
-def _cookie_kwargs(max_age: int) -> dict:
+def _cookie_kwargs(max_age: int | None) -> dict:
     kwargs = {
         "httponly": True,
         "secure": settings.auth_cookie_secure,
         "samesite":  "lax" if settings.AUTH_COOKIE_SAMESITE.lower() == "lax" else "strict",
         "path": "/",
-        "max_age": max_age,
     }
+    if max_age is not None:
+        kwargs["max_age"] = max_age
 
     if settings.AUTH_COOKIE_DOMAIN.strip():
       kwargs["domain"] = settings.AUTH_COOKIE_DOMAIN.strip()
@@ -21,16 +22,24 @@ def _cookie_kwargs(max_age: int) -> dict:
     return kwargs
 
 
-def set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
+def set_auth_cookies(
+    response: Response,
+    access_token: str,
+    refresh_token: str,
+    remember: bool = False
+) -> None:
+    access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60 if remember else None
+    refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60 if remember else None
+
     response.set_cookie(
         ACCESS_COOKIE_NAME,
         access_token,
-        **_cookie_kwargs(settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+        **_cookie_kwargs(access_max_age),
     )
     response.set_cookie(
         REFRESH_COOKIE_NAME,
         refresh_token,
-        **_cookie_kwargs(settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60),
+        **_cookie_kwargs(refresh_max_age),
     )
 
 

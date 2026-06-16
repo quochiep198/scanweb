@@ -331,7 +331,7 @@ export default function UploadPage() {
     if (prevIsTrainingRef.current && !isTraining) {
       const logsLower = logs.toLowerCase();
       const isSuccess = logsLower.includes("completed successfully") || 
-                        logsLower.includes("huấn luyện hoàn thành") || 
+                        logsLower.includes(messages.upload.trainFinishedKeyword) || 
                         logsLower.includes("success") || 
                         logsLower.includes("completed");
       const isZeroRecords = logsLower.includes("zero records available") || 
@@ -344,25 +344,25 @@ export default function UploadPage() {
         setResultPopup({
           isOpen: true,
           status: "success",
-          message: "Quá trình huấn luyện mô hình đã hoàn thành thành công!",
+          message: messages.upload.trainSuccessMsg,
         });
       } else if (isZeroRecords) {
         setResultPopup({
           isOpen: true,
           status: "error",
-          message: "Không có dữ liệu mới để huấn luyện mô hình.",
+          message: messages.upload.trainNoNewDataMsg,
         });
       } else if (isCriticalError) {
         setResultPopup({
           isOpen: true,
           status: "error",
-          message: "Quá trình huấn luyện mô hình đã thất bại. Vui lòng kiểm tra nhật ký lỗi!",
+          message: messages.upload.trainFailedMsg,
         });
       } else {
         setResultPopup({
           isOpen: true,
           status: "success",
-          message: "Quá trình huấn luyện mô hình đã hoàn thành.",
+          message: messages.upload.trainFinishedMsg,
         });
       }
     }
@@ -545,14 +545,14 @@ export default function UploadPage() {
     const idxHeight = findIndex(["height (meter)", "height(meter)", "height  (meter)", "height meter", "height"]);
     const idxWeight = findIndex(["weight (kg)", "weight(kg)", "weight (kg) ", "weight kg", "weight"]);
     const idxBmi = findIndex(["bmi", "bmi:"]);
-    const idxDiagnosis = findIndex(["diagnosis", "diagnostic", "nhãn chẩn đoán", "nhan chan doan"]);
-    const idxAge = findIndex(["age", "tuổi", "tuoi"]);
-    const idxGender = findIndex(["gender", "sex", "giới tính", "gioi tinh"]);
+    const idxDiagnosis = findIndex(["diagnosis", "diagnostic", messages.upload.csvMappingKeywordDiagnosis, "nhan chan doan"]);
+    const idxAge = findIndex(["age", messages.upload.csvMappingKeywordAge, "tuoi"]);
+    const idxGender = findIndex(["gender", "sex", messages.upload.csvMappingKeywordGender, "gioi tinh"]);
     const idxTscore = findIndex(["t-score", "tscore", "t score", "t_score", "t score value", "t-score value"]);
-    const idxDatasetSplit = findIndex(["dataset split", "dataset_split", "dataset-split", "split", "tập dữ liệu", "tap du lieu"]);
+    const idxDatasetSplit = findIndex(["dataset split", "dataset_split", "dataset-split", "split", messages.upload.csvMappingKeywordDatasetSplit, "tap du lieu"]);
 
     if (idxPatientId === -1) {
-      alert("Không tìm thấy cột 'Patient Id' trong file CSV.");
+      alert(messages.upload.csvMissingPatientId);
       return [];
     }
 
@@ -699,7 +699,7 @@ export default function UploadPage() {
     setResultPopup({
       isOpen: true,
       status: "success",
-      message: "Tự động điền dữ liệu lâm sàng từ file CSV thành công!",
+      message: messages.upload.csvAutoFillSuccess,
     });
   };
 
@@ -963,7 +963,7 @@ export default function UploadPage() {
                       <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle", marginRight: "4px" }}>
                         upload_file
                       </span>
-                      {csvFileName ? `CSV: ${csvFileName}` : "Tải lên file CSV"}
+                      {csvFileName ? messages.upload.csvButtonLabel(csvFileName) : messages.upload.csvUploadDefault}
                     </button>
                     <button
                       type="button"
@@ -974,7 +974,7 @@ export default function UploadPage() {
                       <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle", marginRight: "4px" }}>
                         bolt
                       </span>
-                      Tự động điền (AutoFill)
+                      {messages.upload.btnAutoFill}
                     </button>
                     <button
                       type="button"

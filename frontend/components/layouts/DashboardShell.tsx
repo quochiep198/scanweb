@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import styles from "@/components/layouts/dashboard-shell.module.css";
 
+import { messages } from "@/app/messages";
+
 type NavItem = {
   view: string;
   label: string;
@@ -13,9 +15,9 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { view: "dashboard", label: "Quản lý chung", icon: "dashboard" },
-  { view: "upload", label: "Tải lên & Huấn luyện", icon: "upload_file" },
-  { view: "measurement", label: "Phân Tích", icon: "straighten" },
+  { view: "dashboard", label: messages.dashboardShell.navDashboard, icon: "dashboard" },
+  { view: "upload", label: messages.dashboardShell.navUpload, icon: "upload_file" },
+  { view: "measurement", label: messages.dashboardShell.navMeasurement, icon: "straighten" },
 ];
 
 const footerItems: NavItem[] = [];
@@ -75,8 +77,8 @@ export function DashboardShell({ children, currentView, onViewChange }: Dashboar
               <span className="material-symbols-outlined">health_and_safety</span>
             </div>
             <div>
-              <h2 className={styles.clinicTitle}>Trung tâm Y tế</h2>
-              <p className={styles.clinicSubtitle}>Khoa chẩn đoán hình ảnh</p>
+              <h2 className={styles.clinicTitle}>{messages.dashboardShell.clinicTitleDefault}</h2>
+              <p className={styles.clinicSubtitle}>{messages.dashboardShell.clinicSubtitleDefault}</p>
             </div>
           </div>
 
@@ -120,7 +122,7 @@ export function DashboardShell({ children, currentView, onViewChange }: Dashboar
 
             <button type="button" className={styles.navLink} onClick={logout}>
               <span className="material-symbols-outlined">logout</span>
-              <span>Đăng xuất</span>
+              <span>{messages.dashboardShell.logout}</span>
             </button>
           </div>
         </aside>

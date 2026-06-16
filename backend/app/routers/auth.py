@@ -81,7 +81,7 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
 
     access_token, refresh_token = AuthService.create_tokens(user)
     AuthService.create_refresh_token_record(db, user.id, refresh_token)
-    set_auth_cookies(response, access_token, refresh_token)
+    set_auth_cookies(response, access_token, refresh_token, remember=request.remember)
 
     return MessageResponse(message="Dang nhap thanh cong", user_id=user.id)
 
