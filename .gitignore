@@ -38,3 +38,7 @@ backend/models/
 backend/mlruns/
 
 /.env.example
+/backend/check_current_training.py
+/backend/query_latest_run.py
+/backend/query_run_0403.py
+/models/best_model_v1.0.0.pt
