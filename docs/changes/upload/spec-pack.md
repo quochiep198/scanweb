@@ -251,6 +251,81 @@ Hệ thống ghi nhận toàn bộ thông tin qua MLflow cục bộ lưu tại `
   - `metrics.json` (Lịch sử các chỉ số qua các epoch).
   - `plots.png` (Biểu đồ trực quan hóa đường cong Loss và Metrics).
 
+## 3.3.11. Tích hợp Huấn luyện qua Kaggle Cloud GPU (Kaggle Integration)
+
+Để tối ưu hóa chi phí phần cứng và tận dụng GPU hiệu năng cao miễn phí (30 giờ/tuần GPU T4 của Kaggle), hệ thống hỗ trợ cơ chế chạy huấn luyện mô hình gián tiếp thông qua **Kaggle API** sử dụng đầu vào là tệp cấu hình notebook `colab_custom.ipynb` đã hoạt động ổn định trên Colab.
+
+### Cấu hình biến môi trường & Secrets bắt buộc
+
+1. **Trên tài khoản Kaggle của Admin**:
+   Cần tạo các **User Secrets** tương ứng để notebook trên Kaggle có thể truy cập được tài nguyên bảo mật:
+   - `DATABASE_URL`: Đường dẫn kết nối trực tiếp đến PostgreSQL (phải là DB public/cloud như Supabase, Neon hoặc AWS RDS để Kaggle kết nối được).
+   - `CLOUDFLARE_R2_ACCOUNT_ID`: Account ID Cloudflare.
+   - `CLOUDFLARE_R2_ACCESS_KEY_ID`: Access Key ID của R2 bucket.
+   - `CLOUDFLARE_R2_SECRET_ACCESS_KEY`: Secret Access Key của R2.
+   - `CLOUDFLARE_R2_BUCKET_NAME`: Tên bucket chứa ảnh và model weights.
+   - `ACTIVE_MODEL_VERSION`: Phiên bản mô hình đang hoạt động (ví dụ: `v1.0.0`).
+
+2. **Tại file `.env` ở Backend server**:
+   Cần bổ sung thông tin định danh API của Kaggle để backend có quyền đẩy job:
+   - `KAGGLE_USERNAME`: Tên tài khoản Kaggle của Admin.
+   - `KAGGLE_KEY`: API Key tạo từ phần Account Settings trên Kaggle.
+
+### Luồng xử lý chi tiết (Kaggle API Workflow)
+
+1. **Lựa chọn Môi trường (Frontend UI)**:
+   - Giao diện `UploadView.tsx` cung cấp trường lựa chọn **Môi trường huấn luyện (Training Environment)**:
+     - `Local (CPU/GPU)` (Mặc định: huấn luyện trực tiếp trên server).
+     - `Kaggle GPU Cloud` (Chạy pipeline huấn luyện đám mây trên GPU Kaggle).
+   - **Cơ chế cấu hình mặc định**: Khi chọn `Kaggle GPU Cloud`, hệ thống sẽ mặc định tự động sử dụng thông tin tài khoản và API Key (`KAGGLE_USERNAME` và `KAGGLE_KEY`) cấu hình trong tệp `.env` của Backend để khởi chạy tiến trình. Điều này giúp admin không cần nhập thông tin tài khoản thủ công trong mỗi lần chạy.
+   - **Tùy chọn Ghi đè (Override Options)**: Giao diện hiển thị thêm nút mở rộng tùy chọn ẩn/hiện "Cấu hình nâng cao tài khoản Kaggle". Khi được mở rộng, người dùng có thể nhập đè `Kaggle Username` và `Kaggle API Key` khác nếu muốn huấn luyện bằng tài khoản Kaggle khác với tài khoản mặc định của hệ thống.
+
+2. **Gọi API huấn luyện (Backend Trigger)**:
+   - Khi người dùng nhấn nút **Huấn luyện ngay**, Frontend gửi yêu cầu `POST /v1/training/train` kèm các tham số:
+     - `platform = "kaggle"`
+     - `kaggle_username` và `kaggle_key` (nếu có).
+   - Backend thực hiện các bước sau:
+     1. Khởi tạo một bản ghi `training_history` với trạng thái `running` để theo dõi tiến trình.
+     2. Đọc tệp gốc `scratch/colab_custom.ipynb`.
+     3. Tự động chuyển đổi logic cấu hình bảo mật bằng cách thay thế thư viện lấy thông tin bí mật từ Google Colab (`from google.colab import userdata`) thành thư viện Kaggle Secrets (`from kaggle_secrets import UserSecretsClient`) và lưu thành tệp tạm thời `kaggle_custom.ipynb`.
+     4. Tạo tệp cấu hình `kernel-metadata.json` chứa thông tin kernel của Kaggle:
+        ```json
+        {
+          "id": "<KAGGLE_USERNAME>/osteoai-training-job",
+          "title": "OsteoAI Training Job",
+          "code_file": "kaggle_custom.ipynb",
+          "language": "python",
+          "kernel_type": "notebook",
+          "is_private": true,
+          "enable_gpu": true,
+          "enable_tpu": false,
+          "enable_internet": true,
+          "dataset_sources": [],
+          "competition_sources": [],
+          "kernel_sources": [],
+          "model_sources": []
+        }
+        ```
+     5. Lưu các tệp trên vào thư mục tạm và chạy lệnh của Kaggle CLI hoặc sử dụng thư viện Python `kaggle`:
+        ```bash
+        kaggle kernels push -p /path/to/temp_dir
+        ```
+        Lệnh này sẽ tải notebook lên Kaggle và tự động kích hoạt tiến trình chạy ngầm (execution job) trên môi trường GPU của Kaggle.
+
+3. **Thực thi trên Kaggle & Đồng bộ CSDL trực tiếp**:
+   - Khi Kernel chạy trên Kaggle, nó sẽ lấy các thông tin cấu hình từ **Kaggle Secrets** (bao gồm `DATABASE_URL` kết nối CSDL PostgreSQL, thông tin truy cập Cloudflare R2, v.v.).
+   - Notebook sẽ tự động truy vấn dữ liệu huấn luyện từ CSDL, tải ảnh từ Cloudflare R2 về Kaggle SSD cục bộ, chạy tối ưu hóa mô hình, áp dụng kiểm định chất lượng (Validation Gate).
+   - **Ghi nhật ký tiến trình (Real-time logs)**: Notebook trên Kaggle liên tục ghi logs trực tiếp vào bảng CSDL `training_logs` (thông qua kết nối `DATABASE_URL` sử dụng SQLAlchemy). Do đó, giao diện Dashboard/Terminal của OsteoAI Platform có thể truy vấn bảng `training_logs` để hiển thị logs huấn luyện theo thời gian thực mà không cần backend trung gian thu thập.
+   - **Hoàn tất và Triển khai**: Sau khi đạt chuẩn Validation Gate, notebook lưu mô hình tốt nhất, tự động tải ngược (upload) trọng số lên Cloudflare R2, và cập nhật trạng thái của bản ghi `training_history` thành `success` hoặc `failed`.
+
+4. **Giám sát trạng thái từ Backend (Polling Thread)**:
+   - Backend khởi chạy một luồng chạy nền (Background Polling Task) để định kỳ (ví dụ mỗi 30 giây) gọi API của Kaggle kiểm tra trạng thái của Kernel:
+     ```bash
+     kaggle kernels status <KAGGLE_USERNAME>/osteoai-training-job
+     ```
+   - Trạng thái trả về: `queued` (đang xếp hàng), `running` (đang chạy), `complete` (hoàn tất thành công), hoặc `error` (bị lỗi).
+   - Nếu trạng thái là `error` hoặc bị quá thời gian chạy (timeout), Backend sẽ cập nhật bản ghi `training_history` thành `failed` và ghi nhận chi tiết lỗi từ log của Kaggle nhằm đảm bảo hệ thống không bị treo trạng thái `running`.
+
 ---
 
 # Kết quả sau khi huấn luyện

@@ -884,4 +884,210 @@ class TrainingService:
         finally:
             db.close()
 
+    @staticmethod
+    def run_kaggle_training_pipeline(db: Session, trainer_id: str, history_id: str, use_augmentation: bool, kaggle_username: str = None, kaggle_key: str = None):
+        import time
+        from datetime import datetime
+
+        # 1. Setup credentials
+        from app.core.config import settings
+        username = kaggle_username or settings.KAGGLE_USERNAME
+        key = kaggle_key or settings.KAGGLE_KEY
+        
+        # Monkey-patch write_log to write to both DB and local file
+        old_write_log = TrainingService.write_log
+        def temp_write_log(message: str, mode: str = "a"):
+            old_write_log(message, db, history_id, mode)
+        TrainingService.write_log = temp_write_log
+
+        try:
+            TrainingService.write_log("Bắt đầu chuẩn bị cấu hình huấn luyện qua Kaggle GPU Cloud...", "w")
+
+            # Get absolute paths to solve CWD issues
+            current_file_dir = os.path.dirname(os.path.abspath(__file__))
+            repo_root = os.path.abspath(os.path.join(current_file_dir, "..", "..", ".."))
+            colab_nb_path = os.path.join(repo_root, "scratch", "colab_custom.ipynb")
+            
+            if not os.path.exists(colab_nb_path):
+                raise FileNotFoundError(f"Không tìm thấy tệp mẫu notebook Colab tại {colab_nb_path}")
+
+            # Temp folder structure
+            temp_dir = os.path.join(repo_root, "backend", "tmp", "kaggle_jobs", history_id)
+            os.makedirs(temp_dir, exist_ok=True)
+            kaggle_nb_path = os.path.join(temp_dir, "kaggle_custom.ipynb")
+            metadata_path = os.path.join(temp_dir, "kernel-metadata.json")
+
+            # 2. Convert Colab Notebook to Kaggle Notebook
+            TrainingService.write_log("Đang chuyển đổi Colab Notebook sang định dạng Kaggle Notebook...")
+            with open(colab_nb_path, "r", encoding="utf-8") as f:
+                nb = json.load(f)
+
+            for cell in nb.get("cells", []):
+                if cell.get("cell_type") == "code":
+                    new_source = []
+                    for line in cell.get("source", []):
+                        # Comment out secrets modules imports
+                        line = line.replace("from google.colab import userdata", "# from google.colab import userdata")
+                        line = line.replace("from kaggle_secrets import UserSecretsClient", "# from kaggle_secrets import UserSecretsClient")
+                        
+                        # Safe installation for Kaggle: prevent upgrading pre-installed torch/torchvision which breaks CUDA compatibility
+                        if "pip install" in line:
+                            line = "!pip install --no-deps easyocr torchxrayvision monai && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow\n"
+                        
+                        # Inject actual configuration settings values directly to bypass manual secret configuration on Kaggle website
+                        # Handle Colab userdata.get (single quotes)
+                        line = line.replace("userdata.get('DATABASE_URL')", f"'{settings.DATABASE_URL}'")
+                        line = line.replace("userdata.get('CLOUDFLARE_R2_ACCOUNT_ID')", f"'{settings.CLOUDFLARE_R2_ACCOUNT_ID}'")
+                        line = line.replace("userdata.get('CLOUDFLARE_R2_ACCESS_KEY_ID')", f"'{settings.CLOUDFLARE_R2_ACCESS_KEY_ID}'")
+                        line = line.replace("userdata.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY')", f"'{settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY}'")
+                        line = line.replace("userdata.get('CLOUDFLARE_R2_BUCKET_NAME')", f"'{settings.CLOUDFLARE_R2_BUCKET_NAME}'")
+                        line = line.replace("userdata.get('ACTIVE_MODEL_VERSION')", f"'{settings.ACTIVE_MODEL_VERSION}'")
+                        
+                        # Handle Colab userdata.get (double quotes)
+                        line = line.replace('userdata.get("DATABASE_URL")', f"'{settings.DATABASE_URL}'")
+                        line = line.replace('userdata.get("CLOUDFLARE_R2_ACCOUNT_ID")', f"'{settings.CLOUDFLARE_R2_ACCOUNT_ID}'")
+                        line = line.replace('userdata.get("CLOUDFLARE_R2_ACCESS_KEY_ID")', f"'{settings.CLOUDFLARE_R2_ACCESS_KEY_ID}'")
+                        line = line.replace('userdata.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")', f"'{settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY}'")
+                        line = line.replace('userdata.get("CLOUDFLARE_R2_BUCKET_NAME")', f"'{settings.CLOUDFLARE_R2_BUCKET_NAME}'")
+                        line = line.replace('userdata.get("ACTIVE_MODEL_VERSION")', f"'{settings.ACTIVE_MODEL_VERSION}'")
+
+                        # Handle Kaggle UserSecretsClient().get_secret (single quotes)
+                        line = line.replace("UserSecretsClient().get_secret('DATABASE_URL')", f"'{settings.DATABASE_URL}'")
+                        line = line.replace("UserSecretsClient().get_secret('CLOUDFLARE_R2_ACCOUNT_ID')", f"'{settings.CLOUDFLARE_R2_ACCOUNT_ID}'")
+                        line = line.replace("UserSecretsClient().get_secret('CLOUDFLARE_R2_ACCESS_KEY_ID')", f"'{settings.CLOUDFLARE_R2_ACCESS_KEY_ID}'")
+                        line = line.replace("UserSecretsClient().get_secret('CLOUDFLARE_R2_SECRET_ACCESS_KEY')", f"'{settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY}'")
+                        line = line.replace("UserSecretsClient().get_secret('CLOUDFLARE_R2_BUCKET_NAME')", f"'{settings.CLOUDFLARE_R2_BUCKET_NAME}'")
+                        line = line.replace("UserSecretsClient().get_secret('ACTIVE_MODEL_VERSION')", f"'{settings.ACTIVE_MODEL_VERSION}'")
+                        
+                        # Handle Kaggle UserSecretsClient().get_secret (double quotes)
+                        line = line.replace('UserSecretsClient().get_secret("DATABASE_URL")', f"'{settings.DATABASE_URL}'")
+                        line = line.replace('UserSecretsClient().get_secret("CLOUDFLARE_R2_ACCOUNT_ID")', f"'{settings.CLOUDFLARE_R2_ACCOUNT_ID}'")
+                        line = line.replace('UserSecretsClient().get_secret("CLOUDFLARE_R2_ACCESS_KEY_ID")', f"'{settings.CLOUDFLARE_R2_ACCESS_KEY_ID}'")
+                        line = line.replace('UserSecretsClient().get_secret("CLOUDFLARE_R2_SECRET_ACCESS_KEY")', f"'{settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY}'")
+                        line = line.replace('UserSecretsClient().get_secret("CLOUDFLARE_R2_BUCKET_NAME")', f"'{settings.CLOUDFLARE_R2_BUCKET_NAME}'")
+                        line = line.replace('UserSecretsClient().get_secret("ACTIVE_MODEL_VERSION")', f"'{settings.ACTIVE_MODEL_VERSION}'")
+                        
+                        # Also replace any general userdata.get or UserSecretsClient calls that might be left
+                        line = line.replace("userdata.get(", "UserSecretsClient().get_secret(")
+                        
+                        new_source.append(line)
+                    cell["source"] = new_source
+
+            with open(kaggle_nb_path, "w", encoding="utf-8") as f:
+                json.dump(nb, f, indent=2)
+
+            # 3. Generate kernel-metadata.json
+            slug = "osteoai-training-job"
+            metadata = {
+                "id": f"{username}/{slug}",
+                "title": "OsteoAI Training Job",
+                "code_file": "kaggle_custom.ipynb",
+                "language": "python",
+                "kernel_type": "notebook",
+                "is_private": True,
+                "enable_gpu": True,
+                "accelerator": "NvidiaTeslaT4",
+                "enable_tpu": False,
+                "enable_internet": True,
+                "dataset_sources": [],
+                "competition_sources": [],
+                "kernel_sources": [],
+                "model_sources": []
+            }
+            with open(metadata_path, "w", encoding="utf-8") as f:
+                json.dump(metadata, f, indent=2)
+
+            # 4. Push kernel to Kaggle
+            TrainingService.write_log(f"Đang kết nối API và đẩy notebook lên Kaggle cho tài khoản '{username}'...")
+            
+            # Set credentials in env for Kaggle extended API client to authenticate
+            os.environ["KAGGLE_USERNAME"] = username
+            os.environ["KAGGLE_KEY"] = key
+            os.environ["KAGGLE_API_TOKEN"] = key
+            
+            from kaggle.api.kaggle_api_extended import KaggleApi
+            api = KaggleApi()
+            api.authenticate()
+            
+            # Push kernel
+            api.kernels_push(temp_dir, acc="NvidiaTeslaT4")
+            TrainingService.write_log("Đã tải notebook lên Kaggle thành công. Job đang được đưa vào hàng đợi chạy trên GPU...")
+
+            # 5. Polling job status
+            last_status = None
+            max_time = 3600 * 2  # 2 hours timeout limit
+            start_time = time.time()
+            kernel_ref = f"{username}/{slug}"
+
+            while time.time() - start_time < max_time:
+                try:
+                    res = api.kernels_status(kernel_ref)
+                    status_obj = getattr(res, "status", None) or (res.get("status") if isinstance(res, dict) else None)
+                    status_str = str(status_obj) if status_obj is not None else ""
+                    
+                    if status_str != last_status:
+                        TrainingService.write_log(f"Trạng thái tiến trình Kaggle: {status_str}")
+                        last_status = status_str
+
+                    status_lower = status_str.lower()
+                    if "complete" in status_lower:
+                        TrainingService.write_log("Kaggle Kernel hoàn tất thành công! Trọng số mô hình đã được tải lên Cloudflare R2.")
+                        # Double check database history is successfully completed
+                        history_rec = db.query(TrainingHistory).filter(TrainingHistory.id == history_id).first()
+                        if history_rec and history_rec.status == "running":
+                            db.query(TrainingHistory).filter(TrainingHistory.id == history_id).update({
+                                "status": "success",
+                                "completed_at": datetime.utcnow()
+                            })
+                            db.commit()
+                        break
+                    elif "error" in status_lower:
+                        failure_msg = getattr(res, "failure_message", None) or (res.get("failure_message") if isinstance(res, dict) else "Không rõ lỗi chi tiết.")
+                        TrainingService.write_log(f"LỖI: Kaggle Kernel chạy thất bại: {failure_msg}")
+                        db.query(TrainingHistory).filter(TrainingHistory.id == history_id).update({
+                            "status": "failed",
+                            "error_message": f"Kaggle execution failed: {failure_msg}",
+                            "completed_at": datetime.utcnow()
+                        })
+                        db.commit()
+                        break
+                except Exception as poll_err:
+                    logger.error(f"Error polling Kaggle status: {poll_err}")
+                
+                time.sleep(30)
+            else:
+                # Timeout
+                TrainingService.write_log("LỖI: Quá thời gian chờ chạy trên Kaggle GPU (Timeout 2h).")
+                db.query(TrainingHistory).filter(TrainingHistory.id == history_id).update({
+                    "status": "failed",
+                    "error_message": "Kaggle job timed out after 2 hours",
+                    "completed_at": datetime.utcnow()
+                })
+                db.commit()
+
+        except Exception as e:
+            TrainingService.write_log(f"LỖI KHỞI CHẠY KAGGLE: {e}")
+            db.query(TrainingHistory).filter(TrainingHistory.id == history_id).update({
+                "status": "failed",
+                "error_message": f"Failed to push or monitor Kaggle job: {str(e)}",
+                "completed_at": datetime.utcnow()
+            })
+            db.commit()
+        finally:
+            if 'old_write_log' in locals():
+                TrainingService.write_log = old_write_log
+
+    @staticmethod
+    def run_kaggle_training_pipeline_task(trainer_id: str, history_id: str, use_augmentation: bool = True, kaggle_username: str = None, kaggle_key: str = None):
+        from app.core.database import SessionLocal
+        db = SessionLocal()
+        try:
+            return TrainingService.run_kaggle_training_pipeline(db, trainer_id, history_id, use_augmentation, kaggle_username, kaggle_key)
+        except Exception as e:
+            logger.error(f"Kaggle training background task failed: {e}")
+            raise e
+        finally:
+            db.close()
+
+
 

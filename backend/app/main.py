@@ -68,6 +68,22 @@ async def startup_event():
     from datetime import datetime, timedelta
     from app.services.training_service import TrainingService
     from app.core.database import SessionLocal
+    from app.models.training_history import TrainingHistory
+
+    # Automatically clean up stuck "running" jobs from database on startup/restart
+    try:
+        with SessionLocal() as db:
+            stuck_runs = db.query(TrainingHistory).filter(TrainingHistory.status == "running").all()
+            if stuck_runs:
+                logger.info(f"Startup: Found {len(stuck_runs)} stuck training runs. Resetting to 'failed'...")
+                for run in stuck_runs:
+                    run.status = "failed"
+                    run.error_message = "Hệ thống bị khởi động lại hoặc tiến trình bị ngắt đột ngột."
+                    run.completed_at = datetime.utcnow()
+                db.commit()
+                logger.info("Startup: Reset stuck training runs successfully.")
+    except Exception as reset_err:
+        logger.error(f"Startup: Failed to reset stuck runs: {reset_err}")
 
     def run_nightly_full_retrain():
         try:

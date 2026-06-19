@@ -229,6 +229,12 @@ export default function UploadPage() {
   const [crossValidation, setCrossValidation] = useState(true);
   const [selectedModel, setSelectedModel] = useState("EfficientNet-B3");
 
+  // Kaggle training state variables
+  const [trainingEnvironment, setTrainingEnvironment] = useState<"local" | "kaggle">("local");
+  const [customKaggleUsername, setCustomKaggleUsername] = useState("");
+  const [customKaggleKey, setCustomKaggleKey] = useState("");
+  const [showAdvancedKaggle, setShowAdvancedKaggle] = useState(false);
+
   const totalItems = items.length;
   const overallProgress = totalItems > 0
     ? Math.round(items.reduce((acc, item) => acc + (item.progress || 0), 0) / totalItems)
@@ -841,7 +847,16 @@ export default function UploadPage() {
 
     try {
       const apiUrl = getApiUrl();
-      const response = await fetchWithAuth(`${apiUrl}/v1/training/train?use_augmentation=${augmentation}`, {
+      let queryParams = `use_augmentation=${augmentation}&platform=${trainingEnvironment}`;
+      if (trainingEnvironment === "kaggle") {
+        if (customKaggleUsername.trim()) {
+          queryParams += `&kaggle_username=${encodeURIComponent(customKaggleUsername.trim())}`;
+        }
+        if (customKaggleKey.trim()) {
+          queryParams += `&kaggle_key=${encodeURIComponent(customKaggleKey.trim())}`;
+        }
+      }
+      const response = await fetchWithAuth(`${apiUrl}/v1/training/train?${queryParams}`, {
         method: "POST",
       });
 
@@ -1452,9 +1467,117 @@ export default function UploadPage() {
                 <div className={styles.progressTrack}>
                   <div className={styles.progressFill} style={{ width: `${readiness}%` }} />
                 </div>
-                <p className={styles.progressHint}>
+                <p style={{ margin: 0 }}>
                   {m.view.readinessHint}
                 </p>
+
+                {/* Model Configuration / Training Environment */}
+                <div style={{ marginTop: "16px", marginBottom: "16px", borderTop: "1px dashed #e2e8f0", paddingTop: "16px" }}>
+                  <label htmlFor="env-select" style={{ fontSize: "0.8rem", fontWeight: "700", color: "#475569", display: "block", marginBottom: "6px" }}>
+                    Môi trường huấn luyện
+                  </label>
+                  <select
+                    id="env-select"
+                    value={trainingEnvironment}
+                    onChange={(event) => setTrainingEnvironment(event.target.value as "local" | "kaggle")}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      backgroundColor: "#ffffff",
+                      fontSize: "0.85rem",
+                      color: "#1e293b",
+                      outline: "none"
+                    }}
+                  >
+                    <option value="local">Local (Cục bộ CPU/GPU)</option>
+                    <option value="kaggle">Kaggle GPU Cloud</option>
+                  </select>
+                </div>
+
+                {trainingEnvironment === "kaggle" && (
+                  <div style={{ marginBottom: "16px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedKaggle(!showAdvancedKaggle)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#2563eb",
+                        fontSize: "0.8rem",
+                        fontWeight: "600",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        cursor: "pointer",
+                        padding: 0,
+                        marginBottom: "10px"
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
+                        {showAdvancedKaggle ? "expand_less" : "settings"}
+                      </span>
+                      {showAdvancedKaggle ? "Ẩn cấu hình nâng cao Kaggle" : "Cấu hình nâng cao tài khoản Kaggle"}
+                    </button>
+                    
+                    {showAdvancedKaggle && (
+                      <div style={{
+                        padding: "12px",
+                        borderRadius: "6px",
+                        backgroundColor: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px"
+                      }}>
+                        <div>
+                          <label htmlFor="kaggle-username" style={{ fontSize: "0.75rem", fontWeight: "600", color: "#64748b", display: "block", marginBottom: "4px" }}>
+                            Kaggle Username
+                          </label>
+                          <input
+                            id="kaggle-username"
+                            type="text"
+                            value={customKaggleUsername}
+                            placeholder="Mặc định từ file .env"
+                            onChange={(e) => setCustomKaggleUsername(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              borderRadius: "4px",
+                              border: "1px solid #cbd5e1",
+                              fontSize: "0.8rem",
+                              outline: "none"
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="kaggle-key" style={{ fontSize: "0.75rem", fontWeight: "600", color: "#64748b", display: "block", marginBottom: "4px" }}>
+                            Kaggle API Key
+                          </label>
+                          <input
+                            id="kaggle-key"
+                            type="password"
+                            value={customKaggleKey}
+                            placeholder="Mặc định từ file .env"
+                            onChange={(e) => setCustomKaggleKey(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              borderRadius: "4px",
+                              border: "1px solid #cbd5e1",
+                              fontSize: "0.8rem",
+                              outline: "none"
+                            }}
+                          />
+                        </div>
+                        <p style={{ fontSize: "0.7rem", color: "#94a3b8", margin: 0, lineHeight: "1.3" }}>
+                          * Nếu để trống, hệ thống sẽ sử dụng thông tin tài khoản và khóa API định nghĩa sẵn trên máy chủ.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <button type="button" className={styles.trainButton} onClick={handleTrainNow}>
                   <span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>

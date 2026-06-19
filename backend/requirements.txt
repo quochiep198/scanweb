@@ -18,4 +18,4 @@ mlflow
 easyocr
 opencv-python-headless
 google-auth
-
+kaggle

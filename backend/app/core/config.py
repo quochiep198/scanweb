@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     ACTIVE_MODEL_VERSION: str = "v1.0.0"
     ACTIVE_DATASET_VERSION: str = "dataset_v1.0"
     GOOGLE_CLIENT_ID: str = ""
+    
+    # Kaggle Settings
+    KAGGLE_USERNAME: str = ""
+    KAGGLE_KEY: str = ""
 
 
     AUTH_COOKIE_DOMAIN: str = ""

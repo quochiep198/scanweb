@@ -196,19 +196,37 @@ def train_model(
     background_tasks: BackgroundTasks,
     use_augmentation: bool = True,
     force_full: bool = False,
+    platform: str = "local",
+    kaggle_username: str = None,
+    kaggle_key: str = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """
-    Start the model training pipeline asynchronously in the background (Section 3.3.6).
+    Start the model training pipeline asynchronously in the background (Section 3.3.6 and 3.3.11).
+    Supports platform="local" or platform="kaggle".
     """
     # Check if there is already an active training running in the database
-    active_run = db.query(TrainingHistory).filter(TrainingHistory.status == "running").first()
-    if active_run:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Đang có tiến trình huấn luyện khác đang chạy."
-        )
+    # If found, automatically mark them as failed (cancelled by new run) so they don't block the new request
+    active_runs = db.query(TrainingHistory).filter(TrainingHistory.status == "running").all()
+    if active_runs:
+        logger.warning(f"Found {len(active_runs)} active/stuck training runs. Automatically resetting them to 'failed'...")
+        for run in active_runs:
+            run.status = "failed"
+            run.error_message = "Hủy do người dùng khởi chạy tiến trình huấn luyện mới."
+            run.completed_at = datetime.utcnow()
+        db.commit()
+
+    # Validate Kaggle credentials if platform is kaggle
+    if platform == "kaggle":
+        from app.core.config import settings
+        username = kaggle_username or settings.KAGGLE_USERNAME
+        key = kaggle_key or settings.KAGGLE_KEY
+        if not username or not key:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Chưa cấu hình tài khoản Kaggle (Kaggle Username/Key). Vui lòng nhập hoặc cấu hình trong file .env."
+            )
 
     metadata = TrainingService.get_training_metadata(db)
     dataset_size = len(metadata)
@@ -237,9 +255,10 @@ def train_model(
     clinical_summary = f"Tổng số: {dataset_size} ảnh. Nhãn: Bình thường ({label_counts['normal']}), Thiếu xương ({label_counts['osteopenia']}), Loãng xương ({label_counts['osteoporosis']}). {age_summary}"
 
     history_id = str(uuid.uuid4())
+    run_prefix = "Colab/Kaggle Run" if platform == "kaggle" else "EfficientNet-B3 Run"
     training_history_record = TrainingHistory(
         id=history_id,
-        run_name=f"EfficientNet-B3 Run {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        run_name=f"{run_prefix} {datetime.now().strftime('%Y-%m-%d %H:%M')}",
         trainer_id=current_user.id,
         status="running",
         clinical_info=clinical_summary,
@@ -248,17 +267,31 @@ def train_model(
     db.add(training_history_record)
     db.commit()
 
-    background_tasks.add_task(
-        TrainingService.run_training_pipeline_task,
-        trainer_id=current_user.id,
-        history_id=history_id,
-        use_augmentation=use_augmentation,
-        force_full=force_full
-    )
-    return {
-        "status": "success",
-        "message": "Bắt đầu huấn luyện mô hình EfficientNet-B3 thành công trong nền!"
-    }
+    if platform == "kaggle":
+        background_tasks.add_task(
+            TrainingService.run_kaggle_training_pipeline_task,
+            trainer_id=current_user.id,
+            history_id=history_id,
+            use_augmentation=use_augmentation,
+            kaggle_username=kaggle_username,
+            kaggle_key=kaggle_key
+        )
+        return {
+            "status": "success",
+            "message": "Đã gửi yêu cầu huấn luyện lên Kaggle GPU Cloud thành công!"
+        }
+    else:
+        background_tasks.add_task(
+            TrainingService.run_training_pipeline_task,
+            trainer_id=current_user.id,
+            history_id=history_id,
+            use_augmentation=use_augmentation,
+            force_full=force_full
+        )
+        return {
+            "status": "success",
+            "message": "Bắt đầu huấn luyện mô hình EfficientNet-B3 thành công trong nền!"
+        }
 
 @router.get("/history", status_code=status.HTTP_200_OK)
 def get_training_history(
