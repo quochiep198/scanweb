@@ -1,5 +1,6 @@
 import os
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
 
 import uuid
 import json
