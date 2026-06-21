@@ -5,6 +5,7 @@ custom_code_str = r"""# ==========================================
 # CELL 6: Kịch bản Huấn luyện Chính (Orchestrated)
 # ==========================================
 import os
+os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
 import uuid
 import datetime
 import traceback

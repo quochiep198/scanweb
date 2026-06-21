@@ -36,6 +36,8 @@ Thumbs.db
 # Machine Learning outputs
 backend/models/
 backend/mlruns/
+backend/mlflow.db
+*.db
 
 /.env.example
 /backend/check_current_training.py
