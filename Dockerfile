@@ -13,6 +13,9 @@ ENV HOME=/home/user \
 # Set the working directory to the user's home directory
 WORKDIR $HOME/app
 
+# Set system-wide environment variables
+ENV MLFLOW_ALLOW_FILE_STORE=true
+
 # Copy the current directory contents into the container at $HOME/app setting the owner to the user
 COPY --chown=user ./backend/requirements.txt $HOME/app/requirements.txt
 
