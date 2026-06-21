@@ -16,8 +16,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Xóa thư mục frontend và tài liệu để tránh lỗi file nhị phân và dung lượng lớn trên HF
-          rm -rf frontend/
+          # Xóa thư mục chứa file ảnh để tránh lỗi dung lượng của HF
           rm -rf docs/
           
           # Tạo một lịch sử Git mới hoàn toàn để không mang theo ảnh cũ

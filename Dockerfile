@@ -16,9 +16,6 @@ WORKDIR $HOME/app
 # Copy the current directory contents into the container at $HOME/app setting the owner to the user
 COPY --chown=user ./backend/requirements.txt $HOME/app/requirements.txt
 
-# Install CPU-only PyTorch & torchvision first to reduce download size (~3.3GB down to ~250MB) and build time on Hugging Face
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
-
 # Install dependencies
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
