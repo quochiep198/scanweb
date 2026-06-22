@@ -1020,9 +1020,9 @@ class TrainingService:
             api = KaggleApi()
             api.authenticate()
             
-            # Push kernel using CLI via subprocess
+            # Push kernel using CLI via subprocess to ensure T4 GPU is allocated
             import subprocess
-            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir]
+            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir, "--accelerator", "NvidiaTeslaT4"]
             logger.info(f"Executing Kaggle push command: {' '.join(push_cmd)}")
             res = subprocess.run(push_cmd, capture_output=True, text=True, encoding="utf-8")
             
