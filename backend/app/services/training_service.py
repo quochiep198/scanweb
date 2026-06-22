@@ -922,6 +922,13 @@ class TrainingService:
             with open(colab_nb_path, "r", encoding="utf-8") as f:
                 nb = json.load(f)
 
+            # Ensure Kaggle accelerator metadata is injected directly into the notebook
+            if "metadata" not in nb:
+                nb["metadata"] = {}
+            if "kaggle" not in nb["metadata"]:
+                nb["metadata"]["kaggle"] = {}
+            nb["metadata"]["kaggle"]["accelerator"] = "nvidiaTeslaT4"
+
             for cell in nb.get("cells", []):
                 if cell.get("cell_type") == "code":
                     new_source = []
@@ -1013,9 +1020,9 @@ class TrainingService:
             api = KaggleApi()
             api.authenticate()
             
-            # Push kernel using CLI via subprocess to ensure --accelerator parameter is correctly applied
+            # Push kernel using CLI via subprocess
             import subprocess
-            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir, "--accelerator", "NvidiaTeslaT4"]
+            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir]
             logger.info(f"Executing Kaggle push command: {' '.join(push_cmd)}")
             res = subprocess.run(push_cmd, capture_output=True, text=True, encoding="utf-8")
             
