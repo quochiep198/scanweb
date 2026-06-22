@@ -1,4 +1,18 @@
 import os
+import sys
+
+# Reconfigure stdout/stderr to use UTF-8 to prevent encoding errors on non-UTF-8 terminals (e.g. CP932 on Windows)
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+if hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
 
@@ -1022,7 +1036,8 @@ class TrainingService:
             
             # Push kernel using CLI via subprocess to ensure T4 GPU is allocated
             import subprocess
-            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir, "--accelerator", "NvidiaTeslaT4"]
+            # Rely on enable_gpu and accelerator fields in kernel-metadata.json instead of CLI flag
+            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir]
             logger.info(f"Executing Kaggle push command: {' '.join(push_cmd)}")
             res = subprocess.run(push_cmd, capture_output=True, text=True, encoding="utf-8")
             

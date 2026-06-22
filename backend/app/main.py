@@ -1,4 +1,18 @@
 import os
+import sys
+
+# Reconfigure stdout/stderr to use UTF-8 to prevent encoding errors on non-UTF-8 terminals (e.g. CP932 on Windows)
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+if hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
 
