@@ -905,14 +905,13 @@ class TrainingService:
 
             # Get absolute paths to solve CWD issues
             current_file_dir = os.path.dirname(os.path.abspath(__file__))
-            repo_root = os.path.abspath(os.path.join(current_file_dir, "..", "..", ".."))
-            colab_nb_path = os.path.join(repo_root, "scratch", "colab_custom.ipynb")
+            colab_nb_path = os.path.join(current_file_dir, "colab_custom.ipynb")
             
             if not os.path.exists(colab_nb_path):
                 raise FileNotFoundError(f"Không tìm thấy tệp mẫu notebook Colab tại {colab_nb_path}")
 
-            # Temp folder structure
-            temp_dir = os.path.join(repo_root, "backend", "tmp", "kaggle_jobs", history_id)
+            # Temp folder structure (under backend/tmp/ in both local and container environments)
+            temp_dir = os.path.abspath(os.path.join(current_file_dir, "..", "..", "tmp", "kaggle_jobs", history_id))
             os.makedirs(temp_dir, exist_ok=True)
             kaggle_nb_path = os.path.join(temp_dir, "kaggle_custom.ipynb")
             metadata_path = os.path.join(temp_dir, "kernel-metadata.json")
