@@ -1,5 +1,6 @@
 import os
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
 
 from fastapi import FastAPI, Depends
 from fastapi.responses import RedirectResponse
@@ -144,7 +145,11 @@ async def startup_event():
 
 @app.get("/", include_in_schema=False)
 def read_root():
-    return RedirectResponse(url="/docs")
+    return {
+        "status": "online",
+        "message": "OsteoAI API is running. Access API documentation at /docs",
+        "docs_url": "/docs"
+    }
 
 @app.get('/health')
 def health():
