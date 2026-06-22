@@ -1036,8 +1036,8 @@ class TrainingService:
             
             # Push kernel using CLI via subprocess to ensure T4 GPU is allocated
             import subprocess
-            # Rely on enable_gpu and accelerator fields in kernel-metadata.json instead of CLI flag
-            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir]
+            # Explicitly specify the accelerator on the command line to override Kaggle's default GPU allocation (P100)
+            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir, "--accelerator", "NvidiaTeslaT4"]
             logger.info(f"Executing Kaggle push command: {' '.join(push_cmd)}")
             res = subprocess.run(push_cmd, capture_output=True, text=True, encoding="utf-8")
             

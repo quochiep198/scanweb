@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     # Kaggle Settings
     KAGGLE_USERNAME: str = ""
     KAGGLE_KEY: str = ""
+    MLFLOW_ALLOW_FILE_STORE: str = "true"
 
 
     AUTH_COOKIE_DOMAIN: str = ""
@@ -72,5 +73,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()

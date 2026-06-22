@@ -35,6 +35,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+
 app = FastAPI(
     title="OsteoAI API",
     description="Medical Imaging Data Collection Platform"
