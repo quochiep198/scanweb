@@ -1014,9 +1014,8 @@ class TrainingService:
             api.authenticate()
             
             # Push kernel using CLI via subprocess to ensure --accelerator parameter is correctly applied
-            import sys
             import subprocess
-            push_cmd = [sys.executable, "-m", "kaggle", "kernels", "push", "-p", temp_dir, "--accelerator", "NvidiaTeslaT4"]
+            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir, "--accelerator", "NvidiaTeslaT4"]
             logger.info(f"Executing Kaggle push command: {' '.join(push_cmd)}")
             res = subprocess.run(push_cmd, capture_output=True, text=True, encoding="utf-8")
             
