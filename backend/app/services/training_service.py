@@ -1013,8 +1013,17 @@ class TrainingService:
             api = KaggleApi()
             api.authenticate()
             
-            # Push kernel
-            api.kernels_push(temp_dir)
+            # Push kernel using CLI via subprocess to ensure --accelerator parameter is correctly applied
+            import sys
+            import subprocess
+            push_cmd = [sys.executable, "-m", "kaggle", "kernels", "push", "-p", temp_dir, "--accelerator", "NvidiaTeslaT4"]
+            logger.info(f"Executing Kaggle push command: {' '.join(push_cmd)}")
+            res = subprocess.run(push_cmd, capture_output=True, text=True, encoding="utf-8")
+            
+            if res.returncode != 0:
+                error_msg = res.stderr or res.stdout or "Không rõ lỗi."
+                raise RuntimeError(f"Lỗi khi đẩy Notebook lên Kaggle qua CLI: {error_msg}")
+                
             TrainingService.write_log("Đã tải notebook lên Kaggle thành công. Job đang được đưa vào hàng đợi chạy trên GPU...")
 
             # 5. Polling job status
