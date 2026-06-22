@@ -273,6 +273,7 @@ def train_model(
             trainer_id=current_user.id,
             history_id=history_id,
             use_augmentation=use_augmentation,
+            force_full=force_full,
             kaggle_username=kaggle_username,
             kaggle_key=kaggle_key
         )

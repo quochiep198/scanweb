@@ -886,7 +886,7 @@ class TrainingService:
             db.close()
 
     @staticmethod
-    def run_kaggle_training_pipeline(db: Session, trainer_id: str, history_id: str, use_augmentation: bool, kaggle_username: str = None, kaggle_key: str = None):
+    def run_kaggle_training_pipeline(db: Session, trainer_id: str, history_id: str, use_augmentation: bool, force_full: bool = True, kaggle_username: str = None, kaggle_key: str = None):
         import time
         from datetime import datetime
 
@@ -970,6 +970,10 @@ class TrainingService:
                         # Also replace any general userdata.get or UserSecretsClient calls that might be left
                         line = line.replace("userdata.get(", "UserSecretsClient().get_secret(")
                         
+                        # Replace the run_colab_training call to pass force_full parameter dynamically
+                        if "run_colab_training(" in line:
+                            line = f"run_colab_training(use_augmentation={use_augmentation}, force_full={force_full})\n"
+                        
                         new_source.append(line)
                     cell["source"] = new_source
 
@@ -1010,7 +1014,7 @@ class TrainingService:
             api.authenticate()
             
             # Push kernel
-            api.kernels_push(temp_dir, acc="NvidiaTeslaT4")
+            api.kernels_push(temp_dir)
             TrainingService.write_log("Đã tải notebook lên Kaggle thành công. Job đang được đưa vào hàng đợi chạy trên GPU...")
 
             # 5. Polling job status
@@ -1078,11 +1082,11 @@ class TrainingService:
                 TrainingService.write_log = old_write_log
 
     @staticmethod
-    def run_kaggle_training_pipeline_task(trainer_id: str, history_id: str, use_augmentation: bool = True, kaggle_username: str = None, kaggle_key: str = None):
+    def run_kaggle_training_pipeline_task(trainer_id: str, history_id: str, use_augmentation: bool = True, force_full: bool = True, kaggle_username: str = None, kaggle_key: str = None):
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
-            return TrainingService.run_kaggle_training_pipeline(db, trainer_id, history_id, use_augmentation, kaggle_username, kaggle_key)
+            return TrainingService.run_kaggle_training_pipeline(db, trainer_id, history_id, use_augmentation, force_full, kaggle_username, kaggle_key)
         except Exception as e:
             logger.error(f"Kaggle training background task failed: {e}")
             raise e
