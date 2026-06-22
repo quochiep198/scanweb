@@ -144,14 +144,15 @@ class TrainingService:
     is_training_active = False
 
     # Path constants
-    MODEL_DIR = "models"
-    CACHE_DIR = os.path.join("tmp", "training_images")
-    BEST_MODEL_PATH = os.path.join("models", "best_model.pt")
-    CANDIDATE_MODEL_PATH = os.path.join("models", "candidate_model.pt")
-    LOG_FILE_PATH = os.path.join("models", "training.log")
-    TRAINING_CONFIG_PATH = os.path.join("models", "training_config.json")
-    METRICS_PATH = os.path.join("models", "metrics.json")
-    PLOTS_PATH = os.path.join("models", "plots.png")
+    BASE_DIR = "/data" if os.path.isdir("/data") and os.access("/data", os.W_OK) else "."
+    MODEL_DIR = os.path.join(BASE_DIR, "models")
+    CACHE_DIR = os.path.join(BASE_DIR, "tmp", "training_images")
+    BEST_MODEL_PATH = os.path.join(BASE_DIR, "models", "best_model.pt")
+    CANDIDATE_MODEL_PATH = os.path.join(BASE_DIR, "models", "candidate_model.pt")
+    LOG_FILE_PATH = os.path.join(BASE_DIR, "models", "training.log")
+    TRAINING_CONFIG_PATH = os.path.join(BASE_DIR, "models", "training_config.json")
+    METRICS_PATH = os.path.join(BASE_DIR, "models", "metrics.json")
+    PLOTS_PATH = os.path.join(BASE_DIR, "models", "plots.png")
 
     # Hyperparameter defaults
     DEFAULT_BATCH_SIZE = 8
@@ -554,7 +555,7 @@ class TrainingService:
                 best_loss = epoch_val_loss
                 TrainingService.write_log(f"Validation loss decreased ({best_loss:.4f}). Saving candidate model...")
                 torch.save(model.state_dict(), TrainingService.CANDIDATE_MODEL_PATH)
-                torch.save(model.state_dict(), f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+                torch.save(model.state_dict(), os.path.join(TrainingService.MODEL_DIR, f"candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt"))
         else:
             # Save candidate model based on training loss if no validation split is present
             epoch_val_loss = epoch_loss
@@ -578,7 +579,7 @@ class TrainingService:
                 best_loss = epoch_loss
                 TrainingService.write_log(f"Train loss decreased ({best_loss:.4f}). Saving candidate model...")
                 torch.save(model.state_dict(), TrainingService.CANDIDATE_MODEL_PATH)
-                torch.save(model.state_dict(), f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+                torch.save(model.state_dict(), os.path.join(TrainingService.MODEL_DIR, f"candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt"))
         return best_loss
 
     @staticmethod
@@ -605,8 +606,8 @@ class TrainingService:
             if os.path.exists(TrainingService.CANDIDATE_MODEL_PATH):
                 shutil.copyfile(TrainingService.CANDIDATE_MODEL_PATH, TrainingService.BEST_MODEL_PATH)
             
-            candidate_versioned_path = f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt"
-            best_versioned_path = f"models/best_model_{settings.ACTIVE_MODEL_VERSION}.pt"
+            candidate_versioned_path = os.path.join(TrainingService.MODEL_DIR, f"candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+            best_versioned_path = os.path.join(TrainingService.MODEL_DIR, f"best_model_{settings.ACTIVE_MODEL_VERSION}.pt")
             if os.path.exists(candidate_versioned_path):
                 shutil.copyfile(candidate_versioned_path, best_versioned_path)
             
@@ -778,7 +779,7 @@ class TrainingService:
             TrainingService.write_log("Pre-download completed.")
 
             TrainingService.write_log("Connecting to local MLflow tracking server...")
-            mlflow.set_tracking_uri("sqlite:///mlflow.db")
+            mlflow.set_tracking_uri(f"sqlite:///{os.path.abspath(os.path.join(TrainingService.BASE_DIR, 'mlflow.db'))}")
             mlflow.set_experiment("Osteoporosis_EfficientNetB3")
             
             history = {
@@ -812,7 +813,7 @@ class TrainingService:
                 
                 # Save initial candidate model state to guarantee candidate_model.pt exists
                 torch.save(model.state_dict(), TrainingService.CANDIDATE_MODEL_PATH)
-                torch.save(model.state_dict(), f"models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt")
+                torch.save(model.state_dict(), os.path.join(TrainingService.MODEL_DIR, f"candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt"))
                 TrainingService.write_log(f"Initialized models/candidate_model.pt and models/candidate_model_{settings.ACTIVE_MODEL_VERSION}.pt checkpoints.")
                 
                 TrainingService.write_log("Initializing PyTorch DataLoader...")

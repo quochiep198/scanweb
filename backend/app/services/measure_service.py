@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 _cached_models = {}
 
 class MeasureService:
+    BASE_DIR = "/data" if os.path.isdir("/data") and os.access("/data", os.W_OK) else "."
+
     @staticmethod
     def get_device() -> torch.device:
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -38,7 +40,7 @@ class MeasureService:
         global _cached_models
         
         version = settings.ACTIVE_MODEL_VERSION
-        local_path = f"models/best_model_{version}.pt"
+        local_path = os.path.join(MeasureService.BASE_DIR, "models", f"best_model_{version}.pt")
         r2_key = f"models/{version}/best_model.pt"
         
         # 1. Fetch metadata from R2 to check if local file is outdated
@@ -68,7 +70,7 @@ class MeasureService:
         if should_download:
             logger.info(f"Model {local_path} not found locally or outdated. Attempting to download key {r2_key} from Cloudflare R2...")
             try:
-                os.makedirs("models", exist_ok=True)
+                os.makedirs(os.path.join(MeasureService.BASE_DIR, "models"), exist_ok=True)
                 try:
                     # A. Try downloading the versioned model from R2
                     model_bytes = R2Service.download_file(r2_key)
@@ -79,9 +81,10 @@ class MeasureService:
                         model_bytes = R2Service.download_file("models/best_model.pt")
                     except Exception as default_r2_err:
                         # C. Fallback to local legacy file if exists
-                        if os.path.exists("models/best_model.pt"):
-                            logger.info("R2 download failed entirely, but found local models/best_model.pt. Loading local file.")
-                            with open("models/best_model.pt", "rb") as legacy_f:
+                        legacy_local_path = os.path.join(MeasureService.BASE_DIR, "models", "best_model.pt")
+                        if os.path.exists(legacy_local_path):
+                            logger.info(f"R2 download failed entirely, but found local fallback at {legacy_local_path}. Loading local file.")
+                            with open(legacy_local_path, "rb") as legacy_f:
                                 model_bytes = legacy_f.read()
                         else:
                             raise default_r2_err
@@ -92,11 +95,12 @@ class MeasureService:
             except Exception as e:
                 logger.error(f"Failed to download model from R2: {e}")
                 # Secondary fallback to legacy model if it exists
-                if os.path.exists("models/best_model.pt"):
-                    logger.info("Falling back to local models/best_model.pt as final backup")
-                    local_path = "models/best_model.pt"
+                legacy_local_path = os.path.join(MeasureService.BASE_DIR, "models", "best_model.pt")
+                if os.path.exists(legacy_local_path):
+                    logger.info(f"Falling back to local fallback at {legacy_local_path} as final backup")
+                    local_path = legacy_local_path
                 else:
-                    raise FileNotFoundError(f"Model file {r2_key} could not be loaded and no fallback models/best_model.pt exists: {e}")
+                    raise FileNotFoundError(f"Model file {r2_key} could not be loaded and no fallback {legacy_local_path} exists: {e}")
 
         # 2. Instantiate model and load weights
         try:
