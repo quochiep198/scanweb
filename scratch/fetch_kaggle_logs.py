@@ -17,9 +17,11 @@ try:
         text=True,
         encoding="utf-8"
     )
-    print("STDOUT:")
-    print(res.stdout)
-    print("STDERR:")
-    print(res.stderr)
+    with open("scratch/kaggle_kernel_logs.txt", "w", encoding="utf-8") as f:
+        f.write("=== STDOUT ===\n")
+        f.write(res.stdout)
+        f.write("\n=== STDERR ===\n")
+        f.write(res.stderr)
+    print("Logs written to scratch/kaggle_kernel_logs.txt successfully.")
 except Exception as e:
     print(f"Error: {e}")

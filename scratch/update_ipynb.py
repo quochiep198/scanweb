@@ -175,7 +175,7 @@ def run_colab_training(use_augmentation: bool = True):
         
         # K. Kết nối MLflow & Huấn luyện
         write_log("Connecting to local MLflow tracking server...", db, history_id)
-        mlflow.set_tracking_uri("file:./mlruns")
+        mlflow.set_tracking_uri("sqlite:///mlflow.db")
         mlflow.set_experiment("Osteoporosis_EfficientNetB3")
         
         with mlflow.start_run() as run:
@@ -605,7 +605,7 @@ def run_colab_training(use_augmentation: bool = True, force_full: bool = True):
         }
         
         write_log("Connecting to local MLflow tracking server...", db, history_id)
-        mlflow.set_tracking_uri("file:./mlruns")
+        mlflow.set_tracking_uri("sqlite:///mlflow.db")
         mlflow.set_experiment("Osteoporosis_EfficientNetB3")
         
         with mlflow.start_run() as run:

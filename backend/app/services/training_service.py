@@ -764,7 +764,7 @@ class TrainingService:
             TrainingService.write_log("Pre-download completed.")
 
             TrainingService.write_log("Connecting to local MLflow tracking server...")
-            mlflow.set_tracking_uri("file:./mlruns")
+            mlflow.set_tracking_uri("sqlite:///mlflow.db")
             mlflow.set_experiment("Osteoporosis_EfficientNetB3")
             
             history = {
