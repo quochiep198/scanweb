@@ -971,7 +971,7 @@ class TrainingService:
                         line = line.replace("userdata.get(", "UserSecretsClient().get_secret(")
                         
                         # Replace the run_colab_training call to pass force_full parameter dynamically
-                        if "run_colab_training(" in line:
+                        if "run_colab_training(" in line and "def " not in line:
                             line = f"run_colab_training(use_augmentation={use_augmentation}, force_full={force_full})\n"
                         
                         new_source.append(line)
