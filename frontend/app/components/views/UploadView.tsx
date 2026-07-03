@@ -1579,7 +1579,13 @@ export default function UploadPage() {
                   </div>
                 )}
 
-                <button type="button" className={styles.trainButton} onClick={handleTrainNow}>
+                <button
+                  type="button"
+                  className={styles.trainButton}
+                  onClick={handleTrainNow}
+                  disabled={true}
+                  style={{ opacity: 0.6, cursor: "not-allowed" }}
+                >
                   <span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>
                     play_circle
                   </span>{" "}
