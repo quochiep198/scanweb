@@ -80,6 +80,12 @@ export default function MeasurementPage(props: MeasurementViewProps) {
               setHeatmapBlobUrl(objectUrl);
             } else if (active) {
               console.error("Failed to fetch heatmap:", response.status);
+              if (!alertedErrorRef.current) {
+                alertedErrorRef.current = true;
+                alert("Bạn không có quyền xem ảnh này");
+              }
+              setShowHeatmap(false);
+              setHeatmapBlobUrl("failed");
             }
           } catch (err) {
             console.error("Error fetching heatmap:", err);
@@ -108,6 +114,11 @@ export default function MeasurementPage(props: MeasurementViewProps) {
               setOriginalBlobUrl(objectUrl);
             } else if (active) {
               console.error("Failed to fetch original image:", response.status);
+              if (!alertedErrorRef.current) {
+                alertedErrorRef.current = true;
+                alert("Bạn không có quyền xem ảnh này");
+              }
+              setOriginalBlobUrl("failed");
             }
           } catch (err) {
             console.error("Error fetching original image:", err);
@@ -125,11 +136,12 @@ export default function MeasurementPage(props: MeasurementViewProps) {
   useEffect(() => {
     if (initialResultData) {
       // Clear any previous blobs
-      if (heatmapBlobUrl) URL.revokeObjectURL(heatmapBlobUrl);
-      if (originalBlobUrl) URL.revokeObjectURL(originalBlobUrl);
+      if (heatmapBlobUrl && heatmapBlobUrl.startsWith("blob:")) URL.revokeObjectURL(heatmapBlobUrl);
+      if (originalBlobUrl && originalBlobUrl.startsWith("blob:")) URL.revokeObjectURL(originalBlobUrl);
       setHeatmapBlobUrl("");
       setOriginalBlobUrl("");
       setSelectedFile(null);
+      alertedErrorRef.current = false;
       
       setResultData(initialResultData);
       setAge(initialResultData.age?.toString() || "");
@@ -149,6 +161,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
   }, [initialResultData]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const alertedErrorRef = useRef<boolean>(false);
 
   const handleOpenPicker = () => {
     fileInputRef.current?.click();
@@ -210,13 +223,14 @@ export default function MeasurementPage(props: MeasurementViewProps) {
     setResultData(null);
     setShowHeatmap(false);
     if (heatmapBlobUrl) {
-      URL.revokeObjectURL(heatmapBlobUrl);
+      if (heatmapBlobUrl.startsWith("blob:")) URL.revokeObjectURL(heatmapBlobUrl);
       setHeatmapBlobUrl("");
     }
     if (originalBlobUrl) {
-      URL.revokeObjectURL(originalBlobUrl);
+      if (originalBlobUrl.startsWith("blob:")) URL.revokeObjectURL(originalBlobUrl);
       setOriginalBlobUrl("");
     }
+    alertedErrorRef.current = false;
     setErrorMsg(null);
     setReviewSuccessMsg(null);
     setReviewErrorMsg(null);
@@ -485,10 +499,20 @@ export default function MeasurementPage(props: MeasurementViewProps) {
               )
             ) : resultData && resultData.measurement_id ? (
               // Historical view
-              showHeatmap && heatmapBlobUrl ? (
+              showHeatmap && heatmapBlobUrl && heatmapBlobUrl !== "failed" ? (
                 <img src={heatmapBlobUrl} alt="AI Grad-CAM Heatmap" className={styles.scanImage} />
-              ) : originalBlobUrl ? (
+              ) : originalBlobUrl && originalBlobUrl !== "failed" ? (
                 <img src={originalBlobUrl} alt="X-Ray Scan Preview" className={styles.scanImage} />
+              ) : originalBlobUrl === "failed" ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#ef4444", width: "100%", minHeight: "300px", padding: "20px", textAlign: "center" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "48px", color: "#ba1a1a", marginBottom: "16px" }}>
+                    error
+                  </span>
+                  <h4>Không có quyền truy cập</h4>
+                  <p style={{ fontSize: "0.85rem", marginTop: "4px", color: "#64748b" }}>
+                    Bạn không có quyền xem ảnh này
+                  </p>
+                </div>
               ) : (
                 // Loading indicator for historical image
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af", width: "100%", minHeight: "300px" }}>
