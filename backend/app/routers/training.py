@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import get_current_privileged_user
 from app.services.training_service import TrainingService
 from app.services.r2_service import R2Service
 from app.services.image_loader_service import ImageLoaderService
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/v1/training", tags=["Training"])
 @router.get("/metadata", status_code=status.HTTP_200_OK)
 def get_training_metadata(
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Retrieve clinical metadata and image paths for training (Section 3.3.1).
@@ -31,7 +31,7 @@ def get_training_metadata(
 @router.get("/test-load-image", status_code=status.HTTP_200_OK)
 def test_load_image(
     image_path: str,
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Test loading an image from R2 and parsing its format (Section 3.3.2).
@@ -64,7 +64,7 @@ def test_load_image(
 @router.get("/test-xray-analysis", status_code=status.HTTP_200_OK)
 def test_xray_analysis(
     image_path: str,
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Download image from R2, decode format, preprocess via TorchXRayVision,
@@ -104,7 +104,7 @@ def test_xray_analysis(
 def test_monai_processing(
     image_path: str,
     use_augmentation: bool = True,
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Download image from R2, decode, and preprocess/augment using MONAI transforms (Section 3.3.4).
@@ -144,7 +144,7 @@ def test_dataloader(
     batch_size: int = 8,
     use_augmentation: bool = True,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Load a single batch from the training dataloader and return the shapes and details of the tensors (Section 3.3.5).
@@ -201,7 +201,7 @@ def train_model(
     kaggle_username: str = None,
     kaggle_key: str = None,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Start the model training pipeline asynchronously in the background (Section 3.3.6 and 3.3.11).
@@ -302,7 +302,7 @@ def get_training_history(
     search_date: str = None, # format: YYYY-MM-DD
     search_trainer: str = None,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Retrieve paginated training run histories with optional date and trainer search (Section 6).
@@ -369,7 +369,8 @@ def get_training_history(
 
 @router.get("/logs", status_code=status.HTTP_200_OK)
 def get_training_logs(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Get the active training logs from the database, falling back to models/training.log.

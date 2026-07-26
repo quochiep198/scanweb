@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import get_current_privileged_user
 from app.models.scan_zone import ScanZone
 from app.models.diagnostic_label import DiagnosticLabel
 from app.schemas.upload import UploadOptionsResponse
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/v1/upload", tags=["Upload"])
 @router.get("/options", response_model=UploadOptionsResponse)
 def get_upload_options(
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """Retrieve Scan Zones and Diagnostic Labels dynamically from database."""
     scan_zones = db.query(ScanZone).all()
@@ -132,7 +132,7 @@ def upload_file(
     label_source: str = Form(None),
     dataset_split: str = Form(None),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_privileged_user)
 ):
     """
     Uploads a file to R2 and registers patient, xray, and osteoporosis label.

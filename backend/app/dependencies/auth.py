@@ -46,3 +46,13 @@ def get_current_user(
         )
 
     return user
+
+def get_current_privileged_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if current_user.role not in ["admin", "doctor"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Quyet truy cap bi tu choi. Yeu cau vai tro Admin hoac Doctor."
+        )
+    return current_user

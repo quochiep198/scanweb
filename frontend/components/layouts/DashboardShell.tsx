@@ -44,6 +44,13 @@ type DashboardShellProps = {
 export function DashboardShell({ children, currentView, onViewChange }: DashboardShellProps) {
   const { logout, user } = useAuth();
 
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.view === "upload") {
+      return user && (user.role === "admin" || user.role === "doctor");
+    }
+    return true;
+  });
+
   return (
     <div className={`${styles.shell} dashboard-shell-root`}>
       <header className={styles.topbar}>
@@ -83,7 +90,7 @@ export function DashboardShell({ children, currentView, onViewChange }: Dashboar
           </div>
 
           <nav className={styles.nav}>
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const isActive = currentView === item.view;
               const className = isActive
                 ? `${styles.navLink} ${styles.navLinkActive}`

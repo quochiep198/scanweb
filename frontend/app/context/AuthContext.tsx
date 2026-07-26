@@ -9,6 +9,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  role: string;
 }
 
 interface AuthContextType {
@@ -41,6 +42,7 @@ async function fetchCurrentUser(): Promise<User | null> {
     id: userData.id,
     email: userData.email,
     name: userData.name,
+    role: userData.role || "user",
   };
 }
 
