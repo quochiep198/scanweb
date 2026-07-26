@@ -77,6 +77,7 @@ class UserResponse(BaseModel):
     email: str
     name: str
     is_verified: bool
+    role: str
 
     class Config:
         from_attributes = True

@@ -15,6 +15,7 @@ class User(Base):
     is_locked = Column(Boolean, default=False)
     locked_until = Column(DateTime(timezone=True), nullable=True)
     failed_login_attempts = Column(Integer, default=0)
+    role = Column(String(50), nullable=False, server_default="user")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

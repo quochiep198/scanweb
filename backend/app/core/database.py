@@ -27,6 +27,7 @@ def check_and_update_schema():
                 'is_locked': 'BOOLEAN NOT NULL DEFAULT FALSE' if engine.dialect.name != 'sqlite' else 'BOOLEAN NOT NULL DEFAULT 0',
                 'locked_until': 'TIMESTAMP WITH TIME ZONE NULL' if engine.dialect.name != 'sqlite' else 'DATETIME NULL',
                 'failed_login_attempts': 'INTEGER NOT NULL DEFAULT 0',
+                'role': "VARCHAR(50) NOT NULL DEFAULT 'user'",
                 'created_at': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP' if engine.dialect.name != 'sqlite' else 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
                 'updated_at': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP' if engine.dialect.name != 'sqlite' else 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP'
             }

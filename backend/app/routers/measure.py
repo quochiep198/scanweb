@@ -204,6 +204,14 @@ def get_measurement_heatmap(
             detail="Không tìm thấy kết quả phân tích"
         )
         
+    # Check access permission (Prevent IDOR)
+    is_privileged = getattr(current_user, 'role', 'user') in ['admin', 'doctor']
+    if not is_privileged and db_result.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem ảnh của bản ghi này"
+        )
+        
     if not db_result.image_heatmap_r2_key:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -238,6 +246,14 @@ def get_measurement_image(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy kết quả phân tích"
+        )
+        
+    # Check access permission (Prevent IDOR)
+    is_privileged = getattr(current_user, 'role', 'user') in ['admin', 'doctor']
+    if not is_privileged and db_result.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem ảnh của bản ghi này"
         )
         
     if not db_result.image_r2_key:
