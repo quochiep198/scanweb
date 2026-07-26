@@ -916,7 +916,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
 
       {/* Loading overlay modal during analysis */}
       {isAnalyzing && (
-        <div className={loadingStyles.overlay}>
+        <div className={loadingStyles.overlay} style={{ backgroundColor: "rgba(255, 255, 255, 0.4)", backdropFilter: "blur(2px)" }}>
           <div className={loadingStyles.modal}>
             <div className={loadingStyles.spinner} />
             <p className={loadingStyles.text}>{m.view.analyzingTitle}</p>
