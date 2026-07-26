@@ -46,7 +46,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
   const [age, setAge] = useState<string>("");
   const [sex, setSex] = useState<string>("F");
   const [bmi, setBmi] = useState<string>("");
-  
+
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [resultData, setResultData] = useState<any>(null);
@@ -82,7 +82,6 @@ export default function MeasurementPage(props: MeasurementViewProps) {
               console.error("Failed to fetch heatmap:", response.status);
               if (!alertedErrorRef.current) {
                 alertedErrorRef.current = true;
-                alert("Bạn không có quyền xem ảnh này");
               }
               setShowHeatmap(false);
               setHeatmapBlobUrl("failed");
@@ -116,7 +115,6 @@ export default function MeasurementPage(props: MeasurementViewProps) {
               console.error("Failed to fetch original image:", response.status);
               if (!alertedErrorRef.current) {
                 alertedErrorRef.current = true;
-                alert("Bạn không có quyền xem ảnh này");
               }
               setOriginalBlobUrl("failed");
             }
@@ -142,18 +140,18 @@ export default function MeasurementPage(props: MeasurementViewProps) {
       setOriginalBlobUrl("");
       setSelectedFile(null);
       alertedErrorRef.current = false;
-      
+
       setResultData(initialResultData);
       setAge(initialResultData.age?.toString() || "");
       setSex(initialResultData.sex || "F");
       setBmi(initialResultData.bmi?.toString() || "");
-      
+
       setReviewStatus(initialResultData.review_status || "confirmed_correct");
       setDoctorConfirmedLabel(initialResultData.doctor_confirmed_label || initialResultData.predicted_label);
       setErrorType(initialResultData.error_type || "none");
       setApprovedForNextTraining(initialResultData.approved_for_next_training || false);
       setReviewNote(initialResultData.review_note || "");
-      
+
       setReviewSuccessMsg(null);
       setReviewErrorMsg(null);
       setShowHeatmap(false);
@@ -196,7 +194,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
-    
+
     setSelectedFile(file);
     setErrorMsg(null);
     setResultData(null);
@@ -207,7 +205,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
     }
     setReviewSuccessMsg(null);
     setReviewErrorMsg(null);
-    
+
     // Create new object URL for preview
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
@@ -380,16 +378,16 @@ export default function MeasurementPage(props: MeasurementViewProps) {
         <div>
           <h1 className={styles.pageTitle}>{m.view.title}</h1>
           <p className={styles.patientInfo}>
-            {selectedFile 
+            {selectedFile
               ? m.view.fileLabel(selectedFile.name, (selectedFile.size / (1024 * 1024)).toFixed(2))
               : m.view.filePrompt
             }
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button 
-            className={styles.btnPrimary} 
-            onClick={handleAnalyze} 
+          <button
+            className={styles.btnPrimary}
+            onClick={handleAnalyze}
             disabled={isAnalyzing || !selectedFile}
           >
             <span className="material-symbols-outlined">
@@ -464,16 +462,15 @@ export default function MeasurementPage(props: MeasurementViewProps) {
             className={styles.uploadInput}
             onChange={handleFileChange}
           />
-          
+
           {/* Scan Preview & Upload Area (Combined) */}
           <div
-            className={`${styles.scanPreview} ${
-              !selectedFile && !resultData
-                ? isDragActive
-                  ? styles.scanPreviewActive
-                  : styles.scanPreviewEmpty
-                : ""
-            }`}
+            className={`${styles.scanPreview} ${!selectedFile && !resultData
+              ? isDragActive
+                ? styles.scanPreviewActive
+                : styles.scanPreviewEmpty
+              : ""
+              }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -538,7 +535,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                 <div className={styles.overlayTop} style={{ justifyContent: "flex-end", width: "100%" }}>
                   <div className={styles.overlayControls} style={{ pointerEvents: "auto" }}>
                     {resultData && (resultData.heatmap_url || resultData.image_heatmap_r2_key) && (
-                      <button 
+                      <button
                         className={`${styles.controlBtn} ${showHeatmap ? styles.controlBtnActive : ""}`}
                         onClick={() => setShowHeatmap(!showHeatmap)}
                         style={{
@@ -562,8 +559,8 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                         </button>
                       </>
                     )}
-                    <button 
-                      className={styles.controlBtn} 
+                    <button
+                      className={styles.controlBtn}
                       onClick={handleRemoveFile}
                       style={{ backgroundColor: "rgba(186, 26, 26, 0.2)", borderColor: "rgba(186, 26, 26, 0.4)" }}
                       title={m.view.deleteTitle}
@@ -603,36 +600,36 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                 <div className={styles.scoresGrid}>
                   <div className={styles.scoreBox}>
                     <div className={styles.scoreLabel}>{m.view.predictedTScoreLabel}</div>
-                    <div 
-                      className={resultData.predicted_t_score <= -2.5 ? styles.scoreValueRed : styles.scoreValue} 
+                    <div
+                      className={resultData.predicted_t_score <= -2.5 ? styles.scoreValueRed : styles.scoreValue}
                       style={{ color: resultData.predicted_t_score <= -2.5 ? "#ba1a1a" : "#155dca" }}
                     >
-                      {resultData.predicted_t_score !== undefined && resultData.predicted_t_score !== null 
-                        ? resultData.predicted_t_score.toFixed(2) 
+                      {resultData.predicted_t_score !== undefined && resultData.predicted_t_score !== null
+                        ? resultData.predicted_t_score.toFixed(2)
                         : "N/A"}
                     </div>
                     <div className={resultData.predicted_t_score <= -2.5 ? styles.scoreStatusRed : styles.scoreStatus}>
-                      {resultData.predicted_t_score <= -2.5 
+                      {resultData.predicted_t_score <= -2.5
                         ? m.view.riskHigh
-                        : resultData.predicted_t_score <= -1.0 
+                        : resultData.predicted_t_score <= -1.0
                           ? m.view.riskMedium
                           : m.view.riskLow}
                     </div>
                   </div>
                   <div className={styles.scoreBox}>
                     <div className={styles.scoreLabel}>{m.view.predictedAiLabel}</div>
-                    <div 
-                      className={resultData.predicted_label === "osteoporosis" ? styles.scoreValueRed : styles.scoreValue} 
-                      style={{ 
-                        color: resultData.predicted_label === "osteoporosis" 
-                          ? "#ba1a1a" 
-                          : (resultData.predicted_label === "osteopenia" ? "#eab308" : "#22c55e") 
+                    <div
+                      className={resultData.predicted_label === "osteoporosis" ? styles.scoreValueRed : styles.scoreValue}
+                      style={{
+                        color: resultData.predicted_label === "osteoporosis"
+                          ? "#ba1a1a"
+                          : (resultData.predicted_label === "osteopenia" ? "#eab308" : "#22c55e")
                       }}
                     >
-                      {resultData.predicted_label === "osteoporosis" 
-                        ? m.view.predictedLabelOsteoporosis 
-                        : resultData.predicted_label === "osteopenia" 
-                          ? m.view.predictedLabelOsteopenia 
+                      {resultData.predicted_label === "osteoporosis"
+                        ? m.view.predictedLabelOsteoporosis
+                        : resultData.predicted_label === "osteopenia"
+                          ? m.view.predictedLabelOsteopenia
                           : m.view.predictedLabelNormal}
                     </div>
                     <div className={styles.scoreStatus}>
@@ -641,29 +638,29 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                   </div>
                 </div>
                 {resultData.predicted_t_score !== undefined && resultData.predicted_t_score !== null &&
-                 resultData.predicted_t_score > -2.5 && resultData.predicted_t_score <= -2.0 && (
-                  <div style={{
-                    marginTop: "16px",
-                    padding: "12px 16px",
-                    backgroundColor: "#fffbeb",
-                    border: "1px solid #fef3c7",
-                    borderRadius: "8px",
-                    color: "#b45309",
-                    fontSize: "13px",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "10px",
-                    lineHeight: "1.5"
-                  }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#d97706", flexShrink: 0, marginTop: "2px" }}>
-                      warning
-                    </span>
-                    <div>
-                      <strong style={{ display: "block", marginBottom: "4px" }}>{m.view.borderWarningTitle}</strong>
-                      {m.view.borderWarningText(Number(resultData.predicted_t_score.toFixed(2)))}
+                  resultData.predicted_t_score > -2.5 && resultData.predicted_t_score <= -2.0 && (
+                    <div style={{
+                      marginTop: "16px",
+                      padding: "12px 16px",
+                      backgroundColor: "#fffbeb",
+                      border: "1px solid #fef3c7",
+                      borderRadius: "8px",
+                      color: "#b45309",
+                      fontSize: "13px",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "10px",
+                      lineHeight: "1.5"
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#d97706", flexShrink: 0, marginTop: "2px" }}>
+                        warning
+                      </span>
+                      <div>
+                        <strong style={{ display: "block", marginBottom: "4px" }}>{m.view.borderWarningTitle}</strong>
+                        {m.view.borderWarningText(Number(resultData.predicted_t_score.toFixed(2)))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </>
             )}
 
@@ -701,7 +698,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                 <div>
                   <div className={styles.trendValue}>{confidenceText}</div>
                   <div className={styles.trendDesc}>
-                    {resultData 
+                    {resultData
                       ? m.view.confidenceDescActive(resultData.model_name)
                       : m.view.confidenceDescDefault
                     }
@@ -786,7 +783,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                 <span className="material-symbols-outlined">rate_review</span>
                 {m.view.reviewTitle}
               </h3>
-              
+
               <div className={styles.reviewForm}>
                 {/* Review status */}
                 <div className={styles.field}>
