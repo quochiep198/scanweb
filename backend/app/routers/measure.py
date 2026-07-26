@@ -195,8 +195,7 @@ def get_measurement_heatmap(
     Downloads the heatmap PNG bytes from Cloudflare R2 and serves it directly as an image response.
     """
     db_result = db.query(MeasurementResult).filter(
-        MeasurementResult.measurement_id == measurement_id,
-        MeasurementResult.user_id == current_user.id
+        MeasurementResult.measurement_id == measurement_id
     ).first()
     
     if not db_result:
@@ -232,8 +231,7 @@ def get_measurement_image(
     Downloads the original scan image bytes from Cloudflare R2 and serves it directly.
     """
     db_result = db.query(MeasurementResult).filter(
-        MeasurementResult.measurement_id == measurement_id,
-        MeasurementResult.user_id == current_user.id
+        MeasurementResult.measurement_id == measurement_id
     ).first()
     
     if not db_result:
