@@ -143,6 +143,8 @@ export const messages = {
       filePrompt: "Vui lòng chọn hoặc kéo thả ảnh X-ray/DICOM y tế để chẩn đoán",
       btnAnalyzing: "Đang Phân Tích...",
       btnAnalyze: "Chạy Phân Tích",
+      analyzingTitle: "Hình ảnh đang được phân tích",
+      analyzingSub: "Vui lòng chờ đợi trong giây lát.",
       btnExportPdf: "Xuất PDF",
       ageLabel: "Tuổi bệnh nhân *",
       agePlaceholder: "VD: 65",

@@ -3,6 +3,7 @@
 import { useState, useRef, ChangeEvent, DragEvent, useEffect } from "react";
 import { getApiUrl } from "@/app/lib/api";
 import styles from "../../measurement/measurement.module.css";
+import loadingStyles from "../loading.module.css";
 import PrintableReport from "./PrintableReport";
 import ClassificationGauge from "./ClassificationGauge";
 import { messages } from "@/app/messages";
@@ -912,6 +913,17 @@ export default function MeasurementPage(props: MeasurementViewProps) {
         selectedFile={selectedFile}
         resultData={resultData}
       />
+
+      {/* Loading overlay modal during analysis */}
+      {isAnalyzing && (
+        <div className={loadingStyles.overlay}>
+          <div className={loadingStyles.modal}>
+            <div className={loadingStyles.spinner} />
+            <p className={loadingStyles.text}>{m.view.analyzingTitle}</p>
+            <p className={loadingStyles.subtext}>{m.view.analyzingSub}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
