@@ -81,10 +81,10 @@ class OsteoporosisDataset(Dataset):
             # 3. Decode image bytes to NumPy array
             np_arr = ImageLoaderService.load_image_to_numpy(image_bytes, filename)
             
-            # 4. TorchXRayVision preprocessing (normalization, center crop, resize to 224x224)
-            xray_arr = XRayAnalyzerService.preprocess_xray(np_arr)
+            # 4. TorchXRayVision preprocessing (normalization, center crop, resize to 300x300)
+            xray_arr = XRayAnalyzerService.preprocess_xray(np_arr, target_size=300)
             
-            # 5. MONAI processing/augmentation (resize to 300x300, intensity normalization, random transforms)
+            # 5. MONAI processing/augmentation (random transforms, convert to Tensor)
             image_tensor = MonaiProcessingService.process_image(xray_arr, self.use_augmentation)
             
             # 6. Extract clinical features (Age, Sex, BMI)

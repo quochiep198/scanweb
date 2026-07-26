@@ -147,10 +147,10 @@ class MeasureService:
             # A. Convert bytes to NumPy array
             np_arr = ImageLoaderService.load_image_to_numpy(file_content, filename)
             
-            # B. TorchXRayVision preprocessing (grayscale, norm, center crop, resize to 224x224)
-            xray_arr = XRayAnalyzerService.preprocess_xray(np_arr)
+            # B. TorchXRayVision preprocessing (grayscale, norm, center crop, resize to 300x300)
+            xray_arr = XRayAnalyzerService.preprocess_xray(np_arr, target_size=300)
             
-            # C. MONAI preprocessing without random augmentations (resize to 300x300, intensity normalisation, convert to Tensor)
+            # C. MONAI preprocessing without random augmentations (convert to Tensor)
             image_tensor = MonaiProcessingService.process_image(xray_arr, use_augmentation=False)
             
             # Add batch dimension: (1, 1, 300, 300)

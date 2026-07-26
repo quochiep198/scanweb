@@ -21,13 +21,13 @@ def get_densenet_model():
 
 class XRayAnalyzerService:
     @staticmethod
-    def preprocess_xray(img_array: np.ndarray) -> np.ndarray:
+    def preprocess_xray(img_array: np.ndarray, target_size: int = 224) -> np.ndarray:
         """
         Preprocesses a NumPy image array using TorchXRayVision standards.
         - Converts to grayscale if color.
         - Normalizes pixel values to [-1024, 1024].
-        - Center crops and resizes to 224x224 using TorchXRayVision resizer.
-        Returns a preprocessed NumPy array of shape (1, 224, 224).
+        - Center crops and resizes to target_size using TorchXRayVision resizer.
+        Returns a preprocessed NumPy array of shape (1, target_size, target_size).
         """
         try:
             # 1. Convert to grayscale if it has multiple channels
@@ -57,10 +57,10 @@ class XRayAnalyzerService:
             # Add channel dimension: expects (1, H, W)
             normalized_img = normalized_img[None, :, :]
             
-            # 3. Apply TorchXRayVision center crop and resizer (224x224)
+            # 3. Apply TorchXRayVision center crop and resizer
             transform = transforms.Compose([
                 xrv.datasets.XRayCenterCrop(),
-                xrv.datasets.XRayResizer(224)
+                xrv.datasets.XRayResizer(target_size)
             ])
             
             processed_img = transform(normalized_img)

@@ -22,9 +22,6 @@ class MonaiProcessingService:
         """
         if use_augmentation:
             return Compose([
-                # Resize to 300x300 for EfficientNet-B3
-                Resize(spatial_size=(300, 300)),
-                NormalizeIntensity(),
                 RandRotate(range_x=0.1, prob=0.5),
                 RandZoom(min_zoom=0.9, max_zoom=1.1, prob=0.5),
                 RandGaussianNoise(prob=0.3, mean=0.0, std=0.1),
@@ -33,8 +30,6 @@ class MonaiProcessingService:
         else:
             # Baseline preprocessing without random augmentations (e.g. for validation/testing)
             return Compose([
-                Resize(spatial_size=(300, 300)),
-                NormalizeIntensity(),
                 ToTensor()
             ])
 

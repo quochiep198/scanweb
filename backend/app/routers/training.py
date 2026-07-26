@@ -120,7 +120,8 @@ def test_monai_processing(
         np_arr = ImageLoaderService.load_image_to_numpy(image_bytes, filename)
         
         # 4. Preprocess and augment using MONAI
-        tensor = MonaiProcessingService.process_image(np_arr, use_augmentation)
+        processed_arr = XRayAnalyzerService.preprocess_xray(np_arr, target_size=300)
+        tensor = MonaiProcessingService.process_image(processed_arr, use_augmentation)
         
         return {
             "status": "success",
