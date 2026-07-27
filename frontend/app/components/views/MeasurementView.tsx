@@ -65,6 +65,48 @@ export default function MeasurementPage(props: MeasurementViewProps) {
   const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
   const [heatmapBlobUrl, setHeatmapBlobUrl] = useState<string>("");
   const [originalBlobUrl, setOriginalBlobUrl] = useState<string>("");
+  const [isZoomed, setIsZoomed] = useState<boolean>(false);
+  const [showGrid, setShowGrid] = useState<boolean>(false);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasDraggedRef = useRef<boolean>(false);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isZoomed) return;
+    setIsDragging(true);
+    hasDraggedRef.current = false;
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !isZoomed) return;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      hasDraggedRef.current = true;
+    }
+    setPanOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleImageClick = () => {
+    if (hasDraggedRef.current) return;
+    if (isZoomed) {
+      setIsZoomed(false);
+      setPanOffset({ x: 0, y: 0 });
+    } else {
+      setIsZoomed(true);
+    }
+  };
 
   // Fetch heatmap blob from backend securely when enabled
   useEffect(() => {
@@ -475,10 +517,24 @@ export default function MeasurementPage(props: MeasurementViewProps) {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
           >
             {selectedFile ? (
               showHeatmap && resultData && heatmapBlobUrl ? (
-                <img src={heatmapBlobUrl} alt="AI Grad-CAM Heatmap" className={styles.scanImage} />
+                <img 
+                  src={heatmapBlobUrl} 
+                  alt="AI Grad-CAM Heatmap" 
+                  className={styles.scanImage} 
+                  style={{
+                    transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${isZoomed ? 1.8 : 1})`,
+                    transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                    cursor: isZoomed ? (isDragging ? "grabbing" : "grab") : "zoom-in",
+                  }}
+                  onClick={handleImageClick}
+                />
               ) : (
                 // Check if file is dicom. Dicom files are rendered as placeholder image because browser cannot directly display raw dicom data
                 selectedFile.name.toLowerCase().endsWith(".dcm") ? (
@@ -492,15 +548,45 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                     </p>
                   </div>
                 ) : (
-                  <img src={previewUrl} alt="X-Ray Scan Preview" className={styles.scanImage} />
+                  <img 
+                    src={previewUrl} 
+                    alt="X-Ray Scan Preview" 
+                    className={styles.scanImage} 
+                    style={{
+                      transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${isZoomed ? 1.8 : 1})`,
+                      transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                      cursor: isZoomed ? (isDragging ? "grabbing" : "grab") : "zoom-in",
+                    }}
+                    onClick={handleImageClick}
+                  />
                 )
               )
             ) : resultData && resultData.measurement_id ? (
               // Historical view
               showHeatmap && heatmapBlobUrl && heatmapBlobUrl !== "failed" ? (
-                <img src={heatmapBlobUrl} alt="AI Grad-CAM Heatmap" className={styles.scanImage} />
+                <img 
+                  src={heatmapBlobUrl} 
+                  alt="AI Grad-CAM Heatmap" 
+                  className={styles.scanImage} 
+                  style={{
+                    transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${isZoomed ? 1.8 : 1})`,
+                    transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                    cursor: isZoomed ? (isDragging ? "grabbing" : "grab") : "zoom-in",
+                  }}
+                  onClick={handleImageClick}
+                />
               ) : originalBlobUrl && originalBlobUrl !== "failed" ? (
-                <img src={originalBlobUrl} alt="X-Ray Scan Preview" className={styles.scanImage} />
+                <img 
+                  src={originalBlobUrl} 
+                  alt="X-Ray Scan Preview" 
+                  className={styles.scanImage} 
+                  style={{
+                    transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${isZoomed ? 1.8 : 1})`,
+                    transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                    cursor: isZoomed ? (isDragging ? "grabbing" : "grab") : "zoom-in",
+                  }}
+                  onClick={handleImageClick}
+                />
               ) : originalBlobUrl === "failed" ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#ef4444", width: "100%", minHeight: "300px", padding: "20px", textAlign: "center" }}>
                   <span className="material-symbols-outlined" style={{ fontSize: "48px", color: "#ba1a1a", marginBottom: "16px" }}>
@@ -530,6 +616,26 @@ export default function MeasurementPage(props: MeasurementViewProps) {
               </div>
             )}
 
+            {/* Diagnostic Grid overlay */}
+            {showGrid && (selectedFile || (resultData && resultData.measurement_id)) && (
+              <div 
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  pointerEvents: "none",
+                  backgroundImage: `
+                    linear-gradient(to right, rgba(21, 93, 202, 0.12) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(21, 93, 202, 0.12) 1px, transparent 1px)
+                  `,
+                  backgroundSize: "30px 30px",
+                  zIndex: 5,
+                }}
+              />
+            )}
+
             {/* Clear button and overlay controls when file is selected OR when viewing historical results */}
             {(selectedFile || (resultData && resultData.measurement_id)) && (
               <div className={styles.aiOverlays} style={{ pointerEvents: "none" }}>
@@ -552,11 +658,36 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                     )}
                     {resultData && (
                       <>
-                        <button className={styles.controlBtn}>
-                          <span className="material-symbols-outlined">zoom_in</span>
+                        <button 
+                          className={`${styles.controlBtn} ${isZoomed ? styles.controlBtnActive : ""}`}
+                          onClick={() => {
+                            setIsZoomed(!isZoomed);
+                            if (isZoomed) {
+                              setPanOffset({ x: 0, y: 0 });
+                            }
+                          }}
+                          style={{
+                            backgroundColor: isZoomed ? "rgba(21, 93, 202, 0.2)" : "rgba(255, 255, 255, 0.15)",
+                            borderColor: isZoomed ? "#155dca" : "rgba(255, 255, 255, 0.3)",
+                          }}
+                          title={isZoomed ? "Thu nhỏ" : "Phóng to"}
+                        >
+                          <span className="material-symbols-outlined" style={{ color: isZoomed ? "#155dca" : "#e2e8f0" }}>
+                            {isZoomed ? "zoom_out" : "zoom_in"}
+                          </span>
                         </button>
-                        <button className={styles.controlBtn}>
-                          <span className="material-symbols-outlined">grid_on</span>
+                        <button 
+                          className={`${styles.controlBtn} ${showGrid ? styles.controlBtnActive : ""}`}
+                          onClick={() => setShowGrid(!showGrid)}
+                          style={{
+                            backgroundColor: showGrid ? "rgba(21, 93, 202, 0.2)" : "rgba(255, 255, 255, 0.15)",
+                            borderColor: showGrid ? "#155dca" : "rgba(255, 255, 255, 0.3)",
+                          }}
+                          title={showGrid ? "Ẩn lưới ô" : "Hiển thị lưới ô"}
+                        >
+                          <span className="material-symbols-outlined" style={{ color: showGrid ? "#155dca" : "#e2e8f0" }}>
+                            {showGrid ? "grid_off" : "grid_on"}
+                          </span>
                         </button>
                       </>
                     )}
