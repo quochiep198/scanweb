@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.config import settings
-from app.models.efficientnet_model import OsteoporosisEfficientNetB3
+from app.models.densenet_model import OsteoporosisDenseNet121
 from app.models.measurement_result import MeasurementResult
 from app.services.r2_service import R2Service
 from app.services.image_loader_service import ImageLoaderService
@@ -31,7 +31,7 @@ class MeasureService:
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     @staticmethod
-    def load_model() -> OsteoporosisEfficientNetB3:
+    def load_model() -> OsteoporosisDenseNet121:
         """
         Loads the model based on settings.ACTIVE_MODEL_VERSION.
         First checks local folder, then downloads from R2.
@@ -105,7 +105,7 @@ class MeasureService:
         # 2. Instantiate model and load weights
         try:
             logger.info(f"Loading weights from {local_path} to device {device}...")
-            model = OsteoporosisEfficientNetB3(num_classes=3, pretrained=False)
+            model = OsteoporosisDenseNet121(num_classes=3, pretrained=False)
             model.load_state_dict(torch.load(local_path, map_location=device))
             model.to(device)
             model.eval()

@@ -227,7 +227,7 @@ export default function UploadPage() {
   const csvInputRef = useRef<HTMLInputElement | null>(null);
   const [augmentation, setAugmentation] = useState(false);
   const [crossValidation, setCrossValidation] = useState(true);
-  const [selectedModel, setSelectedModel] = useState("EfficientNet-B3");
+  const [selectedModel, setSelectedModel] = useState("DenseNet-121");
 
   // Kaggle training state variables
   const [trainingEnvironment, setTrainingEnvironment] = useState<"local" | "kaggle">("local");
@@ -1620,7 +1620,7 @@ export default function UploadPage() {
                     onChange={(event) => setSelectedModel(event.target.value)}
                     disabled
                   >
-                    <option value="EfficientNet-B3">EfficientNet-B3 (Osteoporosis classification)</option>
+                    <option value="DenseNet-121">DenseNet-121 (Osteoporosis classification)</option>
                   </select>
                 </div>
 

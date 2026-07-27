@@ -389,7 +389,7 @@ export const messages = {
       uploadSuccess: "Đã đăng ký dữ liệu thành công",
       loginRequired: "Bạn cần đăng nhập để thực hiện huấn luyện.",
       connectFailed: "Không thể kết nối đến server để bắt đầu huấn luyện.",
-      trainSuccess: "Bắt đầu huấn luyện mô hình EfficientNet-B3 thành công trong nền!",
+      trainSuccess: "Bắt đầu huấn luyện mô hình DenseNet-121 thành công trong nền!",
     },
     view: {
       title: "Quản lý tải lên & Huấn luyện AI",
