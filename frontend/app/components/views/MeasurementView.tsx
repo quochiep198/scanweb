@@ -100,13 +100,14 @@ export default function MeasurementPage(props: MeasurementViewProps) {
 
   const handleImageClick = () => {
     if (hasDraggedRef.current) return;
-    if (isZoomed) {
-      setIsZoomed(false);
-      setPanOffset({ x: 0, y: 0 });
-    } else {
-      setIsZoomed(true);
-    }
+    setIsZoomed(!isZoomed);
   };
+
+  useEffect(() => {
+    if (!isZoomed) {
+      setPanOffset({ x: 0, y: 0 });
+    }
+  }, [isZoomed]);
 
   // Fetch heatmap blob from backend securely when enabled
   useEffect(() => {
@@ -528,6 +529,8 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                   src={heatmapBlobUrl} 
                   alt="AI Grad-CAM Heatmap" 
                   className={styles.scanImage} 
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
                   style={{
                     transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${isZoomed ? 1.8 : 1})`,
                     transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -552,6 +555,8 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                     src={previewUrl} 
                     alt="X-Ray Scan Preview" 
                     className={styles.scanImage} 
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
                     style={{
                       transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${isZoomed ? 1.8 : 1})`,
                       transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -568,6 +573,8 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                   src={heatmapBlobUrl} 
                   alt="AI Grad-CAM Heatmap" 
                   className={styles.scanImage} 
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
                   style={{
                     transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${isZoomed ? 1.8 : 1})`,
                     transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -580,6 +587,8 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                   src={originalBlobUrl} 
                   alt="X-Ray Scan Preview" 
                   className={styles.scanImage} 
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
                   style={{
                     transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${isZoomed ? 1.8 : 1})`,
                     transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -660,12 +669,7 @@ export default function MeasurementPage(props: MeasurementViewProps) {
                       <>
                         <button 
                           className={`${styles.controlBtn} ${isZoomed ? styles.controlBtnActive : ""}`}
-                          onClick={() => {
-                            setIsZoomed(!isZoomed);
-                            if (isZoomed) {
-                              setPanOffset({ x: 0, y: 0 });
-                            }
-                          }}
+                          onClick={() => setIsZoomed(!isZoomed)}
                           style={{
                             backgroundColor: isZoomed ? "rgba(21, 93, 202, 0.2)" : "rgba(255, 255, 255, 0.15)",
                             borderColor: isZoomed ? "#155dca" : "rgba(255, 255, 255, 0.3)",
