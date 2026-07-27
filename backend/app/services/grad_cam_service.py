@@ -35,8 +35,14 @@ class GradCamService:
                 nonlocal gradients
                 gradients = grad_output[0]
                 
-            # Find the last convolutional layer block in EfficientNet backbone
-            target_layer = model.backbone.features[-1]
+            # Find the target convolutional layer block depending on backbone type
+            backbone_name = model.backbone.__class__.__name__.lower()
+            if "densenet" in backbone_name:
+                # For DenseNet, features[-1] is norm5 (BatchNorm2d) which is followed by inplace ReLU,
+                # causing inplace backward hook errors. We hook features[-2] (denseblock4) instead.
+                target_layer = model.backbone.features[-2]
+            else:
+                target_layer = model.backbone.features[-1]
             
             forward_hook = target_layer.register_forward_hook(save_activation)
             if hasattr(target_layer, 'register_full_backward_hook'):
