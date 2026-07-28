@@ -122,9 +122,9 @@ class AuthService:
         db.commit()
 
     @staticmethod
-    def create_tokens(user: User) -> tuple[str, str]:
+    def create_tokens(user: User, remember: bool = False) -> tuple[str, str]:
         access_token = create_access_token(user.id, user.email)
-        refresh_token = create_refresh_token(user.id)
+        refresh_token = create_refresh_token(user.id, remember)
         return access_token, refresh_token
 
     @staticmethod

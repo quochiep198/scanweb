@@ -79,7 +79,7 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
             detail=error,
         )
 
-    access_token, refresh_token = AuthService.create_tokens(user)
+    access_token, refresh_token = AuthService.create_tokens(user, remember=request.remember)
     AuthService.create_refresh_token_record(db, user.id, refresh_token)
     set_auth_cookies(response, access_token, refresh_token, remember=request.remember)
 
@@ -125,9 +125,9 @@ def google_login(request: GoogleLoginRequest, response: Response, db: Session = 
             detail=error,
         )
 
-    access_token, refresh_token = AuthService.create_tokens(user)
+    access_token, refresh_token = AuthService.create_tokens(user, remember=True)
     AuthService.create_refresh_token_record(db, user.id, refresh_token)
-    set_auth_cookies(response, access_token, refresh_token)
+    set_auth_cookies(response, access_token, refresh_token, remember=True)
 
     logger.info("User logged in via Google: %s", email)
 
@@ -164,9 +164,12 @@ def refresh_token(response: Response, req: Request, db: Session = Depends(get_db
 
     AuthService.revoke_refresh_token(db, refresh_token)
 
-    access_token, new_refresh_token = AuthService.create_tokens(user)
+    payload = decode_token(refresh_token)
+    remember = payload.get("remember", False) if payload else False
+
+    access_token, new_refresh_token = AuthService.create_tokens(user, remember=remember)
     AuthService.create_refresh_token_record(db, user.id, new_refresh_token)
-    set_auth_cookies(response, access_token, new_refresh_token)
+    set_auth_cookies(response, access_token, new_refresh_token, remember=remember)
 
     return MessageResponse(message="Lam moi phien thanh cong", user_id=user.id)
 

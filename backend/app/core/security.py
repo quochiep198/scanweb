@@ -31,12 +31,13 @@ def create_access_token(user_id: str, email: str) -> str:
     }
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-def create_refresh_token(user_id: str) -> str:
+def create_refresh_token(user_id: str, remember: bool = False) -> str:
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {
         "sub": user_id,
         "type": "refresh",
-        "exp": expire
+        "exp": expire,
+        "remember": remember
     }
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
