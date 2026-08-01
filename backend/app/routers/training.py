@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks, Response
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.dependencies.auth import get_current_privileged_user
@@ -369,12 +369,17 @@ def get_training_history(
 
 @router.get("/logs", status_code=status.HTTP_200_OK)
 def get_training_logs(
+    response: Response,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_privileged_user)
 ):
     """
     Get the active training logs from the database, falling back to models/training.log.
     """
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, private"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
     # 1. Fetch the active running run first (to avoid being shadowed by future-timestamped completed runs)
     latest_run = db.query(TrainingHistory).filter(TrainingHistory.status == "running").first()
     if not latest_run:

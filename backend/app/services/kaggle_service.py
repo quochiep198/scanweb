@@ -89,6 +89,14 @@ class KaggleService:
             old_write_log(message, db, history_id, mode)
         KaggleService.write_log = temp_write_log
 
+        # Clear all previous training logs to keep only the newest run's logs
+        try:
+            from app.models.training_log import TrainingLog
+            db.query(TrainingLog).delete()
+            db.commit()
+        except Exception as delete_err:
+            logger.error(f"Failed to clear old training logs: {delete_err}")
+
         try:
             KaggleService.write_log("Bắt đầu chuẩn bị cấu hình huấn luyện qua Kaggle GPU Cloud...", "w")
             
