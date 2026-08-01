@@ -82,13 +82,8 @@ class KaggleService:
         
         # Monkey-patch write_log to write to both DB and local file
         old_write_log = KaggleService.write_log
-        def temp_write_log(message: str, db_or_mode = None, run_id_param = None, mode: str = "a"):
-            actual_mode = "a"
-            if isinstance(db_or_mode, str):
-                actual_mode = db_or_mode
-            elif isinstance(mode, str):
-                actual_mode = mode
-            old_write_log(message, db, history_id, actual_mode)
+        def temp_write_log(message: str, mode: str = "a"):
+            old_write_log(message, db, history_id, mode)
         KaggleService.write_log = temp_write_log
 
         try:
@@ -113,11 +108,17 @@ class KaggleService:
             learning_rate = 1e-4 * (batch_size / 16.0)
             learning_rate = max(1e-5, min(learning_rate, 3e-4))
 
-            # Step 2: Read notebook template
+            # Step 2: Read notebook template (with fallbacks for Docker container)
             current_file_dir = os.path.dirname(os.path.abspath(__file__))
-            notebook_template_path = os.path.abspath(
-                os.path.join(current_file_dir, "..", "..", "..", "scriptTranining", "traning-osteo.ipynb")
-            )
+            
+            # Path 1: Inside services directory (production container)
+            notebook_template_path = os.path.abspath(os.path.join(current_file_dir, "traning-osteo.ipynb"))
+            
+            # Fallback path 2: Local development folder structure
+            if not os.path.exists(notebook_template_path):
+                notebook_template_path = os.path.abspath(
+                    os.path.join(current_file_dir, "..", "..", "..", "scriptTranining", "traning-osteo.ipynb")
+                )
             
             if not os.path.exists(notebook_template_path):
                 raise FileNotFoundError(f"Không tìm thấy tệp mẫu notebook tại {notebook_template_path}")

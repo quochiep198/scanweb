@@ -32,13 +32,12 @@ export default function TrainingView() {
   const [kaggleUsername, setKaggleUsername] = useState("");
   const [kaggleKey, setKaggleKey] = useState("");
   const [showAdvancedKaggle, setShowAdvancedKaggle] = useState(false);
-  const [isKaggleConnected, setIsKaggleConnected] = useState(false);
 
   // Training Execution States
   const [isTraining, setIsTraining] = useState(false);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [logsText, setLogsText] = useState("");
-  
+
   // Real-time Parser States
   const [progressState, setProgressState] = useState({
     epoch: 0,
@@ -48,7 +47,7 @@ export default function TrainingView() {
     pct: 0,
     eta: "Đang tính toán..."
   });
-  
+
   const [chartData, setChartData] = useState<{ epoch: number; trainLoss: number; valLoss: number; accuracy: number }[]>([]);
 
   // History Table States
@@ -113,6 +112,7 @@ export default function TrainingView() {
     }
   };
 
+  // 3. Fetch active training logs and status (polling)
   const fetchLogs = async () => {
     try {
       const apiUrl = getApiUrl();
@@ -120,20 +120,19 @@ export default function TrainingView() {
         credentials: "include"
       });
       if (response.ok) {
-        setIsKaggleConnected(true);
         const data = await response.json();
         const logs = data.logs || "";
         const status = data.status || "idle";
-        
+
         setLogsText(logs);
-        
+
         const isRunning = status === "running";
         setIsTraining(isRunning);
 
         // Parse logs to build chart data points
         const parsedPoints: { epoch: number; trainLoss: number; valLoss: number; accuracy: number }[] = [];
         const lines = logs.split("\n");
-        
+
         lines.forEach((line: string) => {
           // Format in notebook: Epoch {epoch}/{epochs} result: train_loss={train_loss:.4f}, validation_loss={val_loss:.4f}, accuracy={accuracy:.4f}
           const match = line.match(/Epoch\s+(\d+)\/\d+\s+result:\s+train_loss=([\d\.]+),\s+validation_loss=([\d\.]+),\s+accuracy=([\d\.]+)/);
@@ -166,7 +165,7 @@ export default function TrainingView() {
             batch = parseInt(progressMatch[3]);
             totalBatches = parseInt(progressMatch[4]);
             pct = Math.round(((epoch - 1) / totalEpochs) * 100 + (batch / totalBatches) * (100 / totalEpochs));
-            
+
             // Simple ETA calculation: ~4.5 seconds per batch on Kaggle T4 average
             const remainingBatches = (totalEpochs - epoch) * totalBatches + (totalBatches - batch);
             const remainingSeconds = remainingBatches * 4.5;
@@ -180,7 +179,7 @@ export default function TrainingView() {
             break;
           }
         }
-        
+
         // If not running but finished, parse the latest completed epoch for progress UI
         if (!progressMatchActive(lines) && parsedPoints.length > 0) {
           const lastPoint = parsedPoints[parsedPoints.length - 1];
@@ -203,12 +202,9 @@ export default function TrainingView() {
           fetchHistory(historyPage);
           fetchUntrainedSummary();
         }
-      } else {
-        setIsKaggleConnected(false);
       }
     } catch (err) {
       console.error("Error polling training logs:", err);
-      setIsKaggleConnected(false);
     }
   };
 
@@ -242,7 +238,7 @@ export default function TrainingView() {
   // 5. Trigger start training
   const handleStartTraining = async () => {
     if (isTraining) return;
-    
+
     setIsTraining(true);
     setLogsText("Đang khởi tạo kết nối và chuẩn bị tệp huấn luyện...");
     setProgressState({
@@ -314,15 +310,15 @@ export default function TrainingView() {
     return svgHeight - acc * svgHeight;
   };
 
-  const trainLossPath = chartData.length > 0 
+  const trainLossPath = chartData.length > 0
     ? "M " + chartData.map(p => `${getX(p.epoch)},${getYLoss(p.trainLoss)}`).join(" L ")
     : "";
-    
-  const valLossPath = chartData.length > 0 
+
+  const valLossPath = chartData.length > 0
     ? "M " + chartData.map(p => `${getX(p.epoch)},${getYLoss(p.valLoss)}`).join(" L ")
     : "";
-    
-  const accPath = chartData.length > 0 
+
+  const accPath = chartData.length > 0
     ? "M " + chartData.map(p => `${getX(p.epoch)},${getYAcc(p.accuracy)}`).join(" L ")
     : "";
 
@@ -335,9 +331,9 @@ export default function TrainingView() {
           <p className={styles.description}>{m.description}</p>
         </div>
         <div className={styles.statusIndicator}>
-          <div className={`${styles.statusDot} ${isKaggleConnected ? styles.statusDotConnected : styles.statusDotDisconnected}`} />
+          <div className={`${styles.statusDot} ${isTraining ? styles.statusDotConnected : styles.statusDotDisconnected}`} />
           <span className={styles.statusText}>
-            {isKaggleConnected ? m.statusConnected : m.statusDisconnected}
+            {isTraining ? m.statusConnected : m.statusDisconnected}
           </span>
         </div>
       </header>
@@ -539,9 +535,9 @@ export default function TrainingView() {
                 <span className={styles.progressValue}>{progressState.pct}%</span>
               </div>
               <div className={styles.progressBar} style={{ height: "14px" }}>
-                <div 
-                  className={`${styles.progressFill} ${isTraining ? styles.progressFillPulse : ""}`} 
-                  style={{ width: `${progressState.pct}%` }} 
+                <div
+                  className={`${styles.progressFill} ${isTraining ? styles.progressFillPulse : ""}`}
+                  style={{ width: `${progressState.pct}%` }}
                 />
               </div>
               <p className={styles.etaText}>
@@ -586,7 +582,7 @@ export default function TrainingView() {
                     <line x1="0" y1={svgHeight * 0.4} x2={svgWidth} y2={svgHeight * 0.4} stroke="#f1f5f9" strokeWidth="1" />
                     <line x1="0" y1={svgHeight * 0.6} x2={svgWidth} y2={svgHeight * 0.6} stroke="#f1f5f9" strokeWidth="1" />
                     <line x1="0" y1={svgHeight * 0.8} x2={svgWidth} y2={svgHeight * 0.8} stroke="#f1f5f9" strokeWidth="1" />
-                    
+
                     {/* Lines */}
                     {trainLossPath && <path d={trainLossPath} fill="none" stroke="#103f9c" strokeWidth="2" />}
                     {valLossPath && <path d={valLossPath} fill="none" stroke="#3b82f6" strokeWidth="2" strokeDasharray="3" />}
