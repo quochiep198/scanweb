@@ -223,10 +223,10 @@ class KaggleService:
                         bypass_warm_start_val = "False" if warm_up else "True"
                         line = line.replace("bypass_warm_start = False", f"bypass_warm_start = {bypass_warm_start_val}")
 
-                        # Re-order pip installs to prevent Kaggle from upgrading PyTorch to an incompatible CUDA version
+                        # Re-order pip installs, uninstall current PyTorch, and install CUDA 11.8 compatible version (supports both P100 sm_60 and T4 sm_75) without full force-reinstall to prevent RAM OOM.
                         line = line.replace(
                             "!pip install --no-deps easyocr torchxrayvision monai && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow",
-                            "!pip install python-bidi pyclipper pydicom psycopg2-binary mlflow && pip install --no-deps easyocr torchxrayvision monai"
+                            "!pip uninstall -y torch torchvision && pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118 && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow && pip install --no-deps easyocr torchxrayvision monai"
                         )
 
                         # Replace execution script call at the end
@@ -249,7 +249,7 @@ class KaggleService:
                 "kernel_type": "notebook",
                 "is_private": True,
                 "enable_gpu": True,
-                "accelerator": "gpuT42",
+                "accelerator": "gpu",
                 "enable_tpu": False,
                 "enable_internet": True,
                 "dataset_sources": [],
