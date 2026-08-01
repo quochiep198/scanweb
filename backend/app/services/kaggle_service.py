@@ -242,7 +242,7 @@ class KaggleService:
                 "kernel_type": "notebook",
                 "is_private": True,
                 "enable_gpu": True,
-                "accelerator": "NvidiaTeslaT4",
+                "accelerator": "gpu",
                 "enable_tpu": False,
                 "enable_internet": True,
                 "dataset_sources": [],
@@ -266,8 +266,8 @@ class KaggleService:
             api = KaggleApi()
             api.authenticate()
             
-            # Execute kernels push with NvidiaTeslaT4 accelerator
-            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir, "--accelerator", "NvidiaTeslaT4"]
+            # Execute kernels push
+            push_cmd = ["kaggle", "kernels", "push", "-p", temp_dir]
             logger.info(f"Executing Kaggle push command: {' '.join(push_cmd)}")
             res = subprocess.run(push_cmd, capture_output=True, text=True, encoding="utf-8")
             
