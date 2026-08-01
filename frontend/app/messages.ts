@@ -235,6 +235,8 @@ export const messages = {
     trainedTodayDesc: "Số lượng mẫu đã hoàn thành huấn luyện cho AI trong ngày hôm nay.",
     totalUploadTitle: "Mẫu đã upload",
     totalUploadDesc: "Tổng số lượng mẫu đã được upload lên hệ thống.",
+    untrainedCountTitle: "Mẫu chưa training",
+    untrainedCountDesc: "Số lượng mẫu ảnh quét X-ray chưa được đưa vào huấn luyện.",
     
     welcomeTitle: (name: string) => `Chào mừng bác sĩ, ${name}!`,
     welcomeDesc: "OsteoScan AI hỗ trợ bạn phân tích mật độ xương, đánh giá nhanh nguy cơ loãng xương của bệnh nhân qua phim quét X-ray/DICOM và tối ưu hóa quy trình chẩn đoán.",

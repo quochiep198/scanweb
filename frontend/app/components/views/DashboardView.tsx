@@ -22,6 +22,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
     trainedTodayCount: 0,
     trainedYesterdayCount: 0,
     uploadCount: 0,
+    untrainedCount: 0,
     distribution: {
       normal: 0,
       osteopenia: 0,
@@ -87,6 +88,7 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
           trainedTodayCount: data.trained_today_count,
           trainedYesterdayCount: data.trained_yesterday_count,
           uploadCount: data.upload_count,
+          untrainedCount: data.untrained_count || 0,
           distribution: data.distribution || { normal: 0, osteopenia: 0, osteoporosis: 0 },
           agreementRate: data.agreement_rate || 0.0,
           totalReviewed: data.total_reviewed || 0,
@@ -231,6 +233,13 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
       value: `${stats.uploadCount}`,
       yesterdayValue: undefined,
       detail: m.totalUploadDesc,
+    },
+    {
+      icon: "pending_actions",
+      title: m.untrainedCountTitle,
+      value: `${stats.untrainedCount}`,
+      yesterdayValue: undefined,
+      detail: m.untrainedCountDesc,
     }
   ];
 
@@ -268,11 +277,11 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
   const getLabelText = (label: string) => {
     switch (label) {
       case "normal":
-        return m.distNormal.split(" ")[0]; // "Bình thường"
+        return m.distNormal.split("(")[0].trim(); // "Bình thường"
       case "osteopenia":
-        return m.distOsteopenia.split(" ")[0]; // "Thiếu xương"
+        return m.distOsteopenia.split("(")[0].trim(); // "Thiếu xương"
       case "osteoporosis":
-        return m.distOsteoporosis.split(" ")[0]; // "Loãng xương"
+        return m.distOsteoporosis.split("(")[0].trim(); // "Loãng xương"
       default:
         return label;
     }
@@ -755,9 +764,9 @@ export default function DashboardPage({ onViewChange, onSelectMeasurement }: Das
               }}
             >
               <option value="all">{m.filterLabelAll}</option>
-              <option value="normal">{m.distNormal.split(" ")[0]}</option>
-              <option value="osteopenia">{m.distOsteopenia.split(" ")[0]}</option>
-              <option value="osteoporosis">{m.distOsteoporosis.split(" ")[0]}</option>
+              <option value="normal">{getLabelText("normal")}</option>
+              <option value="osteopenia">{getLabelText("osteopenia")}</option>
+              <option value="osteoporosis">{getLabelText("osteoporosis")}</option>
             </select>
 
             <select

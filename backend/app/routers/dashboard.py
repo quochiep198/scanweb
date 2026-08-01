@@ -65,6 +65,13 @@ def get_dashboard_stats(
         .count()
     )
 
+    # 3b. Count untrained uploads (trained_date is null)
+    untrained_count = (
+        db.query(XRayImage)
+        .filter(XRayImage.trained_date == None)
+        .count()
+    )
+
     # 4. Count diagnosis distribution (from MeasurementResult)
     dist_query = (
         db.query(
@@ -178,6 +185,7 @@ def get_dashboard_stats(
         "trained_today_count": trained_today_count,
         "trained_yesterday_count": trained_yesterday_count,
         "upload_count": upload_count,
+        "untrained_count": untrained_count,
         "distribution": distribution,
         "agreement_rate": agreement_rate,
         "total_reviewed": total_reviewed,

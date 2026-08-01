@@ -29,10 +29,13 @@ export default function LoginPage() {
     const google = (window as any).google;
     const btn = document.getElementById("google-signin-btn");
     if (google && google.accounts && btn) {
-      google.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-        callback: handleGoogleCredential,
-      });
+      if (!(window as any).googleSignInInitialized) {
+        google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+          callback: handleGoogleCredential,
+        });
+        (window as any).googleSignInInitialized = true;
+      }
 
       google.accounts.id.renderButton(
         btn,
