@@ -82,8 +82,13 @@ class KaggleService:
         
         # Monkey-patch write_log to write to both DB and local file
         old_write_log = KaggleService.write_log
-        def temp_write_log(message: str, mode: str = "a"):
-            old_write_log(message, db, history_id, mode)
+        def temp_write_log(message: str, db_or_mode = None, run_id_param = None, mode: str = "a"):
+            actual_mode = "a"
+            if isinstance(db_or_mode, str):
+                actual_mode = db_or_mode
+            elif isinstance(mode, str):
+                actual_mode = mode
+            old_write_log(message, db, history_id, actual_mode)
         KaggleService.write_log = temp_write_log
 
         try:
