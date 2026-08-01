@@ -394,6 +394,7 @@
   flex: 1;
   padding: 16px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   font-family: monospace;
   font-size: 0.75rem;
   color: #38bdf8;
