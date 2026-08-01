@@ -223,6 +223,12 @@ class KaggleService:
                         bypass_warm_start_val = "False" if warm_up else "True"
                         line = line.replace("bypass_warm_start = False", f"bypass_warm_start = {bypass_warm_start_val}")
 
+                        # Re-order pip installs to prevent Kaggle from upgrading PyTorch to an incompatible CUDA version
+                        line = line.replace(
+                            "!pip install --no-deps easyocr torchxrayvision monai && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow",
+                            "!pip install python-bidi pyclipper pydicom psycopg2-binary mlflow && pip install --no-deps easyocr torchxrayvision monai"
+                        )
+
                         # Replace execution script call at the end
                         if "run_kaggle_training(" in line and "def " not in line:
                             line = f"run_kaggle_training(use_augmentation={use_augmentation})\n"
