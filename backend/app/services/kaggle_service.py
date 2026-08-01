@@ -223,10 +223,10 @@ class KaggleService:
                         bypass_warm_start_val = "False" if warm_up else "True"
                         line = line.replace("bypass_warm_start = False", f"bypass_warm_start = {bypass_warm_start_val}")
 
-                        # Force reinstall torch/torchvision with cu121 and then install other packages to fix CUDA incompatibility
+                        # Force reinstall torch/torchvision with cu118 and then install other packages to fix CUDA incompatibility (supports both P100 sm_60 and T4 sm_75)
                         line = line.replace(
                             "!pip install --no-deps easyocr torchxrayvision monai && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow",
-                            "!pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121 --force-reinstall && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow && pip install --no-deps easyocr torchxrayvision monai"
+                            "!pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118 --force-reinstall && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow && pip install --no-deps easyocr torchxrayvision monai"
                         )
 
                         # Replace execution script call at the end
