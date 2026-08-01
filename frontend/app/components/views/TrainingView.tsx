@@ -32,6 +32,7 @@ export default function TrainingView() {
   const [kaggleUsername, setKaggleUsername] = useState("");
   const [kaggleKey, setKaggleKey] = useState("");
   const [showAdvancedKaggle, setShowAdvancedKaggle] = useState(false);
+  const [isKaggleConnected, setIsKaggleConnected] = useState(false);
 
   // Training Execution States
   const [isTraining, setIsTraining] = useState(false);
@@ -112,7 +113,6 @@ export default function TrainingView() {
     }
   };
 
-  // 3. Fetch active training logs and status (polling)
   const fetchLogs = async () => {
     try {
       const apiUrl = getApiUrl();
@@ -120,6 +120,7 @@ export default function TrainingView() {
         credentials: "include"
       });
       if (response.ok) {
+        setIsKaggleConnected(true);
         const data = await response.json();
         const logs = data.logs || "";
         const status = data.status || "idle";
@@ -202,9 +203,12 @@ export default function TrainingView() {
           fetchHistory(historyPage);
           fetchUntrainedSummary();
         }
+      } else {
+        setIsKaggleConnected(false);
       }
     } catch (err) {
       console.error("Error polling training logs:", err);
+      setIsKaggleConnected(false);
     }
   };
 
@@ -331,9 +335,9 @@ export default function TrainingView() {
           <p className={styles.description}>{m.description}</p>
         </div>
         <div className={styles.statusIndicator}>
-          <div className={`${styles.statusDot} ${isTraining ? styles.statusDotConnected : styles.statusDotDisconnected}`} />
+          <div className={`${styles.statusDot} ${isKaggleConnected ? styles.statusDotConnected : styles.statusDotDisconnected}`} />
           <span className={styles.statusText}>
-            {isTraining ? m.statusConnected : m.statusDisconnected}
+            {isKaggleConnected ? m.statusConnected : m.statusDisconnected}
           </span>
         </div>
       </header>
