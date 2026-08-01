@@ -691,7 +691,7 @@ export default function TrainingView() {
                       })}
                     </td>
                     <td className={styles.td}>
-                      {item.runName.includes("DenseNet-121") ? "MTL DenseNet-121" : "ResNet-50 Optimized"}
+                      {item.runName.includes("EfficientNet") ? "EfficientNet-B3" : "MTL DenseNet-121"}
                     </td>
                     <td className={`${styles.td} ${styles.tdBold}`} style={{ textAlign: "center" }}>
                       {item.accuracy !== null ? item.accuracy.toFixed(4) : "-"}
