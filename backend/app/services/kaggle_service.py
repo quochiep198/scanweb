@@ -212,6 +212,7 @@ class KaggleService:
                         line = line.replace("history_id = str(uuid.uuid4())", f"history_id = '{history_id}'")
                         line = line.replace('trainer_id = db.execute(text("SELECT id FROM users LIMIT 1")).scalar()', f"trainer_id = '{trainer_id}'")
                         line = line.replace("trainer_id = db.execute(text('SELECT id FROM users LIMIT 1')).scalar()", f"trainer_id = '{trainer_id}'")
+                        line = line.replace("db.add(training_history_record)", "db.merge(training_history_record)")
 
                         # Replace hyperparameters
                         line = line.replace("epochs = 50", f"epochs = {epochs}")
