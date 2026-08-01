@@ -67,7 +67,8 @@ export default function TrainingView() {
     try {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/v1/dashboard/stats`, {
-        credentials: "include"
+        credentials: "include",
+        cache: "no-store"
       });
       if (response.ok) {
         const data = await response.json();
@@ -86,7 +87,8 @@ export default function TrainingView() {
     try {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/v1/training/history?page=${page}&limit=${historyLimit}`, {
-        credentials: "include"
+        credentials: "include",
+        cache: "no-store"
       });
       if (response.ok) {
         const data = await response.json();
@@ -117,7 +119,8 @@ export default function TrainingView() {
     try {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/v1/training/logs`, {
-        credentials: "include"
+        credentials: "include",
+        cache: "no-store"
       });
       if (response.ok) {
         const data = await response.json();
@@ -157,8 +160,9 @@ export default function TrainingView() {
 
         for (let j = lines.length - 1; j >= 0; j--) {
           const line = lines[j];
-          // Look for batch execution string: Epoch 19/50: [========>.......] 42/80 batches - loss: 0.1342
-          const progressMatch = line.match(/Epoch\s+(\d+)\/(\d+):\s+\[.*?\]\s+(\d+)\/(\d+)\s+batches/);
+          // Look for batch execution string (supports both Colab and Kaggle log formats)
+          const progressMatch = line.match(/Epoch\s+(\d+)\/(\d+)\s+\|\s+Batch\s+(\d+)\/(\d+)/) ||
+                                line.match(/Epoch\s+(\d+)\/(\d+):\s+\[.*?\]\s+(\d+)\/(\d+)\s+batches/);
           if (progressMatch) {
             epoch = parseInt(progressMatch[1]);
             totalEpochs = parseInt(progressMatch[2]);
@@ -210,7 +214,7 @@ export default function TrainingView() {
 
   const progressMatchActive = (lines: string[]): boolean => {
     for (let j = lines.length - 1; j >= 0; j--) {
-      if (lines[j].includes("batches")) return true;
+      if (lines[j].includes("Batch") || lines[j].includes("batches")) return true;
     }
     return false;
   };
