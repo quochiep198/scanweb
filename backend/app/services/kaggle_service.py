@@ -73,7 +73,8 @@ class KaggleService:
         epochs: int = 50, 
         use_augmentation: bool = True,
         kaggle_username: str = None, 
-        kaggle_key: str = None
+        kaggle_key: str = None,
+        warm_up: bool = True
     ):
         # Setup credentials
         username = kaggle_username or settings.KAGGLE_USERNAME
@@ -207,6 +208,10 @@ class KaggleService:
                         line = line.replace("epochs = 50", f"epochs = {epochs}")
                         line = line.replace("batch_size = 8", f"batch_size = {batch_size}")
                         line = line.replace("lr = 1e-4", f"lr = {learning_rate}")
+                        
+                        # Replace bypass_warm_start
+                        bypass_warm_start_val = "False" if warm_up else "True"
+                        line = line.replace("bypass_warm_start = False", f"bypass_warm_start = {bypass_warm_start_val}")
 
                         # Replace execution script call at the end
                         if "run_kaggle_training(" in line and "def " not in line:
@@ -333,7 +338,8 @@ class KaggleService:
         epochs: int = 50, 
         use_augmentation: bool = True,
         kaggle_username: str = None, 
-        kaggle_key: str = None
+        kaggle_key: str = None,
+        warm_up: bool = True
     ):
         from app.core.database import SessionLocal
         db = SessionLocal()
@@ -345,7 +351,8 @@ class KaggleService:
                 epochs=epochs,
                 use_augmentation=use_augmentation,
                 kaggle_username=kaggle_username,
-                kaggle_key=kaggle_key
+                kaggle_key=kaggle_key,
+                warm_up=warm_up
             )
         except Exception as e:
             logger.error(f"Kaggle training background task failed: {e}")

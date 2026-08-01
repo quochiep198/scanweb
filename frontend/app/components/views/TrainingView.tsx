@@ -253,19 +253,16 @@ export default function TrainingView() {
 
     try {
       const apiUrl = getApiUrl();
-      const body = {
-        model_type: modelType,
-        use_augmentation: useAugmentation,
-        epochs: epochsInput,
-        platform: "kaggle",
-        kaggle_username: kaggleUsername || null,
-        kaggle_key: kaggleKey || null
-      };
+      let url = `${apiUrl}/v1/training/train?platform=kaggle&use_augmentation=${useAugmentation}&warm_up=${warmUp}`;
+      if (kaggleUsername) {
+        url += `&kaggle_username=${encodeURIComponent(kaggleUsername)}`;
+      }
+      if (kaggleKey) {
+        url += `&kaggle_key=${encodeURIComponent(kaggleKey)}`;
+      }
 
-      const response = await fetch(`${apiUrl}/v1/training/train`, {
+      const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
         credentials: "include"
       });
 
@@ -347,7 +344,7 @@ export default function TrainingView() {
           {/* Configuration Card */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <span className="material-symbols-outlined styles.cardIcon">settings_input_component</span>
+              <span className={`material-symbols-outlined ${styles.cardIcon}`}>settings_input_component</span>
               <h2 className={styles.cardTitle}>{m.configCardTitle}</h2>
             </div>
             <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
@@ -386,7 +383,7 @@ export default function TrainingView() {
                       className={styles.input}
                       disabled={true}
                     />
-                    <span className="material-symbols-outlined styles.inputIcon">lock</span>
+                    <span className={`material-symbols-outlined ${styles.inputIcon}`}>lock</span>
                   </div>
                 </div>
               </div>
@@ -400,9 +397,24 @@ export default function TrainingView() {
                     className={styles.input}
                     disabled={true}
                   />
-                  <span className="material-symbols-outlined styles.inputIcon">lock</span>
+                  <span className={`material-symbols-outlined ${styles.inputIcon}`}>lock</span>
                 </div>
                 <p className="text-[11px] text-primary italic mt-0.5">{m.hintLearningRate}</p>
+              </div>
+
+              {/* Warm-up Checkbox */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                <input
+                  type="checkbox"
+                  id="warmUp"
+                  checked={warmUp}
+                  onChange={(e) => setWarmUp(e.target.checked)}
+                  disabled={isTraining}
+                  style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                />
+                <label htmlFor="warmUp" style={{ fontSize: "0.75rem", fontWeight: "700", color: "#334159", cursor: "pointer", userSelect: "none" }}>
+                  {m.labelWarmUp} <span style={{ fontWeight: "normal", color: "#64748b", marginLeft: "4px" }}>({m.descWarmUp})</span>
+                </label>
               </div>
 
               {/* Advanced Kaggle Config Toggle */}
@@ -495,7 +507,7 @@ export default function TrainingView() {
           {/* GPU Hardware Status Card */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <span className="material-symbols-outlined styles.cardIcon">memory</span>
+              <span className={`material-symbols-outlined ${styles.cardIcon}`}>memory</span>
               <h2 className={styles.cardTitle}>{m.gpuCardTitle}</h2>
             </div>
             <div className="flex justify-between items-center bg-[#f8fafc] border border-[#e2e8f0] p-3 rounded-lg">
@@ -538,9 +550,9 @@ export default function TrainingView() {
         {/* Right Column - Chart & Terminal Console */}
         <div className={styles.rightCol}>
           {/* SVG Metrics Chart */}
-          <section className={styles.card} style={{ height: "350px" }}>
+          <section className={styles.card}>
             <div className={styles.cardHeader} style={{ borderBottom: "none", paddingBottom: 0 }}>
-              <span className="material-symbols-outlined styles.cardIcon">monitoring</span>
+              <span className={`material-symbols-outlined ${styles.cardIcon}`}>monitoring</span>
               <h2 className={styles.cardTitle}>{m.chartCardTitle}</h2>
             </div>
 
