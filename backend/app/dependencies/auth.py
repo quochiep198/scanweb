@@ -56,3 +56,14 @@ def get_current_privileged_user(
             detail="Quyet truy cap bi tu choi. Yeu cau vai tro Admin hoac Doctor."
         )
     return current_user
+
+def get_current_admin_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Quyen truy cap bi tu choi. Yeu cau vai tro Admin."
+        )
+    return current_user
+

@@ -17,6 +17,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { view: "dashboard", label: messages.dashboardShell.navDashboard, icon: "dashboard" },
   { view: "upload", label: messages.dashboardShell.navUpload, icon: "upload_file" },
+  { view: "training", label: messages.dashboardShell.navTraining, icon: "psychology" },
   { view: "measurement", label: messages.dashboardShell.navMeasurement, icon: "straighten" },
 ];
 
@@ -47,6 +48,9 @@ export function DashboardShell({ children, currentView, onViewChange }: Dashboar
   const filteredNavItems = navItems.filter((item) => {
     if (item.view === "upload") {
       return user && (user.role === "admin" || user.role === "doctor");
+    }
+    if (item.view === "training") {
+      return user && user.role === "admin";
     }
     return true;
   });

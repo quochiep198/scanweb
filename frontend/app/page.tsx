@@ -8,6 +8,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import DashboardView from "@/app/components/views/DashboardView";
 import UploadView from "@/app/components/views/UploadView";
 import MeasurementView from "@/app/components/views/MeasurementView";
+import TrainingView from "@/app/components/views/TrainingView";
 
 export default function AppRouterPage() {
   const { user } = useAuth();
@@ -15,9 +16,13 @@ export default function AppRouterPage() {
   const [selectedMeasurement, setSelectedMeasurement] = useState<any>(null);
 
   const isPrivileged = user && (user.role === "admin" || user.role === "doctor");
+  const isAdmin = user && user.role === "admin";
 
   const handleViewChange = (view: string) => {
     if (view === "upload" && !isPrivileged) {
+      return;
+    }
+    if (view === "training" && !isAdmin) {
       return;
     }
     if (view !== "measurement") {
@@ -40,6 +45,8 @@ export default function AppRouterPage() {
         );
       case "upload":
         return isPrivileged ? <UploadView /> : <DashboardView onViewChange={handleViewChange} />;
+      case "training":
+        return isAdmin ? <TrainingView /> : <DashboardView onViewChange={handleViewChange} />;
       case "measurement":
         return (
           <MeasurementView 

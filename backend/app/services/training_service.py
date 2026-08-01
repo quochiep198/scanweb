@@ -1031,6 +1031,7 @@ class TrainingService:
             os.environ["KAGGLE_KEY"] = key
             os.environ["KAGGLE_API_TOKEN"] = key
             
+            # pyrefly: ignore [missing-import]
             from kaggle.api.kaggle_api_extended import KaggleApi
             api = KaggleApi()
             api.authenticate()
@@ -1114,15 +1115,15 @@ class TrainingService:
 
     @staticmethod
     def run_kaggle_training_pipeline_task(trainer_id: str, history_id: str, use_augmentation: bool = True, force_full: bool = True, kaggle_username: str = None, kaggle_key: str = None):
-        from app.core.database import SessionLocal
-        db = SessionLocal()
-        try:
-            return TrainingService.run_kaggle_training_pipeline(db, trainer_id, history_id, use_augmentation, force_full, kaggle_username, kaggle_key)
-        except Exception as e:
-            logger.error(f"Kaggle training background task failed: {e}")
-            raise e
-        finally:
-            db.close()
+        from app.services.kaggle_service import KaggleService
+        return KaggleService.run_kaggle_training_pipeline_task(
+            trainer_id=trainer_id,
+            history_id=history_id,
+            epochs=50,
+            use_augmentation=use_augmentation,
+            kaggle_username=kaggle_username,
+            kaggle_key=kaggle_key
+        )
 
 
 
