@@ -223,10 +223,10 @@ class KaggleService:
                         bypass_warm_start_val = "False" if warm_up else "True"
                         line = line.replace("bypass_warm_start = False", f"bypass_warm_start = {bypass_warm_start_val}")
 
-                        # Re-order pip installs to prevent Kaggle from upgrading PyTorch to an incompatible CUDA version
+                        # Force reinstall torch/torchvision with cu121 and then install other packages to fix CUDA incompatibility
                         line = line.replace(
                             "!pip install --no-deps easyocr torchxrayvision monai && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow",
-                            "!pip install python-bidi pyclipper pydicom psycopg2-binary mlflow && pip install --no-deps easyocr torchxrayvision monai"
+                            "!pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121 --force-reinstall && pip install python-bidi pyclipper pydicom psycopg2-binary mlflow && pip install --no-deps easyocr torchxrayvision monai"
                         )
 
                         # Replace execution script call at the end
@@ -302,6 +302,12 @@ class KaggleService:
 
                     status_lower = status_str.lower()
                     if "complete" in status_lower:
+                        # Check if the notebook itself already marked it as failed in the DB
+                        current_record = db.query(TrainingHistory).filter(TrainingHistory.id == history_id).first()
+                        if current_record and current_record.status == "failed":
+                            KaggleService.write_log("Tiến trình Kaggle kết thúc nhưng phát hiện lỗi trong quá trình huấn luyện.")
+                            break
+
                         KaggleService.write_log("Kaggle Kernel hoàn tất thành công! Trọng số mô hình đã được tải lên Cloudflare R2.")
                         
                         # Update status in db
