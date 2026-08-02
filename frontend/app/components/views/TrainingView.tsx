@@ -162,7 +162,7 @@ export default function TrainingView() {
           const line = lines[j];
           // Look for batch execution string (supports both Colab and Kaggle log formats)
           const progressMatch = line.match(/Epoch\s+(\d+)\/(\d+)\s+\|\s+Batch\s+(\d+)\/(\d+)/) ||
-                                line.match(/Epoch\s+(\d+)\/(\d+):\s+\[.*?\]\s+(\d+)\/(\d+)\s+batches/);
+            line.match(/Epoch\s+(\d+)\/(\d+):\s+\[.*?\]\s+(\d+)\/(\d+)\s+batches/);
           if (progressMatch) {
             epoch = parseInt(progressMatch[1]);
             totalEpochs = parseInt(progressMatch[2]);
@@ -286,6 +286,28 @@ export default function TrainingView() {
     }
   };
 
+  const handleStopTraining = async () => {
+    if (!isTraining) return;
+
+    setLogsText((prev) => prev + "\n[HỆ THỐNG] Đang gửi yêu cầu dừng tiến trình huấn luyện...");
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/v1/training/stop`, {
+        method: "POST",
+        credentials: "include"
+      });
+
+      if (response.ok) {
+        setLogsText((prev) => prev + "\n[HỆ THỐNG] Đã gửi yêu cầu dừng huấn luyện thành công.");
+      } else {
+        const errorData = await response.json();
+        setLogsText((prev) => prev + `\n[LỖI] Không thể dừng huấn luyện: ${errorData.detail || "Không rõ lỗi."}`);
+      }
+    } catch (err: any) {
+      setLogsText((prev) => prev + `\n[LỖI KẾT NỐI] ${err.message || err}`);
+    }
+  };
+
   // Calculated hyperparameters details
   const totalTrainEstimate = untrainedCount > 0 ? Math.round(untrainedCount * 0.85) : 0;
   const autoBatchSize = totalTrainEstimate > 128 ? 32 : 16;
@@ -330,7 +352,6 @@ export default function TrainingView() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.titleSection}>
-          <p className={styles.eyebrow}>{messages.dashboardShell.navDashboard}</p>
           <h1 className={styles.title}>{m.title}</h1>
           <p className={styles.description}>{m.description}</p>
         </div>
@@ -499,7 +520,8 @@ export default function TrainingView() {
                 <button
                   type="button"
                   className={`${styles.btn} ${styles.btnDanger}`}
-                  disabled={true} // Stopping is managed automatically by launching new job or Kaggle kernel cancel
+                  disabled={!isTraining}
+                  onClick={handleStopTraining}
                 >
                   <span className="material-symbols-outlined">stop_circle</span>
                   {m.btnStop}

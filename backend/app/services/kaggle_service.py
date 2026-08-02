@@ -222,6 +222,19 @@ class KaggleService:
                         line = line.replace("trainer_id = db.execute(text('SELECT id FROM users LIMIT 1')).scalar()", f"trainer_id = '{trainer_id}'")
                         line = line.replace("db.add(training_history_record)", "db.merge(training_history_record)")
 
+                        # Update database update command in the notebook to include validation images
+                        if 'db.query(XRayImage).filter(XRayImage.image_path.in_(image_paths)).update(' in line:
+                            line = (
+                                '    # Cập nhật cả dữ liệu validation\n'
+                                '    try:\n'
+                                '        val_images = db.query(XRayImage.image_path).filter(XRayImage.dataset_split == "validation").all()\n'
+                                '        if val_images:\n'
+                                '            image_paths.extend([row.image_path for row in val_images])\n'
+                                '    except Exception as val_err:\n'
+                                '        write_log(f"WARNING: Failed to query validation image paths for DB update: {val_err}", db, history_id)\n'
+                                '    db.query(XRayImage).filter(XRayImage.image_path.in_(image_paths)).update(\n'
+                            )
+
                         # Replace hyperparameters
                         line = line.replace("epochs = 50", f"epochs = {epochs}")
                         line = line.replace("batch_size = 8", f"batch_size = {batch_size}")
@@ -300,6 +313,22 @@ class KaggleService:
 
             while time.time() - start_time < max_time:
                 try:
+                    # Check if user cancelled via DB status
+                    try:
+                        db.expire_all()
+                        history_rec = db.query(TrainingHistory).filter(TrainingHistory.id == history_id).first()
+                        if history_rec and history_rec.status != "running":
+                            KaggleService.write_log("Tiến trình huấn luyện đã bị dừng bởi người dùng. Đang hủy Kaggle GPU Job...")
+                            try:
+                                api.kernels_delete(kernel_ref, no_confirm=True)
+                                KaggleService.write_log("Đã gửi yêu cầu hủy Kaggle GPU Job thành công.")
+                            except Exception as kill_err:
+                                logger.error(f"Failed to delete Kaggle kernel: {kill_err}")
+                                KaggleService.write_log(f"Không thể hủy Kaggle Job trực tiếp: {kill_err}")
+                            break
+                    except Exception as db_check_err:
+                        logger.error(f"Error checking cancel status in DB: {db_check_err}")
+
                     res = api.kernels_status(kernel_ref)
                     status_obj = getattr(res, "status", None) or (res.get("status") if isinstance(res, dict) else None)
                     status_str = str(status_obj) if status_obj is not None else ""
@@ -323,6 +352,21 @@ class KaggleService:
                             "status": "success",
                             "completed_at": datetime.utcnow()
                         })
+                        
+                        # Update validation images trained state on successful completion (failsafe)
+                        try:
+                            val_images_count = db.query(XRayImage).filter(
+                                XRayImage.dataset_split == "validation",
+                                XRayImage.trained_date == None
+                            ).update({
+                                "is_trained": True,
+                                "trained_date": datetime.utcnow().date()
+                            }, synchronize_session=False)
+                            KaggleService.write_log(f"Đã cập nhật {val_images_count} ảnh validation thành 'is_trained=True' và gán trained_date.")
+                        except Exception as update_val_err:
+                            logger.error(f"Failed to update validation images on completion: {update_val_err}")
+                            KaggleService.write_log(f"Cảnh báo: Không thể cập nhật trạng thái ảnh validation: {update_val_err}")
+
                         db.commit()
                         break
                     elif "error" in status_lower:
@@ -389,3 +433,69 @@ class KaggleService:
             raise e
         finally:
             db.close()
+
+
+def register_stop_route():
+    import gc
+    from fastapi import FastAPI, Depends, HTTPException, status
+    from sqlalchemy.orm import Session
+    from app.core.database import get_db
+    from app.dependencies.auth import get_current_privileged_user
+    from app.models.training_history import TrainingHistory
+    from app.models.training_log import TrainingLog
+    from datetime import datetime
+
+    def stop_training(
+        db: Session = Depends(get_db),
+        current_user = Depends(get_current_privileged_user)
+    ):
+        active_run = db.query(TrainingHistory).filter(TrainingHistory.status == "running").first()
+        if not active_run:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Không có tiến trình huấn luyện nào đang chạy."
+            )
+        
+        active_run.status = "failed"
+        active_run.error_message = "Tiến trình huấn luyện đã bị dừng bởi người dùng."
+        active_run.completed_at = datetime.utcnow()
+        
+        log_entry = TrainingLog(
+            run_id=active_run.id,
+            message="Yêu cầu dừng tiến trình huấn luyện từ người dùng."
+        )
+        db.add(log_entry)
+        db.commit()
+        
+        try:
+            from app.services.training_service import TrainingService
+            TrainingService.is_training_active = False
+        except Exception:
+            pass
+
+        return {
+            "status": "success",
+            "message": "Đã dừng tiến trình huấn luyện thành công."
+        }
+
+    # Find the FastAPI instance and register route
+    app_instance = None
+    for obj in gc.get_objects():
+        if isinstance(obj, FastAPI):
+            app_instance = obj
+            break
+            
+    if app_instance:
+        route_exists = any(route.path == "/v1/training/stop" for route in app_instance.routes)
+        if not route_exists:
+            app_instance.add_api_route(
+                "/v1/training/stop", 
+                stop_training, 
+                methods=["POST"], 
+                tags=["Training"]
+            )
+            logger.info("Successfully registered /v1/training/stop route dynamically on FastAPI app.")
+    else:
+        logger.warning("FastAPI app instance not found in garbage collector yet.")
+
+register_stop_route()
